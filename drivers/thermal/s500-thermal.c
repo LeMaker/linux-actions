@@ -544,11 +544,11 @@ static struct owl_tmu_platform_data atm7095a_default_tmu_data = {
 	.reference_voltage = 7,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.freq_tab[0] = {
-		.freq_clip_max = 504 * 1000,
+		.freq_clip_max = 408 * 1000,
 		
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 504 * 1000,
+		.freq_clip_max = 408 * 1000,
 		
 	},
 	.freq_tab_count = 2,
@@ -624,8 +624,8 @@ static void wait_cpufreq_ready(struct work_struct *work)
 	pr_notice("++++++++cpufreq ready++++++++\n");
 	/* get thermal freq from freqtable */
 	pdata = data->pdata;
-	pdata->freq_tab[0].freq_clip_max = table[1].frequency;
-	pdata->freq_tab[1].freq_clip_max = table[1].frequency;
+	pdata->freq_tab[0].freq_clip_max = table[0].frequency;
+	pdata->freq_tab[1].freq_clip_max = table[0].frequency;
 	for (i = 0; i < 2; i++)
 		pr_notice("++++++++pdata->freq_tab[%d].freq_clip_max:%d++++++++\n", i, pdata->freq_tab[i].freq_clip_max);
 
