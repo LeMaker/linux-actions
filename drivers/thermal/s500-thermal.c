@@ -532,7 +532,7 @@ static struct thermal_sensor_conf owl_sensor_conf = {
 
 static struct owl_tmu_platform_data atm7095a_default_tmu_data = {
 	.threshold_falling = 10,
-	.threshold = 105,
+	.threshold = 95,
 	.trigger_levels[0] = 0,
 	.trigger_levels[1] = 10,
 	.trigger_levels[2] = 20,
