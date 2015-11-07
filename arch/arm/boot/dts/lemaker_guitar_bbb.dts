@@ -578,7 +578,7 @@
 				mic0_gain = < 0xf 0xf >; /*<Lchannel,Rchannel> [0x0~0xF]*/
 				speaker_gain = < 0xaa 0xaa >; /*<Lchannel,Rchannel>[0x00~0xbebe]*/
 				earphone_gain = < 0xbe 0xbe >; /*<Lchannel,Rchannel>[0x00~0xbebe]*/
-				mic_mode = <2>; /* 1: differential,  2: single end*/
+				mic_mode = <1>; /* 1: differential,  2: single end*/
 				earphone_detect_method = <2>; /*0:gpio, 1:irq, 2:adc*/	
 				adc_plugin_threshold = <200>; /*adc earphone detect plugin threshold value*/		
 				adc_level = <0>; /*adc plugin level, 1:high vol when plugin; 0:low vol when plug in*/
