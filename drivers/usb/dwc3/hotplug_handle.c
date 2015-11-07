@@ -157,7 +157,6 @@ int dwc3_plug_out(struct dwc3	*dwc,int s)
 	if(s == PLUGSTATE_A_OUT){
 		dwc3_host_exit(dwc);
 	}
-	owl_powergate_power_off(OWL_POWERGATE_USB3);
 	return 0;
 }
 
@@ -214,6 +213,8 @@ int __dwc3_set_plugstate(struct dwc3	*dwc,int s)
 	}        
 	if((s==PLUGSTATE_A_OUT)||(s==PLUGSTATE_B_OUT)||(s==PLUGSTATE_B_SUSPEND)){    
 		printk("\n----udc_set_plugstate--PLUGSTATE_OUT--\n");
+		if(owl_powergate_is_powered(OWL_POWERGATE_USB3))
+			owl_powergate_power_off(OWL_POWERGATE_USB3);
         	dwc3_plug_out(dwc,s);
 		if(dwc3_clk_close)
 			dwc3_clk_close();
