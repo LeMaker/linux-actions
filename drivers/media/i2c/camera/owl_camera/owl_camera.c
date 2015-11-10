@@ -686,7 +686,6 @@ static irqreturn_t owl_camera_host_isp_isr(int irq, void *data)
 		goto out;
 	}
 	 if (cam_dev->started == DEV_STOP&&(tmp_int_stat&frameend_int_pd)) {
-        printk(KERN_INFO"found stop in isp_isr");
 		//mdelay(1);
 		ret |= owl_camera_hw_call(hw_adapter, clear_channel_frameend_int_en, cam_param->channel);
         complete(&cam_dev->wait_stop);
@@ -1168,7 +1167,6 @@ static int ext_cmd(struct v4l2_subdev *sd, int cmd, void *args)
     //    af_updata(0);
     //    break;
     default:
-        printk("getctrl invalid control id %d", cmd);
         return -EINVAL;
     }
     //DBG_INFO("%s, cmd:%#x",__func__, cmd);
@@ -1932,7 +1930,7 @@ static int gpio_init(struct device_node *fdt_node,
     enum of_gpio_flags flags;
 
     if (!of_find_property(fdt_node, gpio_name, NULL)) {
-        printk("fshh520 <isp>no config gpios %s", gpio_name );
+        DBG_ERR("<isp>no config gpios" );
         goto fail;
     }
     gpio->num = of_get_named_gpio_flags(fdt_node, gpio_name, 0, &flags);
@@ -1985,7 +1983,7 @@ static int regulator_init(struct device_node *fdt_node,
     DBG_INFO("%s", regul ? regul : "NULL");
 
     if (of_property_read_u32_array(fdt_node, scope_name, scope, 2)) {
-        printk("<isp> fail to get %s", scope_name);
+        DBG_ERR("<isp> fail to get %s", scope_name);
         goto fail;
     }
     DBG_INFO("<isp>: min-%d, max-%d", scope[0], scope[1]);
@@ -2418,8 +2416,7 @@ struct owl_camera_hw_adapter *get_owl_camera_hw_adapter(void)
 {
 	if(of_find_compatible_node(NULL, NULL, "actions,atm7059tc") || of_find_compatible_node(NULL, NULL, "actions,atm7059a"))
 	{
-			printk("actions,atm7059\n");
-    	return &atm7059_hw_adapter;
+    		return &atm7059_hw_adapter;
 	}
 	else if(of_find_compatible_node(NULL, NULL, "actions,atm7039c"))
 	{
