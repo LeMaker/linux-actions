@@ -1932,7 +1932,7 @@ static int gpio_init(struct device_node *fdt_node,
     enum of_gpio_flags flags;
 
     if (!of_find_property(fdt_node, gpio_name, NULL)) {
-        DBG_ERR("<isp>no config gpios");
+        printk("fshh520 <isp>no config gpios %s", gpio_name );
         goto fail;
     }
     gpio->num = of_get_named_gpio_flags(fdt_node, gpio_name, 0, &flags);
@@ -2022,10 +2022,13 @@ static int isp_regulator_init(struct device_node *fdt_node, struct isp_regulator
 
 /*DVDD*/
 	struct dts_gpio *dvdd_gpio = &ir->dvdd_gpio;
-	if (!gpio_init(fdt_node, "dvdd-gpios", dvdd_gpio, 0))/* poweroff */
-		ir->dvdd_use_gpio = 1;
-	else
+
+//* Modify by LeMaker -- begin
+	//if (!gpio_init(fdt_node, "dvdd-gpios", dvdd_gpio, 0))/* poweroff */
+	//	ir->dvdd_use_gpio = 1;
+	//else
 		ir->dvdd_use_gpio = 0;
+//* Modify by LeMaker -- end
 
 	if (regulator_init(fdt_node, "dvdd-regulator",
 				"dvdd-regulator-scope", &ir->dvdd))
