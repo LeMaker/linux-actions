@@ -12,6 +12,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/debugfs.h>
 #include <linux/interrupt.h>
 #include <linux/input.h>
 #include <linux/device.h>
@@ -34,18 +35,20 @@
 #define IR_PROTOCOL_RC5     0x2
 
 /*debug related*/
-#define IRKEYPAD_DEBUG			1
-#define IRKEYPAD_REG_PRINT		1
-#define IRKEYPAD_DEBUG_INFO		1
-#define DEBUG_IRQ_HANDLER 		1
+#define IRKEYPAD_DEBUG			0
+#define IRKEYPAD_REG_PRINT		0
+#define IRKEYPAD_DEBUG_INFO		0
 #define IRKEYPAD_SUPPORT_MOUSE  1
 /*IR Power Key is Suspend Func */
 #if (IRKEYPAD_DEBUG_INFO == 1)
 	#define GL5201_IRKEYPAD_INFO(fmt, args...)	\
-	printk(KERN_INFO "gl5201_irkeypad_drv: " fmt, ##args)
+	printk(KERN_INFO "irkeypad_drv: " fmt, ##args)
 #else
 	#define GL5201_IRKEYPAD_INFO(fmt, args...)
 #endif
+
+#define GL5201_IRKEYPAD_DEBUG( fmt, args...) \
+	printk(KERN_ALERT "irkeypad_drv: " fmt, ##args)
 
 #define res_size(res)	((res)->end - (res)->start + 1)
 
@@ -61,6 +64,9 @@ static int gpio_power_led_pin;
 static bool power_led_exist;
 static bool led_blink_enable = 0;
 
+struct dentry *ir_debug;
+struct dentry *ir_debug_on;
+u32 debug_on = 0;
 
 struct atc260x_dev *atc260x_dev_global = NULL;
 static unsigned long power_timeout;
@@ -277,13 +283,12 @@ static void asoc_irkeypad_scan(struct asoc_irkeypad *irkeypad)
 
 	struct atc260x_dev *atc260x_dev = irkeypad->atc260x_dev;
 
-	//GL5201_IRKEYPAD_INFO("[%s start]\n",__func__);
-
 	irkeypad->ir_val = atc260x_reg_read(atc260x_dev, ATC2603C_IRC_KDC);
 
 	asoc_irkeypad_convert(irkeypad->protocol, &(irkeypad->ir_val));
-
-	//GL5201_IRKEYPAD_INFO("[%s finished]\n",__func__);
+	
+	if ( debug_on )
+		GL5201_IRKEYPAD_DEBUG("[%s finished]\n ir_val = 0x%x",__func__, irkeypad->ir_val);
 
 	return;
 }
@@ -330,9 +335,9 @@ static void asoc_irkeypad_report_released(struct asoc_irkeypad *irkeypad)
 
     asoc_irkeypad_disable_irq(irkeypad);
 
-#if DEBUG_IRQ_HANDLER
-	GL5201_IRKEYPAD_INFO("%s start : old_key_val = %d \n",__func__, irkeypad->old_key_val);
-#endif
+    if ( debug_on )
+	GL5201_IRKEYPAD_DEBUG("%s start : old_key_val = %d \n",__func__, irkeypad->old_key_val);
+
 
     input_dev = irkeypad->input_dev;
     if (irkeypad->old_key_val  != KEY_RESERVED) {
@@ -353,9 +358,9 @@ static void asoc_irkeypad_report_released(struct asoc_irkeypad *irkeypad)
 
 	asoc_irkeypad_enable_irq(irkeypad);
 
-#if DEBUG_IRQ_HANDLER
-	GL5201_IRKEYPAD_INFO("%s end\n",__func__);
-#endif
+	if ( debug_on )
+		GL5201_IRKEYPAD_DEBUG("%s end\n",__func__);
+
 #endif
 
 }
@@ -365,9 +370,9 @@ static void  asoc_irkeypad_report_pressed(struct asoc_irkeypad *irkeypad)
 	unsigned int changed;
 	struct input_dev *input_dev = irkeypad->input_dev;
 
-#if DEBUG_IRQ_HANDLER
-	GL5201_IRKEYPAD_INFO("%s start\n",__func__);
-#endif
+	if ( debug_on )
+		GL5201_IRKEYPAD_DEBUG("%s start\n",__func__);
+
 
 	asoc_irkeypad_map(irkeypad);
 
@@ -612,9 +617,8 @@ static irqreturn_t asoc_irkeypad_irq_handler(int irq, void *dev_id)
 	unsigned int stat;
     unsigned int old_ir_val;
 
-#if DEBUG_IRQ_HANDLER
-	GL5201_IRKEYPAD_INFO("[%s start]\n",__func__);
-#endif
+	if ( debug_on )
+		GL5201_IRKEYPAD_DEBUG("[%s start]\n",__func__);
 
 	stat = atc260x_reg_read(irkeypad->atc260x_dev, ATC2603C_IRC_STAT);
 	atc260x_set_bits(atc260x_dev, ATC2603C_IRC_STAT, 0xffff, 0x0114);
@@ -627,10 +631,11 @@ static irqreturn_t asoc_irkeypad_irq_handler(int irq, void *dev_id)
 		return IRQ_HANDLED;
 	}
 
-#if DEBUG_IRQ_HANDLER
-        stat = atc260x_reg_read(irkeypad->atc260x_dev, ATC2603C_IRC_STAT);
-	GL5201_IRKEYPAD_INFO("IRC_STAT : 0x%x\n", stat);
-#endif
+	if( debug_on )
+	{
+        	stat = atc260x_reg_read(irkeypad->atc260x_dev, ATC2603C_IRC_STAT);
+		GL5201_IRKEYPAD_DEBUG("IRC_STAT : 0x%x\n", stat);
+	}
 
 	if(power_led_exist && led_blink_enable){
 		__gpio_set_value(gpio_power_led_pin, 0);
@@ -642,17 +647,16 @@ static irqreturn_t asoc_irkeypad_irq_handler(int irq, void *dev_id)
 		if ((irkeypad->ir_val == old_ir_val) || (old_ir_val == 0)) {
 			GL5201_IRKEYPAD_INFO("invalide code, old_ir_val = 0x%x, new_ir_val = 0x%x, IRC_STAT = 0x%x\n",
 					old_ir_val, irkeypad->ir_val, stat);
-#if DEBUG_IRQ_HANDLER
-			irkeypad_reg_print(irkeypad);
-#endif
+			if( debug_on )
+				irkeypad_reg_print(irkeypad);
 			return IRQ_HANDLED;
 		}
 	}
 
-#if DEBUG_IRQ_HANDLER
-	GL5201_IRKEYPAD_INFO("[%s] : old_key_val = %d, new_key_val = %d \n",__func__, 
+	if ( debug_on )
+		GL5201_IRKEYPAD_DEBUG("[%s] : old_key_val = %d, new_key_val = %d \n",__func__, 
 				irkeypad->old_key_val, irkeypad->new_key_val);
-#endif
+
 
 	if( stat & IRC_STAT_RCD ){
 		if ((irkeypad->new_key_val == KEY_RESERVED) && (irkeypad->speed_up == 0) ){
@@ -813,7 +817,6 @@ static int atc260x_irkeypad_probe(struct platform_device *pdev)
 
     atc260x_dev_global = atc260x_dev;
 
-	printk("[%s start]\n",__func__);
 	np = pdev->dev.of_node;
 
 	if(led_blink_enable){/*
@@ -866,7 +869,6 @@ static int atc260x_irkeypad_probe(struct platform_device *pdev)
                 irkeypad->ir_ch = 0;
                 //goto of_property_read_err;
         }
-        printk("atc260x_irkeypad: ir_ch = %d\n", irkeypad->ir_ch);
 
 	/*get user_code*/
 	ret = of_property_read_u32(np, "user_code", &(irkeypad->user_code));
@@ -996,20 +998,30 @@ static int atc260x_irkeypad_probe(struct platform_device *pdev)
 
 		dev_err(&pdev->dev, "failed to register input device\n");
 		goto free_input;
-
 	}
 
 	for (i = 0; i < ARRAY_SIZE(irkeypad_attrs); i++) {
 		ret = device_create_file(&pdev->dev, &irkeypad_attrs[i]);
 		if (ret) {
-			printk("failed to create sysfs file\n");
+			printk(KERN_ERR "failed to create sysfs file\n");
 			break;
 		}
 	}
 	
 	power_timeout = jiffies;
+//* Modify by LeMaker -- begin
+	ir_debug = debugfs_create_dir("ir_debug", NULL);
+	if ( !ir_debug )
+		printk( KERN_ERR "debugfs create ir_debug error!\n" );
+	else
+	{
+		ir_debug_on = debugfs_create_bool("debug_on", S_IRWXU, ir_debug, &debug_on);
+		if ( !ir_debug_on )
+			printk( KERN_ERR "debugfs create ir_debug_on error\n" );
+	
+	}
+//* Modify by LeMaker -- end
 	//asoc_irkeypad_open(input_dev);
-	printk("[%s finished]\n", __func__);
 	return 0;
 
 free_input:
@@ -1047,6 +1059,10 @@ static int atc260x_irkeypad_remove(struct platform_device *pdev)
 	platform_set_drvdata(pdev, NULL);
  
         kfree(irkeypad);
+
+	//debugfs_remove(ir_debug_on);
+	//debugfs_remove(ir_debug);
+	debugfs_remove_recursive( ir_debug );
     
 	GL5201_IRKEYPAD_INFO("[%s finished]\n", __func__);
 	return 0;

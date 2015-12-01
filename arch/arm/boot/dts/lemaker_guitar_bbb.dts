@@ -546,7 +546,7 @@
 				wk_code= <77>;
 				period = <140>;
 				ir_code = <77 67 21 28 11 14 16 17 13 26 69 66 12 1 2 3 4 5 6 7 8 9 0 68 83 18 30 31>;
-				key_code = <116 113 115 114 103 108 105 106 28 172 139 158 14 2 3 4 5 6 7 8 9 10 11 175 139 52 165 163>;
+				key_code = <116 113 115 114 103 108 105 106 28 172 273 158 14 2 3 4 5 6 7 8 9 10 11 175 139 52 165 163>;
 				compatible = "actions,atc2603c-irkeypad";
 			};
 
@@ -822,6 +822,24 @@
     		//interrupts =< 0 0x4 >; /*SIRQ0*/
 			vol_range = <3100000 3110000>;
 		};
+
+		gt9xx@5d {
+                        compatible = "Goodix-TS";
+                        reg = <0x5d>;
+                        tp_vcc = "ldo5";
+                        reset_gpios = <&gpio 35 1>; /*GPIOB(3) 0: high, 1: low*/
+                        max_points = <5>;
+                        x_pixel = <1280>;
+                        y_pixel = <800>;
+                        x_revert_en = <0>;
+                        y_revert_en = <0>;
+                        xy_swap_en = <0>;
+                        rotate_degree = <0>;  /* 0 90 180 270 */
+                	interrupt-parent = <&sirq>;
+                	interrupts =< 0 0x4 >; /*SIRQ0*/
+                        vol_range = <3100000 3110000>;
+                };
+
 
 		hdmi_read_edid@30 {
                         compatible = "actions,hdmi_read_edid";
@@ -1123,7 +1141,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&lvds_state_default>;
 		lcd_power_gpios = <&gpio 36 0>;    /*GPIOB4*/
-		lcd_reset_gpios = <&gpio 49 0>; /*GPIOB17*/
+		lcd_standby_gpios = <&gpio 49 0>; /*GPIOB17*/
 		port_type = "lvds";
 		data_width = <0>;		/* 0:24bit ,1:18bit */
 		videomode-0 = <&lcd_mode0>;
@@ -1138,11 +1156,26 @@
 		saturation = <7>;
 		contrast = <5>;
 
-		
+	        //lcd_mode0:mode@1280x800p60 {   /* 1024x600p60 --> 1280x800p60 */
+                //        refresh = <60>;
+                //        xres = <1280>;        /* 1024 --> 1280 */
+                //        yres = <800>;         /* 600 --> 800 */
+                //        /*in pico second, 0.000 000 000 001s*/
+                //        pixclock = <14925>;     /* 20000 --> 14925 */
+                //        left_margin = <80>;     /* 56 --> 80 */
+                //        right_margin = <60>;
+                //        upper_margin = <8>;    /* 13 --> 8 */
+                //        lower_margin = <7>;    /* 18 --> 7 */
+                //        hsync_len = <20>;       /* 4 --> 20 */
+                //        vsync_len = <8>;       /* 4 --> 8 */
+                //        /*0: FB_VMODE_NONINTERLACED, 1:FB_VMODE_INTERLACED*/
+                //        vmode = <0>;
+                //};
+	
 		lcd_mode0:mode@1024x600p60 {
 			refresh = <60>;
 			xres = <1024>;
-			yres = <600>;
+	       		yres = <600>;
 			/*in pico second, 0.000 000 000 001s*/
 			pixclock = <20000>;
 			left_margin = <56>;
@@ -1279,6 +1312,7 @@
 			ILITEK =   <0>;
 			ili2672 =  <0>;
 			ft5x06 =   <1>;
+			Goodix-TS =<1>;
 			MT395 =    <0>;
 			NT1100X =  <0>;
 			SSD254X =  <0>;
