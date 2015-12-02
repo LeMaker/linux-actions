@@ -133,6 +133,7 @@ static int gl520x_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	uint counter_steps, comparator_steps, real_period_ns;
 	u32 pwm_ctl_reg;
 
+
 	/* We currently avoid using 64bit arithmetic by using the
 	 * fact that anything faster than 1Hz is easily representable
 	 * by 32bits. */
@@ -457,6 +458,7 @@ static int gl520x_pwm_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct gl520x_pwm_chip *pwm;
 	int ret;
+	u32 tmp;
 
 	dev_info(&pdev->dev, "Probing...\n");
 
@@ -493,6 +495,11 @@ static int gl520x_pwm_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
 		return ret;
 	}
+
+//* Modify by LeMaker -- begin
+	tmp = act_readl(0xb01b0010 );
+	act_writel( tmp & 0xFFFFFFDF, 0xb01b0010 );
+//* Modify by LeMaker -- end
 
 	return 0;
 }

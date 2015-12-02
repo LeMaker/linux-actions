@@ -351,8 +351,6 @@ static int owl_pwm_bl_probe(struct platform_device *pdev) {
     /* has the Open Firmare data from DT */
     int                                 has_of_data = 0;
 
-    printk("%s: name = %s\n", __func__, pdev->name);
-
     BL_PRINT("%s: get platform data\n", __func__);
     if (!data) {
         /* pdev has no platform data, get them from DT */
@@ -608,7 +606,7 @@ void owl_backlight_set_onoff(int onoff) {
     if (NULL == bl) {
         printk("ERROR! backlight is no exist!\n");
     }
-    pb = dev_get_drvdata(&bl->dev)
+    pb = dev_get_drvdata(&bl->dev);
 
     BL_PRINT("%s: onoff = %d\n", __func__, onoff); 
 

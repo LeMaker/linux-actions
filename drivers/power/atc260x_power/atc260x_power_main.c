@@ -1556,7 +1556,7 @@ static void atc260x_charging_monitor(struct work_struct *work)
 	commit_charge_state(charger);
 
 	/* reschedule for the next time */
-	queue_delayed_work(charger->charger_wq, &charger->work, msecs_to_jiffies(charger->interval * 1000));
+	//queue_delayed_work(charger->charger_wq, &charger->work, msecs_to_jiffies(charger->interval * 1000));
 }
 
 static int atc260x_bat_check_status(struct atc260x_charger *charger, int *status)

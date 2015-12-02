@@ -213,7 +213,7 @@ static void asoc_irkeypad_config(struct asoc_irkeypad * irkeypad)
     atc260x_set_bits(atc260x_dev, ATC2603C_IRC_FILTER,
         0xffff,0x000b);
 
-#if 0
+#if 1
 	unsigned int user_code;
 	unsigned int wk_code;
 	user_code = irkeypad->user_code;
@@ -222,31 +222,33 @@ static void asoc_irkeypad_config(struct asoc_irkeypad * irkeypad)
 	switch(irkeypad->protocol) {
 
 	case IR_PROTOCOL_9012:
-	 	atc260x_set_bits(atc260x_dev, atc2603_IRC_CTL,
+	 	atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CTL,
 			0x0003, 0x0000);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_CC,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CC,
 			0xffff, (user_code << 8) | user_code);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_WK,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_WK,
 			0xffff, (~wk_code << 8) | user_code);
 		break;
 
+#if 0
 	case IR_PROTOCOL_NEC8:
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_CTL,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CTL,
 			0x0003, 0x0001);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_CC,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CC,
 			0xffff, (~user_code << 8) | user_code);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_WK,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_WK,
 			0xffff, (~wk_code << 8) | user_code);
 		break;
 
 	case IR_PROTOCOL_RC5:
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_CTL,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CTL,
 			0x0003, 0x0002);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_CC,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_CC,
 			0xffff, user_code & 0x001f);
-		atc260x_set_bits(atc260x_dev, atc2603_IRC_WK,
+		atc260x_set_bits(atc260x_dev, ATC2603C_IRC_WK,
 			0xffff, wk_code & 0x003f);
 		break;
+#endif
 
 	default:
 		break;
@@ -288,7 +290,7 @@ static void asoc_irkeypad_scan(struct asoc_irkeypad *irkeypad)
 	asoc_irkeypad_convert(irkeypad->protocol, &(irkeypad->ir_val));
 	
 	if ( debug_on )
-		GL5201_IRKEYPAD_DEBUG("[%s finished]\n ir_val = 0x%x",__func__, irkeypad->ir_val);
+		GL5201_IRKEYPAD_DEBUG("[%s finished] ir_val = 0x%x, %d\n",__func__, irkeypad->ir_val, irkeypad->ir_val);
 
 	return;
 }
@@ -880,7 +882,7 @@ static int atc260x_irkeypad_probe(struct platform_device *pdev)
 
 	/*get protocol*/
 	ret = of_property_read_u32(np, "protocol", &(irkeypad->protocol));
-	if ((ret) || (!irkeypad->protocol)) {
+	if (ret) {
 		dev_err(&pdev->dev, "Get protocol failed ret = %d \r\n", ret);
 		goto of_property_read_err;
 	}
