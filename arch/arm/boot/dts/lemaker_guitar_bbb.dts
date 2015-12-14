@@ -1141,7 +1141,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&lvds_state_default>;
 		lcd_power_gpios = <&gpio 36 0>;    /*GPIOB4*/
-		lcd_standby_gpios = <&gpio 49 0>; /*GPIOB17*/
+		//lcd_standby_gpios = <&gpio 49 0>; /*GPIOB17*/
 		port_type = "lvds";
 		data_width = <0>;		/* 0:24bit ,1:18bit */
 		videomode-0 = <&lcd_mode0>;
@@ -1227,7 +1227,7 @@
 	backlight {
 		/*1.pwm num; 2. period in ns; */
 		/*3.plarity, 0: high active, 1: low active*/
-		backlight_en_gpios = <&gpio 37 0>; /*GPIOB5*/ 
+		backlight_en_gpios = <&gpio 49 0>; /*GPIOB5*/ 
 		pwms = <&pwm 0 50000 1>;
 		total_steps = <1024>;
 		min_brightness = <250>;
