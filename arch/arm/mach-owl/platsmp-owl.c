@@ -90,7 +90,7 @@ static void wakeup_secondary(unsigned int cpu)
 {
 	enum owl_powergate_id cpuid;
 
-	pr_info("po %d\n", cpu);
+	printk(KERN_DEBUG "po %d\n", cpu);
 
 	cpuid = owl_cpu_powergate_id(cpu);
 	owl_powergate_power_on(cpuid);
@@ -98,7 +98,7 @@ static void wakeup_secondary(unsigned int cpu)
 	/* wait CPUx run to WFE instruct */
 	udelay(200);
 
-	pr_info("wu %d\n", cpu);
+	printk(KERN_DEBUG "wu %d\n", cpu);
 
 	/*
 	 * write the address of secondary startup into the boot ram register
@@ -143,7 +143,7 @@ int __cpuinit owl_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
 
-	printk(KERN_INFO "cpu:%d\n",  cpu);
+	printk(KERN_DEBUG "cpu:%d\n",  cpu);
 
 	wakeup_secondary(cpu);
 
@@ -194,7 +194,7 @@ int __cpuinit owl_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 * calibrations, then wait for it to finish
 	 */
 	spin_unlock(&boot_lock);
-	printk(KERN_INFO "pr:%d\n", pen_release);
+	printk(KERN_DEBUG "pr:%d\n", pen_release);
 
 	return pen_release != -1 ? -ENOSYS : 0;
 }

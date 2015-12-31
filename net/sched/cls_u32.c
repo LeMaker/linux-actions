@@ -805,13 +805,13 @@ static int __init init_u32(void)
 {
 	pr_info("u32 classifier\n");
 #ifdef CONFIG_CLS_U32_PERF
-	pr_info("    Performance counters on\n");
+	pr_info("Performance counters on\n");
 #endif
 #ifdef CONFIG_NET_CLS_IND
-	pr_info("    input device check on\n");
+	pr_info("input device check on\n");
 #endif
 #ifdef CONFIG_NET_CLS_ACT
-	pr_info("    Actions configured\n");
+	pr_info("Actions configured\n");
 #endif
 	return register_tcf_proto_ops(&cls_u32_ops);
 }

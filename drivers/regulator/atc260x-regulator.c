@@ -128,7 +128,7 @@ static int _atc260x_regulator_set_volt_band(struct atc260x_regulator_dev *atc260
 	int ret;
 
 	BUG_ON(hwinfo->vsel_band_reg_addr == 0 || hwinfo->vsel_band_bm == 0);
-	dev_info(atc260x_regu->dev, "attemp to change volt band to #%u\n", sel_band);
+	dev_dbgl(atc260x_regu->dev, "attemp to change volt band to #%u\n", sel_band);
 
 	ret = atc260x_reg_setbits(atc260x,
 		hwinfo->vsel_band_reg_addr, hwinfo->vsel_band_bm,
@@ -780,7 +780,7 @@ static int atc260x_regulator_probe(struct platform_device *pdev)
 	atc260x = atc260x_get_parent_dev(&pdev->dev);
 	regu_id = pdev->id;
 
-	dev_info(&pdev->dev, "Probing %s, id=%u\n", pdev->name, regu_id);
+	dev_dbgl(&pdev->dev, "Probing %s, id=%u\n", pdev->name, regu_id);
 
 	init_data = of_get_regulator_init_data(&pdev->dev, pdev->dev.of_node);
 	if (!init_data)
@@ -869,7 +869,7 @@ static int atc260x_regulator_print_suspend_state(
 			prompt,
 			state_on, state_bypass, state_oc, state_ov, state_uv);
 	} else {
-		dev_info(atc260x_regu->dev, "state %s : on=%u bypass=%u oc=%u ov=%u uv=%u\n",
+		dev_dbgl(atc260x_regu->dev, "state %s : on=%u bypass=%u oc=%u ov=%u uv=%u\n",
 			prompt,
 			state_on, state_bypass, state_oc, state_ov, state_uv);
 	}

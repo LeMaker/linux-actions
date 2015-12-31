@@ -80,12 +80,12 @@ static void dwc3_clk_init(void)
 	struct dwc3_port_info *port_info ;
 
 	if(pdev_dwc_actions ==NULL){
-		printk("------can't get dwc3-actions platform device structure!!---\n");
+		printk(KERN_WARNING "------can't get dwc3-actions platform device structure!!---\n");
 		return ;
 	}  
 	dwc3_owl = platform_get_drvdata(pdev_dwc_actions);
 	port_info = &dwc3_owl->port_info;
-	printk("\n------------dwc3_clk_init-----ic=%d-----\n",dwc3_owl->ic_type);
+	printk(KERN_DEBUG "\n------------dwc3_clk_init-----ic=%d-----\n",dwc3_owl->ic_type);
 	/*USB3 PLL enable*/
 	reg = readl(port_info->usbpll);
 	if(dwc3_owl->ic_type == IC_ATM7059A){
@@ -152,13 +152,13 @@ static void dwc3_clk_exit(void)
 	struct dwc3_port_info *port_info ;
 
 	if(pdev_dwc_actions ==NULL){
-		printk("------can't get dwc3-actions platform device structure!!---\n");
+		printk(KERN_WARNING "------can't get dwc3-actions platform device structure!!---\n");
 		return ;
 	}  
     	dwc3_owl = platform_get_drvdata(pdev_dwc_actions);
      	port_info = &dwc3_owl->port_info;
     
-	printk("\n------------dwc3_clk_exit----------\n");
+	printk(KERN_DEBUG "\n------------dwc3_clk_exit----------\n");
 	/*USB3 PLL disable*/
 	reg = readl(port_info->usbpll);
 	
@@ -293,7 +293,7 @@ static int  dwc3_actions_probe(struct platform_device *pdev)
 	id = of_match_device(owl_dwc3_actions_of_match, &pdev->dev);
 	if(id ==NULL)
 	{
-		printk("<dwc3_actions>err: no config !!!\n");
+		printk(KERN_WARNING "<dwc3_actions>err: no config !!!\n");
 		return -EINVAL;
 	}
 	dwc3_owl =(struct dwc3_actions	*) id->data;
@@ -387,7 +387,7 @@ static int  dwc3_actions_probe(struct platform_device *pdev)
 		strcpy(probatch_phase, all_probatch_phase[0]);		
 	} else {
 		/* proc op */
-		printk("adfus :can not create proc file\n");
+		printk(KERN_WARNING "adfus :can not create proc file\n");
 	}
 #endif
 	return 0;

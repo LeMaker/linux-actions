@@ -369,19 +369,19 @@ static const struct file_operations mi_op = {
 
 int mi_debug_init(void)
 {
-	PRINT("%s, line %d\n",__FUNCTION__, __LINE__);
+	printk(KERN_DEBUG "%s, line %d\n",__FUNCTION__, __LINE__);
 	dirent = debugfs_create_dir("misc_info", NULL);
-    file = debugfs_create_file("debug", S_IFREG | S_IRUGO, dirent, NULL, &mi_op);
+	file = debugfs_create_file("debug", S_IFREG | S_IRUGO, dirent, NULL, &mi_op);
     
-    return 0;
+	return 0;
 }
 
 int mi_debug_exit(void)
 {   
-	PRINT("%s, line %d\n",__FUNCTION__, __LINE__);
+	printk(KERN_DEBUG "%s, line %d\n",__FUNCTION__, __LINE__);
 	debugfs_remove(file);
-    debugfs_remove(dirent);
-    return 0;     
+	debugfs_remove(dirent);
+	return 0;     
 }
 
 #endif

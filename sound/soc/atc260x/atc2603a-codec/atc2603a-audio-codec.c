@@ -298,7 +298,7 @@ static int atc2603a_write(struct snd_soc_codec *codec, unsigned int reg,
 			(reg) < codec->driver->reg_cache_size &&
 			!codec->cache_bypass) {
 		ret = snd_soc_cache_write(codec, reg, value);
-		snd_dbg("%s: reg[0x%x]=[0x%x]\r\n", __func__, reg, value);
+		snd_dbg("%s: reg[0x%x]=[0x%x]\n", __func__, reg, value);
 		if (ret < 0)
 			return -1;
 	}
@@ -309,7 +309,7 @@ static int atc2603a_write(struct snd_soc_codec *codec, unsigned int reg,
 	}
 
 	ret = atc260x_reg_write(atc260x, reg + REG_BASE, value);
-	snd_dbg("%s: reg[0x%x]=[0x%x]\r\n", __func__, reg + REG_BASE, value);
+	snd_dbg("%s: reg[0x%x]=[0x%x]\n", __func__, reg + REG_BASE, value);
 	if (ret < 0)
 		snd_err("atc2603a_write: reg = %#X, ret = %d failed\n",
 		reg, ret);
@@ -329,7 +329,7 @@ static unsigned int atc2603a_read(struct snd_soc_codec *codec, unsigned int reg)
 			(reg) < codec->driver->reg_cache_size &&
 			!codec->cache_bypass) {
 		ret = snd_soc_cache_read(codec, reg, &val);
-		snd_dbg("%s: reg[0x%x]\r\n", __func__, reg);
+		snd_dbg("%s: reg[0x%x]\n", __func__, reg);
 		if (ret < 0) {
 			snd_err("atc2603a_read: reg=%#X,ret=%d\n",
 				reg, ret);
@@ -339,7 +339,7 @@ static unsigned int atc2603a_read(struct snd_soc_codec *codec, unsigned int reg)
 	}
 
 	ret = atc260x_reg_read(atc260x, reg + REG_BASE);
-	snd_dbg("%s: reg[0x%x]\r\n", __func__, reg + REG_BASE);
+	snd_dbg("%s: reg[0x%x]\n", __func__, reg + REG_BASE);
 	if (ret < 0)
 	snd_err("atc2603a_read: reg = %#X, ret = %d failed\n", reg, ret);
 
@@ -1218,9 +1218,9 @@ static int atc2603a_probe(struct snd_soc_codec *codec)
 {
 	snd_dbg("atc2603a_probe!\n");
 	if (codec == NULL)
-		snd_dbg("NULL codec \r\n");
+		snd_dbg("NULL codec \n");
 
-	snd_dbg("codec->name = %s\r\n", codec->name);
+	snd_dbg("codec->name = %s\n", codec->name);
 
 	atc2603a_codec = codec;
 	codec->read  = atc2603a_read;
@@ -1409,7 +1409,7 @@ static int atc2603a_platform_probe(struct platform_device *pdev)
 /*
 	dn = of_find_compatible_node(NULL, NULL, "actions,atm7039c-i2s");
 	if (!dn) {
-		snd_err("Fail to get device_node actions,atm7039c-i2s\r\n");
+		snd_err("Fail to get device_node actions,atm7039c-i2s\n");
 		//goto of_get_failed;
 	}
 */
@@ -1442,7 +1442,7 @@ static int atc2603a_platform_probe(struct platform_device *pdev)
 
 
 	for (i = 0; i < ARRAY_SIZE(atc2603a_attr); i++) {
-		snd_err("add file!\r\n");
+		snd_err("add file!\n");
 		ret = device_create_file(&pdev->dev, &atc2603a_attr[i]);
 	}
 
@@ -1452,7 +1452,7 @@ static int atc2603a_platform_probe(struct platform_device *pdev)
 	atc2603a_ictype = ATC260X_ICTYPE_2603A;
 
 	pdev->dev.init_name = "atc260x-audio";
-	snd_err("register codec\r\n");
+	snd_err("register codec\n");
 	return snd_soc_register_codec(&pdev->dev, &soc_codec_atc2603a,
 			codec_atc2603a_dai, ARRAY_SIZE(codec_atc2603a_dai));
 }
@@ -1465,11 +1465,11 @@ static int atc2603a_platform_remove(struct platform_device *pdev)
 	dev = bus_find_device_by_name(&platform_bus_type, NULL, "atc260x-audio");
 	if (dev) {
 		for (i = 0; i < ARRAY_SIZE(atc2603a_attr); i++) {
-			snd_err("remove file!\r\n");
+			snd_err("remove file!\n");
 			device_remove_file(dev, &atc2603a_attr[i]);
 		}
 	} else {
-		snd_err("Find platform device atc2603a-audio failed!\r\n");
+		snd_err("Find platform device atc2603a-audio failed!\n");
 		return -ENODEV;
 	}
 
@@ -1516,42 +1516,42 @@ static int atc2603a_get_cfg(void)
 
 	dn = of_find_compatible_node(NULL, NULL, audio_device_node);
 	if (!dn) {
-		snd_err("Fail to get device_node\r\n");
+		snd_err("Fail to get device_node\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32(dn, snd_earphone_output_mode,
 		&audio_hw_cfg.earphone_output_mode);
 	if (ret) {
-		snd_err("Fail to get snd_earphone_output_mode\r\n");
+		snd_err("Fail to get snd_earphone_output_mode\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32(dn, snd_mic_num,
 		&audio_hw_cfg.mic_num);
 	if (ret) {
-		snd_err("Fail to get snd_mic_num\r\n");
+		snd_err("Fail to get snd_mic_num\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32_array(dn, snd_mic0_gain,
 		audio_hw_cfg.mic0_gain, 2);
 	if (ret) {
-		snd_err("Fail to get snd_mic_gain\r\n");
+		snd_err("Fail to get snd_mic_gain\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32_array(dn, snd_speaker_gain,
 		audio_hw_cfg.speaker_gain, 2);
 	if (ret) {
-		snd_err("Fail to get snd_speaker_gain\r\n");
+		snd_err("Fail to get snd_speaker_gain\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32_array(dn, snd_earphone_gain,
 		audio_hw_cfg.earphone_gain, 2);
 	if (ret) {
-		snd_err("Fail to get snd_earphone_gain\r\n");
+		snd_err("Fail to get snd_earphone_gain\n");
 		goto of_get_failed;
 	}
 
@@ -1559,21 +1559,21 @@ static int atc2603a_get_cfg(void)
 	ret = of_property_read_u32(dn, snd_speaker_volume,
 		&audio_hw_cfg.speaker_volume);
 	if (ret) {
-		snd_err("Fail to get snd_speaker_volume\r\n");
+		snd_err("Fail to get snd_speaker_volume\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32(dn, snd_earphone_volume,
 		&audio_hw_cfg.earphone_volume);
 	if (ret) {
-		snd_err("Fail to get snd_earphone_volume\r\n");
+		snd_err("Fail to get snd_earphone_volume\n");
 		goto of_get_failed;
 	}
 
 	ret = of_property_read_u32(dn, snd_earphone_detect_mode,
 		&audio_hw_cfg.earphone_detect_mode);
 	if (ret) {
-		snd_err("Fail to get snd_earphone_detect_mode\r\n");
+		snd_err("Fail to get snd_earphone_detect_mode\n");
 		goto of_get_failed;
 	}
 */
@@ -1584,10 +1584,10 @@ static int atc2603a_get_cfg(void)
 
 	speaker_gpio_num = of_get_named_gpio_flags(dn, speaker_ctrl_name, 0, NULL);
 	if (speaker_gpio_num < 0) {
-		snd_err("get gpio[%s] fail\r\n", speaker_ctrl_name);
+		snd_err("get gpio[%s] fail\n", speaker_ctrl_name);
 	}
 
-	snd_err("Success to get device_node\r\n");
+	snd_err("Success to get device_node\n");
 	return 0;
 of_get_failed:
 	return ret;
@@ -1596,17 +1596,17 @@ of_get_failed:
 static void atc2603a_dump_cfg(void)
 {
 #if 0
-	printk(KERN_ERR"earphone_detect_mode = %d\r\n",audio_hw_cfg.earphone_detect_mode);
-	printk(KERN_ERR"earphone_gain[0] = %d\r\n",audio_hw_cfg.earphone_gain[0]);
-	printk(KERN_ERR"earphone_gain[1] = %d\r\n",audio_hw_cfg.earphone_gain[1]);
-	printk(KERN_ERR"speaker_gain[0] = %d\r\n",audio_hw_cfg.speaker_gain[0]);
-	printk(KERN_ERR"speaker_gain[1] = %d\r\n",audio_hw_cfg.speaker_gain[1]);
-	printk(KERN_ERR"mic0_gain[0] = %d\r\n",audio_hw_cfg.mic0_gain[0]);
-	printk(KERN_ERR"mic0_gain[1] = %d\r\n",audio_hw_cfg.mic0_gain[1]);
-	printk(KERN_ERR"earphone_volume = %d\r\n",audio_hw_cfg.earphone_volume);
-	printk(KERN_ERR"speaker_volume = %d\r\n",audio_hw_cfg.speaker_volume);
-	printk(KERN_ERR"earphone_output_mode = %d\r\n",audio_hw_cfg.earphone_output_mode);
-	printk(KERN_ERR"mic_num = %d\r\n",audio_hw_cfg.mic_num);
+	printk(KERN_ERR"earphone_detect_mode = %d\n",audio_hw_cfg.earphone_detect_mode);
+	printk(KERN_ERR"earphone_gain[0] = %d\n",audio_hw_cfg.earphone_gain[0]);
+	printk(KERN_ERR"earphone_gain[1] = %d\n",audio_hw_cfg.earphone_gain[1]);
+	printk(KERN_ERR"speaker_gain[0] = %d\n",audio_hw_cfg.speaker_gain[0]);
+	printk(KERN_ERR"speaker_gain[1] = %d\n",audio_hw_cfg.speaker_gain[1]);
+	printk(KERN_ERR"mic0_gain[0] = %d\n",audio_hw_cfg.mic0_gain[0]);
+	printk(KERN_ERR"mic0_gain[1] = %d\n",audio_hw_cfg.mic0_gain[1]);
+	printk(KERN_ERR"earphone_volume = %d\n",audio_hw_cfg.earphone_volume);
+	printk(KERN_ERR"speaker_volume = %d\n",audio_hw_cfg.speaker_volume);
+	printk(KERN_ERR"earphone_output_mode = %d\n",audio_hw_cfg.earphone_output_mode);
+	printk(KERN_ERR"mic_num = %d\n",audio_hw_cfg.mic_num);
 #endif
 }
 
@@ -1645,11 +1645,11 @@ static int __init atc2603a_init(void)
 {
 	u32 ret = 0;
 
-	printk("atc2603a_init\n");
+	printk(KERN_DEBUG "atc2603a_init\n");
 
 	ret = atc2603a_get_cfg();
 	if (ret){
-		snd_err("audio get cfg failed!\r\n");
+		snd_err("audio get cfg failed!\n");
 		goto audio_get_cfg_failed;
 	}
 
@@ -1659,7 +1659,7 @@ static int __init atc2603a_init(void)
 
 	ret = platform_driver_register(&atc2603a_platform_driver);
 	if(ret){
-		snd_err("platform_driver_register failed!\r\n");
+		snd_err("platform_driver_register failed!\n");
 		goto platform_driver_register_failed;
 	}
 

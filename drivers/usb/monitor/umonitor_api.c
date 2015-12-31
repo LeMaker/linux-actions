@@ -477,7 +477,7 @@ static int get_configuration_from_dts(struct of_device_id *id )
 
 	REQUEST_OTG_VBUS:
 
-	printk("====otgvbus_gpio: num-%d, active-%s---detect_type=%d,idpin_type=%d,vbus_type=%d---\n",\
+	printk(KERN_DEBUG "====otgvbus_gpio: num-%d, active-%s---detect_type=%d,idpin_type=%d,vbus_type=%d---\n",\
 	port_config->power_switch_gpio_no, port_config->power_switch_active_level ? "high" : "low",port_config->detect_type,\
 	port_config->idpin_type,port_config->vbus_type);
 	if (gpio_request(port_config->power_switch_gpio_no,  id->compatible)) {		

@@ -441,7 +441,7 @@ void check_boot_hdmi_rotate_config(void)
 	struct device_node *np = NULL;
 	
 	np = of_find_compatible_node(NULL, NULL, "actions,atm7059a-hdmi");
-	printk("np %p \n",np);
+	printk(KERN_DEBUG "np %p \n",np);
 	if(np != NULL){
 		if (of_property_read_u32(np, "bootrotate", &boot_hdmi_rotate)){
 			boot_hdmi_rotate = 0;
@@ -451,7 +451,7 @@ void check_boot_hdmi_rotate_config(void)
 		}	
 		printk("boot_hdmi_rotate %d \n",boot_hdmi_rotate);	
 	}
-	printk("boot_hdmi_rotate %d \n",boot_hdmi_rotate);
+	printk(KERN_DEBUG "boot_hdmi_rotate %d \n",boot_hdmi_rotate);
 	return;
 }
 int owlfb_dc_init(struct owlfb_device * fbdev)

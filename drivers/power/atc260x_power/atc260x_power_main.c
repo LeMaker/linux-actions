@@ -2688,8 +2688,8 @@ static  int atc260x_power_probe(struct platform_device *pdev)
 	/*check if battery is healthy*/
 	charger->battery_status = charger->check_health_pre(charger->atc260x);
 
-	pr_info("charger=%p %d\n", charger, __LINE__);
-	pr_info("set_vbus_path=%p set_apds_vbus_pd=%p\n", charger->set_vbus_path, 
+	pr_debug("charger=%p %d\n", charger, __LINE__);
+	pr_debug("set_vbus_path=%p set_apds_vbus_pd=%p\n", charger->set_vbus_path, 
 	     charger->set_apds_vbus_pd);
 	
 	set_judge_adapter_type_handle((void *)distinguish_adapter_type);

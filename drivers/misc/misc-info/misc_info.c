@@ -1056,7 +1056,7 @@ static struct miscdevice mi_dev = {
 
 static int __init misc_info_init(void)
 {
-	PRINT("%s, line %d, %s %s\n", __FUNCTION__, __LINE__, __DATE__, __TIME__);
+	printk(KERN_DEBUG "%s, line %d, %s %s\n", __FUNCTION__, __LINE__, __DATE__, __TIME__);
 
 	if(misc_register(&mi_dev) < 0)
 		return -1;
@@ -1067,10 +1067,10 @@ static int __init misc_info_init(void)
 
 static void __exit misc_info_exit(void)
 {
-    PRINT("%s, line %d\n", __FUNCTION__, __LINE__);
+	printk(KERN_DEBUG "%s, line %d\n", __FUNCTION__, __LINE__);
 
 	misc_deregister(&mi_dev);
-    mi_debug_exit();
+	mi_debug_exit();
 	return;
 }
 

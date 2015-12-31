@@ -75,7 +75,7 @@ static ssize_t store_mirror_to_hdmi(struct device *dev,
 	ofbi->mirror_to_hdmi = mirror_to_hdmi;
 
 	owlfb_get_mem_region(ofbi->region);
-	printk(KERN_ERR "store_mirror_to_hdmi %d\n",mirror_to_hdmi);
+	printk(KERN_DEBUG "store_mirror_to_hdmi %d\n",mirror_to_hdmi);
 	if(mirror_to_hdmi){
 		dss_mgr_enable(tv_mgr);
 		

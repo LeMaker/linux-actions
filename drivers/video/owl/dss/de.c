@@ -82,7 +82,7 @@ static void de_clk_init(void)
 	/* CLKNAME_DEVPLL is used, TODO(CLKNAME_DISPLAYPLL) */
 	parent_clk  = clk_get(NULL, CLKNAME_DEVPLL);
 	parent_rate = clk_get_rate(parent_clk);
-	DSSINFO("de parent pll is %ldhz\n", parent_rate);
+	DSSDBG("de parent pll is %ldhz\n", parent_rate);
 
 	nic_clk     = clk_get(NULL, CLKNAME_NIC_CLK);
 	nic_rate    = clk_get_rate(nic_clk);
@@ -146,7 +146,7 @@ static inline void de_clk_enable(void)
 
 static inline void de_clk_disable(void)
 {
-	DSSINFO("%s\n", __func__);
+	DSSDBG("%s\n", __func__);
 	module_clk_disable(MODULE_CLK_DE);
 }
 
@@ -274,7 +274,7 @@ static int de_irq_init(void)
 	}
 	de_pdata->irq = OWL_IRQ_DE;
 
-	DSSINFO("de irq init ok\n");
+	DSSDBG("de irq init ok\n");
 	spin_unlock_irqrestore(&de_pdata->irq_lock, flags);
 
 	return 0;
@@ -775,7 +775,7 @@ int de_ovl_enable(enum owl_channel channel, enum owl_plane plane, bool enable)
 
 void owl_de_suspend(void)
 {
-	DSSINFO("%s\n", __func__);
+	DSSDBG("%s\n", __func__);
 	de_ops->suspend(de_pdata->pdev, PMSG_SUSPEND);
 
 }
@@ -811,7 +811,7 @@ int owl_de_get_boot_mode(void)
 EXPORT_SYMBOL(owl_de_get_boot_mode);
 void owl_de_resume(void)
 {
-	DSSINFO("%s\n", __func__);
+	DSSDBG("%s\n", __func__);
 
 	de_ops->resume(de_pdata->pdev);
 
@@ -885,7 +885,7 @@ static int __init owl_de_probe(struct platform_device *pdev) {
 
 	const struct of_device_id 	*match;
 
-	DSSINFO("%s, pdev = 0x%p\n", __func__, pdev);
+	DSSDBG("%s, pdev = 0x%p\n", __func__, pdev);
 
 	match = of_match_device(of_match_ptr(owl_de_match), dev);
 	if (!match) {
@@ -928,7 +928,7 @@ static int __init owl_de_probe(struct platform_device *pdev) {
 	de_boot_inited = de_channel_check_boot_inited(OWL_DSS_CHANNEL_LCD) 
 	                 | de_channel_check_boot_inited(OWL_DSS_CHANNEL_DIGIT);
 	
-	DSSINFO("DE INITED FROM UBOOT ?? %d \n", de_boot_inited);
+	DSSDBG("DE INITED FROM UBOOT ?? %d \n", de_boot_inited);
 
 	if (!de_boot_inited) {
 		de_clk_init();

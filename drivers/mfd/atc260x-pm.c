@@ -257,7 +257,7 @@ static int _atc260x_pm_set_wakeup_src_inner(struct atc260x_pm_dev *atc260x_pm,
 	u16 reg_vals[4], reg_masks[4];
 	int ret;
 
-	dev_info(atc260x_pm->dev, "%s() enter, mask=0x%x src=0x%x\n",
+	dev_dbg(atc260x_pm->dev, "%s() enter, mask=0x%x src=0x%x\n",
 		__func__, wakeup_mask, wakeup_src);
 
 	if ((wakeup_mask & ~OWL_PMIC_WAKEUP_SRC_ALL) ||
@@ -307,7 +307,7 @@ static int _atc260x_pm_set_wakeup_src_inner(struct atc260x_pm_dev *atc260x_pm,
 				dev_err(atc260x_pm->dev, "%s() io err, ret=%d\n", __func__, ret);
 				return -EIO;
 			}
-			dev_info(atc260x_pm->dev, "%s() setup reg=0x%x msk=0x%x val=0x%x readback=0x%x\n",
+			dev_dbg(atc260x_pm->dev, "%s() setup reg=0x%x msk=0x%x val=0x%x readback=0x%x\n",
 					__func__, reg_addr, reg_masks[i], reg_vals[i],
 					atc260x_reg_read(atc260x_pm->atc260x, reg_addr));
 		}
@@ -431,7 +431,7 @@ static int _atc260x_pm_get_wakeup_flag_inner(struct atc260x_pm_dev *atc260x_pm)
 	if (ret < 0)
 		return ret;
 	atc260x_pm->active_wakeup_srcs = ret;
-	dev_info(atc260x_pm->dev, "translated wakeup falgs: 0x%x\n", ret);
+	dev_dbg(atc260x_pm->dev, "translated wakeup falgs: 0x%x\n", ret);
 	return 0;
 }
 
@@ -452,7 +452,7 @@ static int _atc260x_pm_setup_rtc_alarm(struct atc260x_pm_dev *atc260x_pm,
 	ulong rtc_times, rtc_alm_times;
 	int ret1, ret2, ret3, ret4, ret5, ret6, ret7;
 
-	dev_info(atc260x_pm->dev, "%s() enter, seconds=%u safe_margin=%u\n",
+	dev_dbg(atc260x_pm->dev, "%s() enter, seconds=%u safe_margin=%u\n",
 		__func__, seconds, safe_margin);
 
 	reg_rtc_ms      = sc_atc260x_pm_regtbl_rtc_ms[atc260x_pm->pmic_type];
@@ -516,14 +516,14 @@ static int _atc260x_pm_setup_rtc_alarm(struct atc260x_pm_dev *atc260x_pm,
 			((rtc_tmp_tm.tm_year+1900 - rtc_cen*100) << 9) |
 			((rtc_tmp_tm.tm_mon +1) << 5) |
 			rtc_tmp_tm.tm_mday;
-		dev_info(atc260x_pm->dev, "%s() saved old alarm %u-%u-%u %u:%u:%u, "
+		dev_dbg(atc260x_pm->dev, "%s() saved old alarm %u-%u-%u %u:%u:%u, "
 			"msalm=0x%x halm=0x%x ymdalm=0x%x\n",
 			__func__,
 			rtc_tmp_tm.tm_year+1900, rtc_tmp_tm.tm_mon+1, rtc_tmp_tm.tm_mday,
 			rtc_tmp_tm.tm_hour, rtc_tmp_tm.tm_min, rtc_tmp_tm.tm_sec,
 			p_old_alarm->msalm, p_old_alarm->halm, p_old_alarm->ymdalm);
 	} else {
-		dev_info(atc260x_pm->dev, "%s() no need to save old alarm\n", __func__);
+		dev_dbg(atc260x_pm->dev, "%s() no need to save old alarm\n", __func__);
 		memset(p_old_alarm, 0, sizeof(*p_old_alarm));
 	}
 
@@ -546,14 +546,14 @@ static int _atc260x_pm_setup_rtc_alarm(struct atc260x_pm_dev *atc260x_pm,
 		dev_err(atc260x_pm->dev, "%s() write IO err\n", __func__);
 		return -EIO;
 	}
-	dev_info(atc260x_pm->dev, "%s() new alarm set to %u-%u-%u %u:%u:%u, "
+	dev_dbg(atc260x_pm->dev, "%s() new alarm set to %u-%u-%u %u:%u:%u, "
 		"msalm=0x%x halm=0x%x ymdalm=0x%x\n",
 		__func__,
 		rtc_tmp_tm.tm_year+1900, rtc_tmp_tm.tm_mon+1, rtc_tmp_tm.tm_mday,
 		rtc_tmp_tm.tm_hour, rtc_tmp_tm.tm_min, rtc_tmp_tm.tm_sec,
 		rtc_msalm, rtc_halm, rtc_ymdalm);
 
-	dev_info(atc260x_pm->dev, "%s() exit\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() exit\n", __func__);
 	return 0;
 }
 
@@ -561,12 +561,12 @@ static int _atc260x_pm_prepare_suspend(void)
 {
 	struct atc260x_pm_dev *atc260x_pm = _get_curr_atc260x_pm_obj();
 
-	dev_info(atc260x_pm->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() enter\n", __func__);
 
 	/* avoid using standard SPI/I2C interface that maybe halt in suspend process */
 	atc260x_set_reg_direct_access(atc260x_pm->atc260x, true);
 
-	dev_info(atc260x_pm->dev, "%s() exit\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() exit\n", __func__);
 	return 0;
 }
 
@@ -586,7 +586,7 @@ static int _set_s2_mode(struct atc260x_pm_dev *atc260x_pm)
 		dev_err(atc260x_pm->dev, "%s() can not get of_property s2_mode \n", __func__);
 		return -ENODEV;
 	}
-	dev_info(atc260x_pm->dev, "got s2_mode: %u\n", s2_mode);
+	dev_dbg(atc260x_pm->dev, "got s2_mode: %u\n", s2_mode);
 
 	return 0;	
 }
@@ -605,7 +605,7 @@ static int _atc260x_pm_enter_suspend(void)
 	atc260x_pm = _get_curr_atc260x_pm_obj();
 	atc260x = atc260x_pm->atc260x;
 
-	dev_info(atc260x_pm->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() enter\n", __func__);
 
 	reg_sysctl2 = sc_atc260x_pm_regtbl_sysctl2[atc260x_pm->pmic_type];
 	reg_sysctl3 = sc_atc260x_pm_regtbl_sysctl3[atc260x_pm->pmic_type];
@@ -630,7 +630,7 @@ static int _atc260x_pm_enter_suspend(void)
 		return -EINVAL;
 	}
 	resume_phy_address = (phys_addr_t)virt_to_phys(p_cpu_resume);
-	dev_info(atc260x_pm->dev, "%s() owl_cpu_resume @ 0x%lx (phy 0x%lx)\n",
+	dev_dbg(atc260x_pm->dev, "%s() owl_cpu_resume @ 0x%lx (phy 0x%lx)\n",
 		__func__, (ulong)p_cpu_resume, (ulong)resume_phy_address);
 		
 	if(s2_mode)
@@ -690,7 +690,7 @@ static int _atc260x_pm_enter_suspend(void)
 	/* clean old wakeup_srcs record. */
 	atc260x_pm->active_wakeup_srcs = 0;
 
-	dev_info(atc260x_pm->dev, "%s() exit\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() exit\n", __func__);
 	return 0;
 }
 
@@ -699,7 +699,7 @@ static int _atc260x_pm_wakeup(void)
 	struct atc260x_pm_dev *atc260x_pm = _get_curr_atc260x_pm_obj();
 	int ret;
 
-	dev_info(atc260x_pm->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() enter\n", __func__);
 
 	atc260x_set_reg_direct_access(atc260x_pm->atc260x, true);
 
@@ -715,14 +715,14 @@ static int _atc260x_pm_wakeup(void)
 		dev_err(atc260x_pm->dev, "%s() pstore access failed\n", __func__);
 	}
 
-	dev_info(atc260x_pm->dev, "%s() exit\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() exit\n", __func__);
 	return 0;
 }
 
 static int _atc260x_pm_finsh_wakeup(void)
 {
 	struct atc260x_pm_dev *atc260x_pm = _get_curr_atc260x_pm_obj();
-	dev_info(atc260x_pm->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x_pm->dev, "%s() enter\n", __func__);
 	atc260x_set_reg_direct_access(atc260x_pm->atc260x, false);
 	return 0;
 }
@@ -745,7 +745,7 @@ static int _atc260x_pm_powerdown(uint deep_pwrdn, uint for_upgrade)
 	atc260x_pm = _get_curr_atc260x_pm_obj();
 	atc260x = atc260x_pm->atc260x;
 
-	dev_info(atc260x_pm->dev, "%s() enter, deep_pwrdn=%u for_upgrade=%u\n",
+	dev_dbg(atc260x_pm->dev, "%s() enter, deep_pwrdn=%u for_upgrade=%u\n",
 		__func__, deep_pwrdn, for_upgrade);
 
 	if (for_upgrade) {
@@ -874,7 +874,7 @@ static int _atc260x_pm_reboot(uint tgt)
 	uint flag_adfu, flag_recovery, flag_dis_mchrg;
 	int ret;
 
-	dev_info(atc260x_pm->dev, "%s() enter, tgt=%u\n", __func__, tgt);
+	dev_dbg(atc260x_pm->dev, "%s() enter, tgt=%u\n", __func__, tgt);
 
 	flag_adfu = flag_recovery = flag_dis_mchrg = 0;
 	switch (tgt) {
@@ -1274,11 +1274,11 @@ static void _clear_status(struct atc260x_pm_dev *atc260x_pm)
 		if (ret) {
 			dev_err(atc260x_pm->dev, "%s() restore old alarm err\n", __func__);
 		}
-		dev_info(atc260x_pm->dev, "%s() restore old alarm, "
+		dev_dbg(atc260x_pm->dev, "%s() restore old alarm, "
 				"msalm=0x%x halm=0x%x ymdalm=0x%x\n",
 				__func__, rtc_msalm, rtc_halm, rtc_ymdalm);
 	} else {
-		dev_info(atc260x_pm->dev, "%s() no need to restore old alarm\n", __func__);
+		dev_dbg(atc260x_pm->dev, "%s() no need to restore old alarm\n", __func__);
 	}
 
 	/* clear pstore */
@@ -1318,7 +1318,7 @@ static int atc260x_pm_setup_wall_vbus_wakup_function(struct atc260x_pm_dev *atc2
 		dev_err(atc260x_pm->dev, "%s() can not get of_property support_adaptor_type \n", __func__);
 		return -ENODEV;
 	}
-	dev_info(atc260x_pm->dev, "got support_adaptor_type: %u\n", support_adaptor_type);
+	dev_dbg(atc260x_pm->dev, "got support_adaptor_type: %u\n", support_adaptor_type);
 
 	reg_mask = (3U << 7);
 	switch (support_adaptor_type == 1) {
@@ -1361,7 +1361,7 @@ static int atc260x_pm_probe(struct platform_device *pdev)
 	struct atc260x_pm_dev *atc260x_pm;
 	int ret;
 
-	dev_info(&pdev->dev, "Probing...\n");
+	dev_dbg(&pdev->dev, "Probing...\n");
 
 	atc260x = atc260x_get_parent_dev(&pdev->dev);
 
@@ -1436,7 +1436,7 @@ static int atc260x_pm_probe(struct platform_device *pdev)
 
 	owl_pmic_set_pm_ops(&atc260x_pm_pmic_ops);
 
-	dev_info(atc260x_pm->dev, "#####%s PMU_SYS_CTL0:0x%x ####\n", __func__,
+	dev_dbg(atc260x_pm->dev, "#####%s PMU_SYS_CTL0:0x%x ####\n", __func__,
 		atc260x_reg_read(atc260x, sc_atc260x_pm_regtbl_sysctl0[atc260x_pm->pmic_type]));
 
 	return 0;

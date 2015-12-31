@@ -284,7 +284,7 @@ void atc260x_exit_reg_direct_access(struct atc260x_dev *atc260x)
 	mode = atc260x->reg_access_mode = ATC260X_ACCESS_MODE_NORMAL;
 	spin_unlock_irqrestore(&atc260x->dacc_spinlock, irq_state_save);
 
-	dev_info(atc260x->dev, "reg access mode set to %u\n", mode);
+	dev_dbg(atc260x->dev, "reg access mode set to %u\n", mode);
 }
 
 void atc260x_set_reg_direct_access(struct atc260x_dev *atc260x, bool enable)
@@ -310,7 +310,7 @@ void atc260x_set_reg_direct_access(struct atc260x_dev *atc260x, bool enable)
 	atc260x->reg_access_mode = mode;
 	spin_unlock_irqrestore(&atc260x->dacc_spinlock, irq_state_save);
 
-	dev_info(atc260x->dev, "reg access mode set to %u\n", mode);
+	dev_dbg(atc260x->dev, "reg access mode set to %u\n", mode);
 }
 EXPORT_SYMBOL_GPL(atc260x_set_reg_direct_access);
 
@@ -425,7 +425,7 @@ static int _atc2603a_init_hardware(struct atc260x_dev *atc260x)
 	tmp &= ~(0x1 << 5);
 	tmp &= ~(0x1 << 11);
 	atc260x_reg_write(atc260x, ATC2603A_PMU_BDG_CTL, tmp);
-	dev_info(atc260x->dev, "set bdg ctl, ret=%d value=0x%x\n", ret, tmp);
+	dev_dbg(atc260x->dev, "set bdg ctl, ret=%d value=0x%x\n", ret, tmp);
 	/*atc260x_reg_setbits(atc260x, ATC2603A_PMU_BDG_CTL, (0x1 << 7),(0x1 << 7));
 	atc260x_reg_setbits(atc260x, ATC2603A_PMU_BDG_CTL, (0x1 << 11),(~(0x1 << 11)));
 	atc260x_reg_setbits(atc260x, ATC2603A_PMU_BDG_CTL, (0x1 << 6),(0x1 << 6));
@@ -467,7 +467,7 @@ static int _atc2603c_init_hardware(struct atc260x_dev *atc260x)
 	tmp &= ~(0x1 << 5);     /*disabel pulldown resistor. */
 	tmp &= ~(0x1 << 11);    /*efuse. */
 	ret = atc260x_reg_write(atc260x, ATC2603C_PMU_BDG_CTL, tmp);
-	dev_info(atc260x->dev, "set bdg ctl, ret=%d value=0x%x\n", ret, tmp);
+	dev_dbg(atc260x->dev, "set bdg ctl, ret=%d value=0x%x\n", ret, tmp);
 	/*atc260x_reg_setbits(atc260x, ATC2603C_PMU_BDG_CTL, (0x1 << 7),(0x1 << 7));
 	atc260x_reg_setbits(atc260x, ATC2603C_PMU_BDG_CTL, (0x1 << 11),(~(0x1 << 11)));
 	atc260x_reg_setbits(atc260x, ATC2603C_PMU_BDG_CTL, (0x1 << 6),(0x1 << 6));
@@ -852,7 +852,7 @@ int atc260x_core_dev_init(struct atc260x_dev *atc260x)
 	struct irq_domain *p_regmap_irq_domain;
 	int ret;
 
-	dev_info(atc260x->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x->dev, "%s() enter\n", __func__);
 
 	/* prepare atc260x structure. */
 	atc260x->reg_save_buf = devm_kzalloc(
@@ -877,7 +877,7 @@ int atc260x_core_dev_init(struct atc260x_dev *atc260x)
 	}
 
 	atc260x->ic_ver = atc260x_get_revised_version(atc260x);
-	dev_info(atc260x->dev, "detect PMU chip type %u ver %c\n",
+	dev_dbg(atc260x->dev, "detect PMU chip type %u ver %c\n",
 			atc260x->ic_type, 'A' + atc260x->ic_ver);
 
 	/* init direct access */
@@ -885,7 +885,7 @@ int atc260x_core_dev_init(struct atc260x_dev *atc260x)
 	atc260x->reg_access_mode = ATC260X_ACCESS_MODE_NORMAL;
 
 	/* irq chip */
-	dev_info(atc260x->dev, "PMU root IRQ %u\n", atc260x->irq);
+	dev_dbg(atc260x->dev, "PMU root IRQ %u\n", atc260x->irq);
 	BUG_ON(atc260x->ic_type >= ARRAY_SIZE(sc_atc260x_irq_chip_tbl));
 	/* PMU subdev IRQ use dynamic (linear) mapping (set argument irq_base=0) */
 	ret = regmap_add_irq_chip(atc260x->regmap, atc260x->irq,
@@ -941,7 +941,7 @@ int atc260x_core_dev_init(struct atc260x_dev *atc260x)
 		goto label_err_lv5;
 	}
 
-	dev_info(atc260x->dev, "%s() exit\n", __func__);
+	dev_dbg(atc260x->dev, "%s() exit\n", __func__);
 	return 0;
 
 	label_err_lv5:
@@ -980,7 +980,7 @@ int atc260x_core_dev_suspend(struct atc260x_dev *atc260x)
 	int ret;
 
 	ATC260X_ASSERT_VALID_DEV(atc260x);
-	dev_info(atc260x->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x->dev, "%s() enter\n", __func__);
 
 	disable_irq(atc260x->irq);
 
@@ -998,7 +998,7 @@ int atc260x_core_dev_suspend(struct atc260x_dev *atc260x)
 int atc260x_core_dev_suspend_late(struct atc260x_dev *atc260x)
 {
 	ATC260X_ASSERT_VALID_DEV(atc260x);
-	dev_info(atc260x->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x->dev, "%s() enter\n", __func__);
 
 	/* disable all reg access until atc260x_set_reg_direct_access is called */
 	atc260x->reg_access_mode = ATC260X_ACCESS_MODE_NONE;
@@ -1013,7 +1013,7 @@ int atc260x_core_dev_suspend_late(struct atc260x_dev *atc260x)
 int atc260x_core_dev_resume_early(struct atc260x_dev *atc260x)
 {
 	ATC260X_ASSERT_VALID_DEV(atc260x);
-	dev_info(atc260x->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x->dev, "%s() enter\n", __func__);
 	atc260x_exit_reg_direct_access(atc260x);
 	dev_dbg(atc260x->dev, "%s() exit\n", __func__);
 	return 0;
@@ -1024,7 +1024,7 @@ int atc260x_core_dev_resume(struct atc260x_dev *atc260x)
 	int ret;
 
 	ATC260X_ASSERT_VALID_DEV(atc260x);
-	dev_info(atc260x->dev, "%s() enter\n", __func__);
+	dev_dbg(atc260x->dev, "%s() enter\n", __func__);
 
 	/* restore critical registers. */
 	ret = _atc260x_restore_critical_regs(atc260x);

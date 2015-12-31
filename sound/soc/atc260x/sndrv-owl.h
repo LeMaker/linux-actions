@@ -31,11 +31,11 @@ static int debug_switch = 1;
 #ifdef SND_DEBUG
 #define snd_err(fmt, args...) \
 	if (error_switch) \
-		printk(KERN_ERR"[SNDRV]:[%s] "fmt"\n", __func__, ##args)
+		printk(KERN_ERR"[SNDRV]:[%s] "fmt, __func__, ##args)
 
 #define snd_dbg(fmt, args...) \
 	if (debug_switch) \
-		printk(KERN_DEBUG"[SNDRV]:[%s] "fmt"\n", __func__, ##args)
+		printk(KERN_DEBUG"[SNDRV]:[%s] "fmt, __func__, ##args)
 #endif
 
 enum {

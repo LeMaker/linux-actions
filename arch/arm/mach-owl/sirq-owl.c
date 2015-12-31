@@ -231,13 +231,13 @@ static int owl_sirq_probe(struct platform_device *pdev)
 	struct resource *res;
 	int i, irq;
 
-	printk(KERN_INFO "owl_sirq_probe()\n");
+	printk(KERN_DEBUG "owl_sirq_probe()\n");
 
 	for (i = 0; i < NR_OWL_SIRQ_IRQS; i++) {
 		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
 		if (res) {
 			owl_sirq_bank[i].irq = res->start;
-			printk(KERN_INFO "owl sirq bank%d - irq%d\n",
+			printk(KERN_DEBUG "owl sirq bank%d - irq%d\n",
 					i, res->start);
 		} else {
 			printk(KERN_INFO "owl gpio bank%d Missing IRQ resource\n"
@@ -275,7 +275,7 @@ static struct platform_driver owl_sirq_driver = {
 
 int __init owl_sirq_init(void)
 {
-	printk(KERN_INFO "init sirqs\n");
+	printk(KERN_DEBUG "init sirqs\n");
 
 	return platform_driver_register(&owl_sirq_driver);
 

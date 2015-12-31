@@ -1690,42 +1690,42 @@ MODULE_DEVICE_TABLE(of, owl_dma_of_match);
 static int __init owl_dma_probe(struct platform_device *pdev)
 {
 	const struct owl_dma_platform_data *pdata;
-    const struct of_device_id *id;
-    struct resource *iores;
+	const struct of_device_id *id;
+	struct resource *iores;
 	struct owl_dma	*owl_dma;
 	size_t			size;
 	int			irq;
 	int			err;
 	int			i;
 
-    printk("owl_dma_probe\n");
+    printk(KERN_DEBUG "owl_dma_probe\n");
 	max_timeout = 1;
 
 	/* get DMA Controller parameters from platform */
     id = of_match_device(owl_dma_of_match, &pdev->dev);
     if(id == NULL)
     {
-        printk("owl dma id is null\n");
+        printk(KERN_WARNING "owl dma id is null\n");
         return -EINVAL;
     }
     pdata = id->data;
 	if (!pdata || pdata->nr_channels > ACTS_DMA_MAX_NR_CHANNELS)
     {
-        printk("owl dma pdata error\n");
+        printk(KERN_WARNING "owl dma pdata error\n");
 		return -EINVAL;
 	}
 
     iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
     if(iores == NULL)
     {
-        printk("owl dma iores is null\n");
+        printk(KERN_WARNING "owl dma iores is null\n");
         return -EINVAL;
     }
 
     irq = platform_get_irq(pdev, 0);
     if (irq < 0)
     {
-        printk("owl dma irq get failed\n");
+        printk(KERN_WARNING "owl dma irq get failed\n");
         return irq;
     }
 
@@ -1751,14 +1751,14 @@ static int __init owl_dma_probe(struct platform_device *pdev)
     iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
     if(iores == NULL)
     {
-        printk("owl dma iores is null\n");
+        printk(KERN_WARNING "owl dma iores is null\n");
         return -EINVAL;
     }
 
     owl_dma->regs = devm_ioremap_resource(&pdev->dev, iores);
     if (IS_ERR(owl_dma->regs))
     {
-        printk("owl dma iobase remap failed\n");
+        printk(KERN_WARNING "owl dma iobase remap failed\n");
         return PTR_ERR(owl_dma->regs);
     }
 
@@ -2068,10 +2068,10 @@ static int __init owl_dma_init(void)
 {
 	int err;
     
-    printk("owl_dma_init\n");
+    printk(KERN_DEBUG "owl_dma_init\n");
     err = platform_driver_register(&owl_dma_driver);
     if (err != 0) {
-        printk("register owl dma platform driver error!\n");
+        printk(KERN_WARNING "register owl dma platform driver error!\n");
         return err;
     } 
 

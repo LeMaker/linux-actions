@@ -99,7 +99,6 @@ static int atc260x_pwm_probe(struct platform_device *pdev)
 	struct device_node *np;
 	int ret = 0;
 
-	dev_info(&pdev->dev, "atc260x_pwm Probing...\n");
 	np = pdev->dev.of_node;
 
 	atc260x_pwm = kzalloc(sizeof(struct atc260x_pwm_dev), GFP_KERNEL);

@@ -1860,14 +1860,14 @@ static int  vde_probe(struct platform_device *pdev)
 	VDE_CMU_DEVRST0 = (void __iomem *)(cmu_base + 0xa8);
 	VDE_CMU_DEVCLKEN0 = (void __iomem *)(cmu_base + 0xa0);
 
-	printk("sps base = 0x%x\n", (unsigned int)sps_base);
-	printk("cmu base = 0x%x\n", (unsigned int)cmu_base);
-	printk("SPS_PG_CTL = 0x%x\n", (unsigned int)VDE_SPS_PG_CTL);
-	printk("Share_Mem_REG = 0x%x\n", (unsigned int)Share_Mem_REG);	
-	printk("CMU_COREPLL = 0x%x\n", (unsigned int)VDE_CMU_COREPLL);
-	printk("CMU_VDE_CLK = 0x%x\n", (unsigned int)VDE_CMU_VDE_CLK);
-	printk("CMU_DEVRST0 = 0x%x\n", (unsigned int)VDE_CMU_DEVRST0);
-	printk("CMU_DEVCLKEN0 = 0x%x\n", (unsigned int)VDE_CMU_DEVCLKEN0);
+	printk(KERN_DEBUG "sps base = 0x%x\n", (unsigned int)sps_base);
+	printk(KERN_DEBUG "cmu base = 0x%x\n", (unsigned int)cmu_base);
+	printk(KERN_DEBUG "SPS_PG_CTL = 0x%x\n", (unsigned int)VDE_SPS_PG_CTL);
+	printk(KERN_DEBUG "Share_Mem_REG = 0x%x\n", (unsigned int)Share_Mem_REG);	
+	printk(KERN_DEBUG "CMU_COREPLL = 0x%x\n", (unsigned int)VDE_CMU_COREPLL);
+	printk(KERN_DEBUG "CMU_VDE_CLK = 0x%x\n", (unsigned int)VDE_CMU_VDE_CLK);
+	printk(KERN_DEBUG "CMU_DEVRST0 = 0x%x\n", (unsigned int)VDE_CMU_DEVRST0);
+	printk(KERN_DEBUG "CMU_DEVCLKEN0 = 0x%x\n", (unsigned int)VDE_CMU_DEVCLKEN0);
 	
 	gVDE = vde;
 	
@@ -2135,10 +2135,9 @@ static int vde_init(void)
 
 #ifdef VDE_DRV_USE_SYSFS    
 	/* create sysfs */
-	printk("device_create_file !\n");
 	ret = device_create_file(vde_miscdevice.this_device, &dev_attr_enable); //dev_attr_message
 	if (ret) {
-		pr_err("hello: failed to create sysfs file, ret = %d\n", ret);
+		pr_err("%s: failed to create sysfs file", __func__);
 		goto err2;
 	}
 #endif

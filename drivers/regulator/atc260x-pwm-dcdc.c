@@ -167,7 +167,7 @@ static int ext_pwm_dcdc_probe(struct platform_device *pdev)
 	struct device_node *node;
 	const __be32 *property;
 
-	dev_info(&pdev->dev, "Probing %s\n", pdev->name);
+	dev_dbgl(&pdev->dev, "Probing %s\n", pdev->name);
 
 	dcdc = devm_kzalloc(&pdev->dev, sizeof(struct ext_pwm_dcdc_dev), GFP_KERNEL);
 	if (dcdc == NULL) {
@@ -193,7 +193,7 @@ static int ext_pwm_dcdc_probe(struct platform_device *pdev)
 		dcdc->table_len = 3;
 	}
 
-	dev_info(&pdev->dev, "table_len = %d\n", dcdc->table_len);
+	dev_dbgl(&pdev->dev, "table_len = %d\n", dcdc->table_len);
 	of_property_read_u32_array(node, "pwm_config_table", dcdc->pwm_config_table, dcdc->table_len);
 	of_property_read_u32_array(node, "vdd_cpu_table", dcdc->vdd_cpu_table, dcdc->table_len);
 #if CONFIG_ATC260x_PWM_DCDC_FULL_DBG

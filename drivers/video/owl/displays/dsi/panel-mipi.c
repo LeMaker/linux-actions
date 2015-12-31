@@ -231,10 +231,10 @@ static struct owl_dss_driver dsi_driver = {
 
 static int __init generic_dsi_panel_drv_init(void)
 {
-	printk("generic_dsi_panel_drv_init \n");
+	printk(KERN_DEBUG "generic_dsi_panel_drv_init \n");
 	owl_dsi_init_platform();
 	if(get_current_display_type()==OWL_DISPLAY_TYPE_DSI){
-		printk("current type dsi \n");
+		printk(KERN_DEBUG "current type dsi \n");
 		owl_dss_register_driver(&dsi_driver);
 	}
 	return 0;

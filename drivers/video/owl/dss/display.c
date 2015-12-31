@@ -194,54 +194,20 @@ void dss_init_device(struct platform_device *pdev,
 	struct device_attribute *attr;
 	int i;
 	int r = 0;
-#if 0
-	switch (dssdev->type) {
-
-	case OWL_DISPLAY_TYPE_LCD:
-		r = lcdc_init_display(dssdev);
-		break;
-
-	case OWL_DISPLAY_TYPE_DSI:
-		r = dsi_init_display(dssdev);
-		break;
-	case OWL_DISPLAY_TYPE_EDP:
-		r = edp_init_display(dssdev);
-		break;
-	case OWL_DISPLAY_TYPE_CVBS:
-		r = cvbs_init_display(dssdev);
-		break;
-	case OWL_DISPLAY_TYPE_YPBPR:
-		r = ypbpr_init_display(dssdev);
-		break;
-
-	case OWL_DISPLAY_TYPE_HDMI:
-		r = hdmi_init_display(dssdev);
-		break;
-
-	default:
-		DSSERR("Support for display '%s' not compiled in.\n",
-				dssdev->name);
-		return;
-	}
-#endif 
-	if (r) {
-		DSSERR("failed to init display %s\n", dssdev->name);
-		return;
-	}
 
 	/* create device sysfs files */
 	i = 0;
 	while ((attr = display_sysfs_attrs[i++]) != NULL) {
 		r = device_create_file(&dssdev->dev, attr);
 		if (r)
-			DSSERR("failed to create sysfs file\n");
+			DSSERR("%s: failed to create device file\n", __func__);
 	}
 
-	/* create display? sysfs links */
+	/* create display sysfs links */
 	r = sysfs_create_link(&pdev->dev.kobj, &dssdev->dev.kobj,
 			dev_name(&dssdev->dev));
 	if (r)
-		DSSERR("failed to create sysfs display link\n");
+		DSSERR("%s: failed to create sysfs display link\n", __func__);
 }
 
 void dss_uninit_device(struct platform_device *pdev,
@@ -350,7 +316,7 @@ enum owl_display_type get_current_display_type(void)
 			continue ;
 		} else {
 			if (!of_property_read_string(np, "port_type", &portname)) {
-				printk(" %d portname = %s\n", i, portname);
+				printk(KERN_DEBUG " %d portname = %s\n", i, portname);
 				if(!strcmp("rgb", portname)){
 					display_type = OWL_DISPLAY_TYPE_LCD;	
 				}else if(!strcmp("lvds", portname)){

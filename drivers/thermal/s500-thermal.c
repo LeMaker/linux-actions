@@ -618,7 +618,7 @@ static void wait_cpufreq_ready(struct work_struct *work)
 	if(NULL == table)
 	{
 		schedule_delayed_work(&data->wait_cpufreq_ready_work, HZ);
-		printk("--------cpufreq not ready--------\n");
+		printk(KERN_DEBUG "--------cpufreq not ready--------\n");
 		return;
 	}
 	pr_notice("++++++++cpufreq ready++++++++\n");

@@ -423,7 +423,7 @@ static void lcdchw_put_clocks(struct platform_device *lcdcdev)
 static void lcdchw_check_boot_lcd0_inited(struct platform_device *lcdcdev) {
     boot_lcd0_inited = lcdchw_read_reg(lcdcdev, LCDCHW_CTL) & 0x1;
 
-    DSSINFO("LCD INITED FROM UBOOT??  %d\n", boot_lcd0_inited);
+    DSSDBG("LCD INITED FROM UBOOT??  %d\n", boot_lcd0_inited);
 
     return ;
 }
@@ -929,7 +929,7 @@ static int owl_lcdchw_probe(struct platform_device *pdev)
     struct resource     *lcdc_mem;
     struct lcdc_data    *lcdc;
 
-    DSSINFO("%s\n", __func__);
+    DSSDBG("%s\n", __func__);
 
     lcdc = kzalloc(sizeof(*lcdc), GFP_KERNEL);
     if (!lcdc) {
@@ -1007,7 +1007,7 @@ static int owl_lcdchw_probe(struct platform_device *pdev)
 
     lcdchw_power_init(pdev);
 
-    DSSINFO("owl_lcdchw_probe called  ok ~~~~~~~~~~~~~\n");
+    DSSDBG("owl_lcdchw_probe called  ok ~~~~~~~~~~~~~\n");
     return 0;
 
 err_parse_params:
