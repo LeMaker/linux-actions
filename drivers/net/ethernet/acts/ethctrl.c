@@ -566,7 +566,15 @@ static void get_mac_address_by_chip(unsigned char input[MBEDTLS_DES_KEY_SIZE],ch
 	return;
 }
 
-/* if all the paths are not usable, use random mac each boot */
+extern int read_mi_item(char *name, void *buf, unsigned int count);
+
+/*
+* get_def_mac_addr:get the mac address,the priority as following:
+* 1.the mac address in the miscinfo;
+* 2.the ramdom address,need to enable in the dts;
+* 3.the local address,need to set this value in the dts;
+* 4.generate the mac address according to the serial number.
+*/
 static const char *get_def_mac_addr(struct platform_device *pdev)
 {
     struct device_node *np = pdev->dev.of_node;
@@ -583,7 +591,7 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
     unsigned char input_value[MBEDTLS_DES_KEY_SIZE] = {0};
     unsigned char output_value[MBEDTLS_DES_KEY_SIZE] = {0};
 
-#define ETH_MAC_ADDR_BURNED_PATH "/sys/miscinfo/infos/ethmac"
+//#define ETH_MAC_ADDR_BURNED_PATH "/sys/miscinfo/infos/ethmac"
 //#define ETH_MAC_ADDR_BURNED_PATH "/data/mac_address"
 #define ETH_MAC_ADDR_PATH "/config/mac_address.bin"
 #ifdef CONFIG_PLATFORM_UBUNTU
@@ -592,7 +600,7 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
 #define ETH_MAC_ADDR_RANDDOM_PATH "/data/mac_address_random"
 #endif
 
-    filp = filp_open(ETH_MAC_ADDR_BURNED_PATH, O_RDONLY, 0);
+    /*filp = filp_open(ETH_MAC_ADDR_BURNED_PATH, O_RDONLY, 0);
     if (IS_ERR_OR_NULL(filp)) {
         printk(KERN_ERR"file %s can't be opened\n", ETH_MAC_ADDR_BURNED_PATH);
     } else {
@@ -604,15 +612,12 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
             return g_default_mac_addr;
         }
         filp_close(filp, current->files);
-    }
-
-    str = of_get_property(np, "local-mac-address", NULL);
-    if (str == NULL) {
-        printk(KERN_ERR"no local-mac-address in dts\n");
-    } else {
-        printk(KERN_INFO"local-mac-address: ");
-        print_mac_address(str);
-        memcpy(g_default_mac_addr, str, ETH_MAC_LEN);
+    }*/
+    ret = read_mi_item("ETHMAC",def_mac,20);
+    if(ret > 0){
+        printk(KERN_DEBUG"Using the mac address in miscinfo.\n");
+        parse_mac_address(def_mac, ret);
+        return g_default_mac_addr;
     }
 
     ret = of_property_read_string(np, "random-mac-address", &str);
@@ -622,6 +627,16 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
         printk(KERN_INFO"random-mac-address: %s\n", str);
         if (!strcmp("okay", str))
             goto random_mac;
+    }
+
+    str = of_get_property(np, "local-mac-address", NULL);
+    if (str == NULL) {
+        printk(KERN_ERR"no local-mac-address in dts\n");
+    } else {
+        printk(KERN_INFO"local-mac-address: ");
+        print_mac_address(str);
+        memcpy(g_default_mac_addr, str, ETH_MAC_LEN);
+        return g_default_mac_addr;
     }
 
     //printk(KERN_DEBUG"%s 0x%llx\n",__func__,system_serial);
@@ -2254,7 +2269,7 @@ static int ec_netdev_open(struct net_device *dev)
 
     printk(KERN_INFO "%s link %s.\n", dev->name, ecp->linked ? "on" : "off");
 
-#if 1
+#if 0
     /* FIXME!used by KSZ8041, other phy may not need this */
     if (ecp->phy_model != ETH_PHY_MODEL_ATC2605)
         phy_cable_plug_irq_enable(0);/* enable high level active */
@@ -2319,7 +2334,7 @@ static int ec_netdev_close(struct net_device *dev)
     stop_power_save_timer(ecp);
 #endif
 
-#if 1
+#if 0
     /* FIXME!used by KSZ8041, other phy may not need this */
     if (ecp->phy_model != ETH_PHY_MODEL_ATC2605)
         phy_cable_plug_irq_disable();
