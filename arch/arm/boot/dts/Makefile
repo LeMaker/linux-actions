@@ -221,10 +221,6 @@ dtb-$(CONFIG_ARCH_OWL) += actduino_bubble_gum.dtb \
 	actduino_bubble_gum_sdboot.dtb \
 	actduino_s500_720p.dtb \
 	actduino_s500_1080p.dtb \
-	actduino_s500_lcd_1280x800.dtb \
-	actduino_s500_lcd_1280x800_uvc.dtb \
-	actduino_s500_lcd_768x1024.dtb \
-	actduino_s500_lcd_768x1024_uvc.dtb \
 	atm7059a_demo_86v.dtb \
 	atm7059a_demo_86v_costdown.dtb \
 	atm7059a_demo_86v_costdown_wvga_dpi120.dtb \
@@ -237,12 +233,8 @@ dtb-$(CONFIG_ARCH_OWL) += actduino_bubble_gum.dtb \
 	lemaker_guitar_bbb.dtb \
 	lemaker_guitar_bbc.dtb \
 	lemaker_guitar_bbd.dtb \
-	actduino_s500_lcd_1280x800_sdboot.dtb \
 	actduino_bubble_gum_linux.dtb \
 	actduino_bubble_gum_sdboot_linux.dtb \
-	actduino_s500_lcd_1280x800_linux.dtb \
-	actduino_s500_lcd_1280x800_sdboot_linux.dtb \
-	actduino_s500_lcd_768x1024_linux.dtb \
 	
 ifeq ($(CONFIG_ARCH_OWL),y)
 DTC_FLAGS = -R -4 -p 0x1000

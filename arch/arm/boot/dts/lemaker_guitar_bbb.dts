@@ -19,21 +19,6 @@
 		};
 	};
 	
-	clock:0b0160000 {
-		compatible = "actions,owl-clk";
-		core_pll = <0x314>;
-		dev_pll = <0x1164>;
-		bus_pll = <0x1c710000>;
-		display_pll = <0x164>;
-		bus1_pll = <0x2e004>;
-		clk_spead = <0x0>;
-	};
-	
-        gpio_int {
-		initgpio_A=<23 0 0>,<25 0 0>;/*<x1,x2,x3>,x1=PIN,x2=(0=OUT,1=IN),x3=IOVAL*/
-		initgpio_B=<23 0 0>;
-        };
-    
 	reserved {
 		tiny {
 			fb_heap_size = <4>;
@@ -840,11 +825,11 @@
                         vol_range = <3100000 3110000>;
                 };
 
-
-		hdmi_read_edid@30 {
+                hdmi_read_edid@30 {
                         compatible = "actions,hdmi_read_edid";
                         reg = <0x30>;
-		};
+                };
+
 	};
 
 	i2c@b0178000 {
@@ -906,11 +891,6 @@
 		eg2801_ram@55 {
 			compatible ="actions,eg2801_ram";
 			reg = <0x55>;
-		};
-
-		hdmi_read_edid@30 {
-			compatible = "actions,hdmi_read_edid";
-			reg = <0x30>;
 		};
 	};
 
@@ -1119,29 +1099,11 @@
     	};
     };
 
-	
-	framebuffer {
-		compatible = "actions,framebuffer";
-
-		/*never creat platform device*/
-		status = "disabled";
-		};
-
-		ovl_boot {
-			usage = "boot";
-			disp_dev = <&lcd0>;
-		};
-
-		ovl_extra {
-			usage = "extra";
-		};
-		
-	lcd0: lcd0@b02a0000 {
+lcd0: lcd0@b02a0000 {
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&lvds_state_default>;
 		lcd_power_gpios = <&gpio 36 0>;    /*GPIOB4*/
-		//lcd_standby_gpios = <&gpio 49 0>; /*GPIOB17*/
 		port_type = "lvds";
 		data_width = <0>;		/* 0:24bit ,1:18bit */
 		videomode-0 = <&lcd_mode0>;
@@ -1192,13 +1154,20 @@
 		status = "disabled";
 	};
 
-	hdmi:hdmi@b02c0000{
+	hdmi: hdmi@b02c0000{
+		status = "okay";
 		hdcp_onoff = <0>;
 		channel_invert = <0>;
 		bit_invert = <0>;
-		bootable = <1>; 
-		bootrotate = <0>;   
-		default_resolution = "1080P60HZ";
+		hotplugable = <0>;
+		bootrotate = <0>;
+		default_resolution = "auto";
+	};
+		
+	framebuffer {
+		compatible = "actions,framebuffer";  
+		def_display  = "hdmi";
+
 	};
 
 	pwm: pwm@b01b0050 {
@@ -1227,7 +1196,7 @@
 	backlight {
 		/*1.pwm num; 2. period in ns; */
 		/*3.plarity, 0: high active, 1: low active*/
-		backlight_en_gpios = <&gpio 49 0>; /*GPIOB5*/ 
+		backlight_en_gpios = <&gpio 49 0>; /*GPIOB17*/ 
 		pwms = <&pwm 0 50000 1>;
 		total_steps = <1024>;
 		min_brightness = <250>;

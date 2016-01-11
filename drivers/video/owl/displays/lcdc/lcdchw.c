@@ -324,10 +324,10 @@ static void lcdchw_lvds_port_enable(struct platform_device *lcdcdev, bool enable
 	
     if(enable){        
         val = lcdchw_read_reg(lcdcdev,LCDCHW_LVDS_ALG_CTL0);
-                
-        val = REG_SET_VAL(val, 0, 30, 31);
-        
-        val = REG_SET_VAL(val, 0, 4, 5);
+               
+        val = REG_SET_VAL(val, 3, 31, 30);
+       
+        val = REG_SET_VAL(val, 1, 5, 5);
         
         lcdchw_write_reg(lcdcdev,LCDCHW_LVDS_ALG_CTL0, lcdc->lvds_alg_ctl0);
         
@@ -339,10 +339,10 @@ static void lcdchw_lvds_port_enable(struct platform_device *lcdcdev, bool enable
                     
     }else{
         val = lcdchw_read_reg(lcdcdev,LCDCHW_LVDS_ALG_CTL0);
-                
-        val = REG_SET_VAL(val, 0, 30, 31);
-        
-        val = REG_SET_VAL(val, 0, 4, 5);
+		        
+        val = REG_SET_VAL(val, 0, 31, 30);
+		   
+        val = REG_SET_VAL(val, 0, 5, 5);
         
         lcdchw_write_reg(lcdcdev,LCDCHW_LVDS_ALG_CTL0, val);
         

@@ -16,14 +16,6 @@ config VIDEO_OWL_DE_ATM7059
 
 	  If unsure, say Y.
 
-config VIDEO_OWL_DE_ATM9009
-	bool "ATM9009 Display Engine"
-	depends on VIDEO_OWL_DSS
-	---help---
-	  Say Y here if you need support ATM9009 DE.
-
-	  If unsure, say Y.
-
 config VIDEO_OWL_MMU_SUPPORT
 	bool "OWL DE MMU Support"
 	depends on VIDEO_OWL_DE_ATM9009 || VIDEO_OWL_DE_ATM7059
