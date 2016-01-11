@@ -998,7 +998,9 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 	if (data[1] & UVC_STREAM_ERR) {
 		uvc_trace(UVC_TRACE_FRAME, "Marking buffer as bad (error bit "
 			  "set).\n");
-		buf->error = 1;
+		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/	  
+		buf->error = UVC_BUF_ERR_ISOFRAM_ERR;
+		uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame err .\n");
 	}
 
 	/* Synchronize to the input stream by waiting for the FID bit to be
@@ -1054,6 +1056,12 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 		uvc_trace(UVC_TRACE_FRAME, "Frame complete (FID bit "
 				"toggled).\n");
 		buf->state = UVC_BUF_STATE_READY;
+		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+		if((buf->bytesused != buf->length) &&
+		   !(stream->cur_format->flags & UVC_FMT_FLAG_COMPRESSED)){
+			buf->error = UVC_BUF_ERR_NOTFULL;
+			uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+		}
 		return -EAGAIN;
 	}
 
@@ -1085,8 +1093,10 @@ static void uvc_video_decode_data(struct uvc_streaming *stream,
 
 	/* Complete the current frame if the buffer size was exceeded. */
 	if (len > maxlen) {
-		uvc_trace(UVC_TRACE_FRAME, "Frame complete (overflow).\n");
+		uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (overflow).\n");
 		buf->state = UVC_BUF_STATE_READY;
+		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+		buf->error = UVC_BUF_ERR_OVERFLOW;
 	}
 }
 
@@ -1161,8 +1171,11 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 			uvc_trace(UVC_TRACE_FRAME, "USB isochronous frame "
 				"lost (%d).\n", urb->iso_frame_desc[i].status);
 			/* Mark the buffer as faulty. */
-			if (buf != NULL)
-				buf->error = 1;
+			if (buf != NULL){
+			        /*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+				buf->error = UVC_BUF_ERR_ISOFRAM_LOST;
+				uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame lost .\n");
+			}
 			continue;
 		}
 
@@ -1190,9 +1203,11 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 		if (buf->state == UVC_BUF_STATE_READY) {
 			if (buf->length != buf->bytesused &&
 			    !(stream->cur_format->flags &
-			      UVC_FMT_FLAG_COMPRESSED))
-				buf->error = 1;
-
+			      UVC_FMT_FLAG_COMPRESSED)){
+				/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/  
+				buf->error = UVC_BUF_ERR_NOTFULL;
+				uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+			}
 			buf = uvc_queue_next_buffer(&stream->queue, buf);
 		}
 	}
@@ -1890,6 +1905,7 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
 #else
 		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
 #endif
+		(&stream->queue)->framestodrop = 0;
 		uvc_queue_enable(&stream->queue, 0);
 		uvc_video_clock_cleanup(stream);
 		return 0;
@@ -1899,6 +1915,7 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
 	if (ret < 0)
 		return ret;
 
+	(&stream->queue)->framestodrop = stream->uvc_drop_nframes;
 	ret = uvc_queue_enable(&stream->queue, 1);
 	if (ret < 0)
 		goto error_queue;

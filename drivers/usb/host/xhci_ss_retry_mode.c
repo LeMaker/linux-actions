@@ -152,7 +152,7 @@ void ss_retry_mode(void __iomem *base)
 	mdelay(5);
     	ss_mac_sample_edge_init(base ); 
 	ss_try_next_mode(base);	
-	mdelay(100);
+	mdelay(200);
     
 	usb_set_vbus_power(1);
     
