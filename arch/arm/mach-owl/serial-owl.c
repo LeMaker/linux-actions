@@ -1625,7 +1625,7 @@ EXPORT_SYMBOL(sdio_uart_pinctrl_request);
 
 void sdio_uart_pinctrl_free(void)
 {
-	if(sdio_serial_state->refcount > 0) {
+	if(sdio_serial_state && sdio_serial_state->refcount > 0) {
 		sdio_serial_state->refcount--;
 		pinctrl_put(sdio_serial_state->p);
 	}
