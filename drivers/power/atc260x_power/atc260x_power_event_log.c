@@ -93,12 +93,12 @@ void log_event_dump(void){
     }
 }
 
-void log_event_init(void){
+void log_event_init(void){
     cur=0; 
     memset(logbuf, 0, LOG_BUF_SIZE);
 }
 
-void log_event_exit(void){
+void log_event_exit(void){
     
 }
 

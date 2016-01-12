@@ -4055,7 +4055,7 @@ EXhalbtc8821a2ant_BtInfoNotify(
 			setBtPsdMode = 0;
 		}
 		if(setBtPsdMode <= 3)
-		{
+		{
 			halbtc8821a2ant_SetBtPsdMode(pBtCoexist, FORCE_EXEC, 0x0); //fix CH-BW mode 
 			setBtPsdMode++;
 		}

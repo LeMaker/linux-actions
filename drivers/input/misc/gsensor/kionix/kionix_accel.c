@@ -682,7 +682,7 @@ static int kionix_accel_grp2_standby(struct kionix_accel_driver *acceld)
 
 	if(acceld->accel_drdy == 0){
 
-		cancel_delayed_work_sync(&acceld->accel_work);
+		cancel_delayed_work_sync(&acceld->accel_work);
 	}
 
 	err = i2c_smbus_write_byte_data(acceld->client, ACCEL_GRP2_CTRL_REG1, 0);
