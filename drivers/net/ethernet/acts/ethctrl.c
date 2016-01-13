@@ -1800,7 +1800,7 @@ static void subisr_enet_rx(ec_priv_t *ecp)
 		* 5302 ether phy. Don't care it now, it'll be fixed in 5203. */
 		//if (status & (RXBD_STAT_ES | RXBD_STAT_DB))
 		if (status & RX_ERROR_CARED) {
-			printk(KERN_ERR"%d: RX_ERROR status:0x%08lx\n", __LINE__, status);
+			//printk(KERN_ERR"%d: RX_ERROR status:0x%08lx\n", __LINE__, status);
 			dev->stats.rx_errors++;
 			if (status & RXBD_STAT_TL)
 				dev->stats.rx_length_errors++;

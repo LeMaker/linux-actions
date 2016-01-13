@@ -417,11 +417,11 @@ static void vde_dump_ddr(int id)
 	unsigned int * v_addr = NULL;
 	int addr = vde_read(gVDE, (id<<2));
 	if (addr == 0) {
-		printk("vde : vde_dump_ddr, In: id = %d, addr = 0x%08x, return.\n", id, addr);
+		VDE_DBG("vde : vde_dump_ddr, In: id = %d, addr = 0x%08x, return.\n", id, addr);
 		return ;
 	}
 	
-	printk("vde : vde_dump_ddr, In: id = %d, addr = 0x%08x(0x%08x)\n", id, addr, addr & 0xFFFFFFFC);
+	VDE_DBG("vde : vde_dump_ddr, In: id = %d, addr = 0x%08x(0x%08x)\n", id, addr, addr & 0xFFFFFFFC);
 	addr =  addr & 0xFFFFFFFC;
 	
 	v_addr = (unsigned int * )ioremap(addr, 2048);
@@ -515,7 +515,7 @@ static void vde_reset_parent_pll(void)
 	pll_rate = clk_get_rate(pll_clk);
 	
 	if ((vde_rate == VDE_FREQ_4Kx2K) && (pll_rate == VDE_FREQ_4Kx2K)) {
-		printk("vde : vde_reset_displaypll: vde: %lu displaypll: %lu\n", vde_rate, pll_rate);
+		VDE_DBG("vde : vde_reset_displaypll: vde: %lu displaypll: %lu\n", vde_rate, pll_rate);
 		vde_waitForIdle();
 		ret = clk_set_rate(pll_clk, 720000000);
 		if(ret != 0) {
@@ -1083,7 +1083,7 @@ VDE_FREQ_T vde_do_set_freq(VDE_FREQ_T new_rate)
 #else
 	targetFreq = new_rate*1000*1000;
 	if (new_rate == VDE_FREQ_MULTI) {
-		printk("vde : targetFreq: %lu\n", targetFreq/30);
+		VDE_DBG("vde : targetFreq: %lu\n", targetFreq/30);
 		VDE_DBG("CMU_DISPLAYPLL=%x,CMU_DEVPLL=%x, CMU_VDECLK=%x\n", act_readl(CMU_DISPLAYPLL), act_readl(CMU_DEVPLL),act_readl(CMU_VDECLK));
 		pll_clk = clk_get_sys(NULL, (const char *)CLK_NAME_DISPLAYPLL);
 		if (IS_ERR(pll_clk)){
@@ -1091,7 +1091,7 @@ VDE_FREQ_T vde_do_set_freq(VDE_FREQ_T new_rate)
 	        return 0;
 	    }
 		clk_set_parent(vde_clk, pll_clk);
-		printk("vde : vde_do_set_freq: set parent pll OK!\n");
+		VDE_DBG("vde : vde_do_set_freq: set parent pll OK!\n");
 	}
 	
 	freq = clk_round_rate(vde_clk, targetFreq); /*设置最接近濉<=  clk 频率， 单位hz*/    
@@ -1310,7 +1310,7 @@ static int vde_adjust_freq(void)
 		ret = vde_setFreq(f);
 		if(ret != 0) {
 			vde_pre_freq = f; 
-			printk("vde : adjust: [w, h, f] = [%d, %d, %s], autoFreq = %d, mulIns = %d, freq.[need, real] = [%d, %d] \n", 
+			VDE_DBG("vde : adjust: [w, h, f] = [%d, %d, %s], autoFreq = %d, mulIns = %d, freq.[need, real] = [%d, %d] \n", 
 				width, height, mode[jpeg_mode], autoFreq_enable, multi_instance_mode, ((int)(vde_cur_need_freq/1000000))/30, ret/30);
 		}else{
 			printk("vde : set %dM Failed,-- %d \n", f/30, VDE_FREQ_DEFAULT);
@@ -1529,7 +1529,7 @@ static int vde_open(struct inode *inode, struct file *file)
 		
     vde_open_count++;
     if (vde_open_count >1){
-        printk("vde drv already open\n");
+        VDE_DBG("vde drv already open\n");
         mutex_unlock(&m_mutex);
         return 0;
     }
@@ -1577,12 +1577,12 @@ static int vde_release(struct inode *inode, struct file *file)
     vde_open_count--;
 
     if (vde_open_count > 0) {
-        printk("vde : vde_release: count:%d pid(%d)\n", vde_open_count, task_tgid_vnr(current));       
+        VDE_DBG("vde : vde_release: count:%d pid(%d)\n", vde_open_count, task_tgid_vnr(current));       
         vde_waitForIdle();
         
         goto VDE_REL;
     } else if (vde_open_count < 0) {
-        printk("vde : vde_release: module is closed before opened\n");
+        VDE_DBG("vde : vde_release: module is closed before opened\n");
         vde_open_count = 0;        
     }
 
@@ -1617,7 +1617,7 @@ static int vde_release(struct inode *inode, struct file *file)
 VDE_REL:    
 	for(i=0;i<MAX_INSTANCE_NUM;i++) {
         if(slot[i].pid == task_tgid_vnr(current)){
-            printk("vde : vde slot is leak by pid(%d), reset it\n", task_tgid_vnr(current));           
+            VDE_DBG("vde : vde slot is leak by pid(%d), reset it\n", task_tgid_vnr(current));           
             if(slot[i].slice_mode == 1 && vde_occupied == 1)
                 vde_occupied = 0;
            slot_reset(i);            
@@ -1692,7 +1692,7 @@ static int thermal_notifier(struct notifier_block *nb,
 								unsigned long event, void *data)
 {
 	//struct freq_clip_table *notify_table = (struct freq_clip_table *)data;
-	printk("vde thermal_notifier event:%d \n", event);
+	VDE_DBG("vde thermal_notifier event:%d \n", event);
 	if(event == CPUFREQ_COOLING_START)
 	{	
 		int ret = 0;
@@ -1701,7 +1701,7 @@ static int thermal_notifier(struct notifier_block *nb,
 			mutex_lock(&m_freq_adjust_mutex); 
 			vde_waitForIdle();	
 			adjust_freq_flag = 0;	
-			printk("vde  CPUFREQ_COOLING_START,event:%d,\n", event);		
+			VDE_DBG("vde  CPUFREQ_COOLING_START,event:%d,\n", event);		
 			if(vde_set_parent_pll(CLK_NAME_DEVCLK) != 0) {
 				 printk("set parent pll fail\n");
     		 mutex_unlock(&m_freq_adjust_mutex);
@@ -1719,13 +1719,13 @@ static int thermal_notifier(struct notifier_block *nb,
     		 mutex_unlock(&m_freq_adjust_mutex);
 			is_cooling = 1;
 		}
-		printk("-- CPUFREQ_COOLING_START --freq : %d",ret/30);
+		VDE_DBG("-- CPUFREQ_COOLING_START --freq : %d",ret/30);
       
 	}
 	
 	if(event == CPUFREQ_COOLING_STOP)
 	{
-		printk("vde  CPUFREQ_COOLING_STOP event:%d\n", event);	
+		VDE_DBG("vde  CPUFREQ_COOLING_STOP event:%d\n", event);	
 		if(is_cooling == 1){
 		mutex_lock(&m_freq_adjust_mutex); 
 			is_cooling = 0;
@@ -1759,9 +1759,9 @@ static int  vde_probe(struct platform_device *pdev)
 		struct ic_info * info = (struct ic_info *)id->data;	
 		if(info != NULL){
 			ic_type = info->ic_type;
-			printk("info ic_type 0x%x \n",ic_type);
+			VDE_DBG("info ic_type 0x%x \n",ic_type);
 		}else{
-			printk("info is null\n");
+			VDE_DBG("info is null\n");
 		}
 	}
 	
@@ -1781,7 +1781,7 @@ static int  vde_probe(struct platform_device *pdev)
 		return PTR_ERR(vde->base);
 
 	vde->irq = platform_get_irq(pdev, 0);
-	printk("vde->irq =%x\n",vde->irq);
+	VDE_DBG("vde->irq =%x\n",vde->irq);
 	if (vde->irq < 0)
 		return vde->irq;
 

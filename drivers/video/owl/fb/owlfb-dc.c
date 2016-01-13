@@ -491,7 +491,7 @@ void check_boot_hdmi_rotate_config(void)
 	np = of_find_compatible_node(NULL, NULL, "actions,atm7059a-hdmi");
 	cp = of_find_compatible_node(NULL, NULL, "actions,atm7059a-cvbs");
 	
-	printk("np %p \n",np);
+	printk(KERN_DEBUG "np %p \n",np);
 	if(np != NULL){
 		if (of_property_read_u32(np, "bootrotate", &boot_hdmi_rotate)){
 			boot_hdmi_rotate = 0;
@@ -499,7 +499,7 @@ void check_boot_hdmi_rotate_config(void)
 		if (of_property_read_u32(np, "bootable", &boot_hdmi_enable)){
 			boot_hdmi_enable = 0;
 		}	
-		printk("boot_hdmi_rotate %d \n",boot_hdmi_rotate);	
+		printk(KERN_DEBUG "boot_hdmi_rotate %d \n",boot_hdmi_rotate);	
 	}
 	
 	if(cp != NULL){
@@ -512,12 +512,12 @@ void check_boot_hdmi_rotate_config(void)
 				printk("of_property_read bootrotate is error\n");
 			boot_cvbs_rotate = 0;
 		}	
-		printk("boot_cvbs_enable %d \n",boot_cvbs_enable);	
+		printk(KERN_DEBUG "boot_cvbs_enable %d \n",boot_cvbs_enable);	
 	}
 	
 	boot_cvbs_rotate =0;
 	
-	printk("boot_hdmi_rotate %d boot_cvbs_rotate=%d \n",boot_hdmi_rotate,boot_cvbs_rotate);
+	printk(KERN_DEBUG "boot_hdmi_rotate %d boot_cvbs_rotate=%d \n",boot_hdmi_rotate,boot_cvbs_rotate);
 	return;
 }
 

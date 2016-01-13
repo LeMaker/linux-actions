@@ -702,7 +702,7 @@ static int atm7059_hdmi_probe(struct platform_device *pdev)
         register_early_suspend(&early_suspend);
 #endif
 	
-	dev_warn(&pdev->dev,
+	dev_dbg(&pdev->dev,
 			"atm7059_hdmi_probe!!\n");
 						
 	return snd_soc_register_codec(&pdev->dev, &soc_codec_hdmi,

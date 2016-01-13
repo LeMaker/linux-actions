@@ -493,15 +493,15 @@ static int usb_timer_process_step0(umonitor_dev_status_t * pStatus)
 	MONITOR_PRINTK("entring usb_timer_process_step0\n");
 
 	if ((pStatus->message_status & (0x1 << MONITOR_B_IN)) != 0) {
-		MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
-		printk("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
+		MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
+		printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
 		pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 		pStatus->message_status =pStatus->message_status & (~(0x1 << MONITOR_B_IN));
 	}
 
 	if ((pStatus->message_status & (0x1 << MONITOR_A_IN)) != 0) {
-		MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
-		printk("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
+		MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FUNCTION__, __LINE__);
+		printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_A_OUT\n", __FUNCTION__, __LINE__);
 		pStatus->core_ops->putt_msg(MON_MSG_USB_A_OUT);
 		pStatus->message_status = pStatus->message_status & (~(0x1 << MONITOR_A_IN));
 	}
@@ -526,13 +526,13 @@ static int usb_timer_process_step0(umonitor_dev_status_t * pStatus)
 host_detect:		  
 		  MONITOR_PRINTK("host detecting!!!!\n");
 			if ((pStatus->message_status & (0x1 << MONITOR_B_IN)) != 0) {
-				MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
-				printk("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
+				//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
+				printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 				pStatus->message_status =pStatus->message_status & (~(0x1 << MONITOR_B_IN));
 			}
 			if ((pStatus->message_status & (0x1 << MONITOR_CHARGER_IN)) != 0) {
-				MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_CHARGER_OUT\n", __FILE__, __LINE__);
+				MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_CHARGER_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_CHARGER_OUT);
 				pStatus->message_status =pStatus->message_status & (~(0x1 << MONITOR_CHARGER_IN));
 			}
@@ -548,8 +548,7 @@ host_detect:
 		} else {
 		  MONITOR_PRINTK("device detect prepare!!!!\n");
 			if ((pStatus->message_status & (0x1 << MONITOR_A_IN)) != 0) {
-				MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
-				printk("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
+				printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_A_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_A_OUT);
 				pStatus->message_status = pStatus->message_status & (~(0x1 << MONITOR_A_IN));
 			}			
@@ -665,14 +664,12 @@ void umonitor_timer_func(void)
 		switch (ret) {
 		case USB_DET_NONE:
 			if ((pStatus->message_status & (0x1 << MONITOR_B_IN)) != 0) {
-				//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
-				printk("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
+				printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 				pStatus->message_status =pStatus->message_status & (~(0x1 << MONITOR_B_IN));
 			}
 			if ((pStatus->message_status & (0x1 << MONITOR_CHARGER_IN)) != 0) {
-				printk("\n%s--%d, SYS_MSG_USB_CHARGER_OUT\n", __FILE__, __LINE__);
-				//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_CHARGER_OUT\n", __FILE__, __LINE__);
+				printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_CHARGER_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_CHARGER_OUT);
 				pStatus->message_status = pStatus->message_status & (~(0x1 << MONITOR_CHARGER_IN));
 			}
@@ -696,8 +693,7 @@ void umonitor_timer_func(void)
 			reg = readl(p_hal->usbecs);
 			reg &=  ~((0x1 << USB3_P0_CTL_DPPUEN_P0)|(0x1 << USB3_P0_CTL_DMPUEN_P0)); 
 			writel(reg, p_hal->usbecs );
-			//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_IN\n", __FILE__, __LINE__);
-			printk("\n%s--%d, SYS_MSG_USB_B_IN\n", __FILE__, __LINE__);
+			printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_B_IN\n", __FUNCTION__, __LINE__);
 			pStatus->core_ops->putt_msg(MON_MSG_USB_B_IN);
 			pStatus->message_status |= 0x1 << MONITOR_B_IN;
 			pStatus->detect_valid = 0;	//disable detection
@@ -707,8 +703,7 @@ void umonitor_timer_func(void)
 			/* if B_IN message not clear, clear it. B_OUT when adaptor is in. */
 			status = pStatus->message_status & (0x1 << MONITOR_B_IN);
 			if (status != 0) {
-			  printk("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
-				//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_B_OUT\n", __FILE__, __LINE__);
+			  printk(KERN_DEBUG "\n%s--%d, SYS_MSG_USB_B_OUT\n", __FUNCTION__, __LINE__);
 				pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 				pStatus->message_status =pStatus->message_status & (~(0x1 << MONITOR_B_IN));
 			}
@@ -718,7 +713,7 @@ void umonitor_timer_func(void)
 				goto out;
 			}
 			p_hal->set_mode(p_hal, USB_IN_DEVICE_MOD);
-			MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_CHARGER_IN\n", __FILE__, __LINE__);
+			MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_CHARGER_IN\n", __FUNCTION__, __LINE__);
 			pStatus->core_ops->putt_msg(MON_MSG_USB_CHARGER_IN);
 			pStatus->message_status |= 0x1 << MONITOR_CHARGER_IN;
 			pStatus->detect_valid = 0;	//disable detection
@@ -734,16 +729,14 @@ void umonitor_timer_func(void)
 		ret = usb_timer_det_udisk(pStatus);
 		status = pStatus->message_status & (0x1 << MONITOR_A_IN);
 		if ((status != 0) && (ret == USB_DET_HOST_NONE)) {
-			//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
-			printk("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FILE__, __LINE__);
+			MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_OUT\n", __FUNCTION__, __LINE__);
 			pStatus->core_ops->putt_msg(MON_MSG_USB_A_OUT);
 			pStatus->message_status = pStatus->message_status & (~(0x1 << MONITOR_A_IN));
 			goto out;
 		}
 		if (ret == USB_DET_HOST_UDISK) {
 			p_hal->set_mode(p_hal, USB_IN_HOST_MOD);
-			//MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_IN\n", __FILE__, __LINE__);
-			printk("\n%s--%d, SYS_MSG_USB_A_IN\n", __FILE__, __LINE__);
+			MONITOR_PRINTK("\n%s--%d, SYS_MSG_USB_A_IN\n", __FUNCTION__, __LINE__);
 			pStatus->core_ops->putt_msg(MON_MSG_USB_A_IN);
 			pStatus->message_status |= 0x1 << MONITOR_A_IN;
 
@@ -938,7 +931,7 @@ void umonitor_printf_debuginfo(void)
 	p_hal = &pStatus->umonitor_hal;
 
 	usb_monitor_debug_status_inf();
-	printk("in printf_debuginfo\n");
+	printk(KERN_DEBUG "in printf_debuginfo\n");
 	p_hal->debug(p_hal);
 
 	return;
@@ -965,7 +958,7 @@ int umonitor_core_suspend(void)
 
   pStatus->detect_valid = 0;
   
-  printk("SUSPEND pStatus->message_status is %d!!!!!!!!!!!!!!\n", pStatus->message_status);
+  printk(KERN_DEBUG "SUSPEND pStatus->message_status is %d!!!!!!!!!!!!!!\n", pStatus->message_status);
   
 	if(pStatus->vbus_enable_power && p_hal->vbus_power_onoff)
 		p_hal->vbus_power_onoff(p_hal,  0);

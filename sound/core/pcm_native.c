@@ -3394,7 +3394,7 @@ static int snd_pcm_mmap(struct file *file, struct vm_area_struct *area)
 			return -ENXIO;
 		return snd_pcm_mmap_control(substream, file, area);
 	default:
-        printk(KERN_ERR"%s,default\n", __func__);
+        printk(KERN_DEBUG "%s,default\n", __func__);
 		return snd_pcm_mmap_data(substream, file, area);
 	}
 	return 0;

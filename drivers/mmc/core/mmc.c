@@ -1310,7 +1310,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		host->card = card;
 
 	mmc_free_ext_csd(ext_csd);
-	printk("%s:ok\n",__FUNCTION__);
+	printk(KERN_DEBUG "%s:ok\n",__FUNCTION__);
 	return 0;
 
 free_card:
@@ -1586,7 +1586,7 @@ int mmc_attach_mmc(struct mmc_host *host)
 		goto err;
 	}
 		
-	printk("emmc init ok\n");
+	printk(KERN_DEBUG "emmc init ok\n");
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);
 	mmc_claim_host(host);

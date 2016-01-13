@@ -186,7 +186,7 @@ static int owl_set_trip_temp(struct thermal_zone_device *thermal, int trip,
 	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
 		return -EINVAL;
 
-	printk("set temp%d= %lld\n", trip, temp);
+	printk(KERN_DEBUG "set temp%d= %lld\n", trip, temp);
 	th_zone->sensor_conf->trip_data.trip_val[trip] = temp/MCELSIUS;
 	return 0;
 }
@@ -621,13 +621,13 @@ static void wait_cpufreq_ready(struct work_struct *work)
 		printk(KERN_DEBUG "--------cpufreq not ready--------\n");
 		return;
 	}
-	pr_notice("++++++++cpufreq ready++++++++\n");
+	printk(KERN_DEBUG "++++++++cpufreq ready++++++++\n");
 	/* get thermal freq from freqtable */
 	pdata = data->pdata;
 	pdata->freq_tab[0].freq_clip_max = table[0].frequency;
 	pdata->freq_tab[1].freq_clip_max = table[0].frequency;
 	for (i = 0; i < 2; i++)
-		pr_notice("++++++++pdata->freq_tab[%d].freq_clip_max:%d++++++++\n", i, pdata->freq_tab[i].freq_clip_max);
+		printk(KERN_DEBUG "++++++++pdata->freq_tab[%d].freq_clip_max:%d++++++++\n", i, pdata->freq_tab[i].freq_clip_max);
 
 	ret = owl_register_thermal(&owl_sensor_conf);
 	if (ret) {
@@ -645,7 +645,7 @@ static int owl_tmu_probe(struct platform_device *pdev)
 	
 
 	if (owl_get_boot_mode() == OWL_BOOT_MODE_UPGRADE) {
-		printk("product process  not need to thmu modules!\n");
+		printk(KERN_DEBUG "product process not need to thmu modules!\n");
 		return -ENODEV;
 	}
 
@@ -668,7 +668,7 @@ static int owl_tmu_probe(struct platform_device *pdev)
 	data->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	//data->mem->start = 0xb01b00e8;
 	//data->mem->end = 0xb01b00e8 + 0x8;
-	printk("tmu-mem:start=0x%x\n",data->mem->start);
+	printk(KERN_DEBUG "tmu-mem:start=0x%x\n",data->mem->start);
 	data->base = devm_ioremap_resource(&pdev->dev, data->mem);
 	if (IS_ERR(data->base))
 		return PTR_ERR(data->base);

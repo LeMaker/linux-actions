@@ -460,7 +460,7 @@ static int gl520x_pwm_probe(struct platform_device *pdev)
 	int ret;
 	u32 tmp;
 
-	dev_info(&pdev->dev, "Probing...\n");
+	dev_dbg(&pdev->dev, "Probing...\n");
 
 	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
 	if (!pwm) {

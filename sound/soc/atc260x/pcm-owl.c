@@ -437,7 +437,7 @@ static struct snd_soc_platform_driver atm7059_soc_platform = {
 
 static int atm7059_pcm_probe(struct platform_device *pdev)
 {
-	dev_info(&pdev->dev,
+	dev_dbg(&pdev->dev,
 			"atm7059_pcm_probe!!\n");
 	pdev->dev.init_name = "atm7059-pcm-audio";
 	return snd_soc_register_platform(&pdev->dev,

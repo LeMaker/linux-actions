@@ -427,7 +427,7 @@ static int __init atm7059_link_init(void)
 	struct device_node *dn = NULL;
 	int pmu_type;
 
-	snd_err("atm7059_link_init\n");
+	snd_dbg("atm7059_link_init\n");
 
 	//20141013 yuchen: check pmu type to select correct codec param
 	pmu_type = atc2603a_audio_get_pmu_status();
@@ -456,7 +456,6 @@ static int __init atm7059_link_init(void)
 	}
 
     /*****************20151012 david add***************/ 
-    printk(KERN_ERR"%s,%d\n", __func__, __LINE__);
     i2s_switch_gpio_num =
         atm7059_audio_gpio_init(dn, i2s_switch_gpio_name, &i2s_switch_gpio_level);
     if(i2s_switch_gpio_num > 0){

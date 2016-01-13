@@ -130,7 +130,7 @@ static int owl_ion_probe(struct platform_device *pdev)
 			goto err;
 		}
 		ion_device_add_heap(owl_ion_device, heaps[i]);
-		pr_info("%s: add heap %s\n", __func__, heaps[i]->name);
+		pr_debug("%s: add heap %s\n", __func__, heaps[i]->name);
 	}
 
 	platform_set_drvdata(pdev, owl_ion_device);

@@ -536,7 +536,7 @@ static __inline__ void aotg_enable_irq(struct aotg_hcd *acthcd)
 //DEBUG
 //	usb_setbitsb(0x1<<4,acthcd->base + USBEIEN);
 	
-	printk("USBEIEN(0x%p): 0x%02X\n", acthcd->base + USBEIEN, readb(acthcd->base + USBEIEN));
+	pr_debug("USBEIEN(0x%p): 0x%02X\n", acthcd->base + USBEIEN, readb(acthcd->base + USBEIEN));
 	usb_setbitsb(OTGCTRL_BUSREQ, acthcd->base + OTGCTRL);	
 }
 
@@ -941,7 +941,7 @@ static int aotg_hcep_set_split_micro_frame(struct aotg_hcd *acthcd, struct aotg_
 	if (set_val != 0) {
 		ep->reg_hcep_splitcs_val = set_val;
 		writeb(set_val, ep->reg_hcep_splitcs);
-		printk("====reg_hcep_splitcs_val:%x, index:%d\n", set_val, ep->index);
+		pr_debug("====reg_hcep_splitcs_val:%x, index:%d\n", set_val, ep->index);
 	}
 	return 0;
 }
@@ -1146,13 +1146,13 @@ static int handle_setup_packet(struct aotg_hcd *acthcd, struct aotg_queue *q)
 	w_value = le16_to_cpu(ctrlreq->wValue);
 	w_index = le16_to_cpu(ctrlreq->wIndex);
 	w_length = le16_to_cpu(ctrlreq->wLength);
-	dev_info(acthcd->dev, "<CTRL>SETUP stage  %02x.%02x V%04x I%04x L%04x\n ",
+	pr_debug(acthcd->dev, "<CTRL>SETUP stage  %02x.%02x V%04x I%04x L%04x\n ",
 		  ctrlreq->bRequestType, ctrlreq->bRequest, w_value, w_index,
 		  w_length);
 #endif
 	if ((q->is_xfer_start) || (ep->q)) {
 		ACT_HCD_DBG
-		printk("q->is_xfer_start:%d\n", q->is_xfer_start);
+		pr_debug("q->is_xfer_start:%d\n", q->is_xfer_start);
 		return 0;
 	}
 	if (unlikely(!HC_IS_RUNNING(aotg_to_hcd(acthcd)->state))) {
@@ -1304,7 +1304,7 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 	u8 reset = 0;
 	struct usb_hcd *hcd = aotg_to_hcd(acthcd);
 
-	printk("hcd ep err ep_num:%d, is_in:%d\n", ep_num, is_in);
+	pr_debug("hcd ep err ep_num:%d, is_in:%d\n", ep_num, is_in);
 		
 	if (ep_num == 0) {
 		ep = acthcd->active_ep0;
@@ -1326,7 +1326,7 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 		}
 		if (ep == NULL) {
 			ACT_HCD_ERR
-			printk("is_in:%d, ep_num:%d\n", is_in, ep_num);
+			pr_debug("is_in:%d, ep_num:%d\n", is_in, ep_num);
 			return;
 		}
 		ring = ep->ring;
@@ -1350,7 +1350,7 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 	}
 
 	err_type = err_val & HCINxERR_TYPE_MASK;
-	printk("err_type:%x\n",err_type>>2);
+	pr_debug("err_type:%x\n",err_type>>2);
 	switch (err_type) {
 	case HCINxERR_NO_ERR:
 	case HCINxERR_OVER_RUN:
@@ -1372,12 +1372,12 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 		break;
 	//case HCINxERR_SPLIET:
 	default:
-		printk("err_val:0x%x, err_type:%d\n", err_val, err_type);
+		pr_debug("err_val:0x%x, err_type:%d\n", err_val, err_type);
 		if (is_in) {
-			printk("HCINEP%dSPILITCS:0x%x\n", ep_num, 
+			pr_debug("HCINEP%dSPILITCS:0x%x\n", ep_num, 
 					readb(acthcd->base + ep_num * 8 + HCEP0SPILITCS));
 		} else { 
-			printk("HCOUTEP%dSPILITCS:0x%x\n", ep_num, 
+			pr_debug("HCOUTEP%dSPILITCS:0x%x\n", ep_num, 
 					readb(acthcd->base + (ep_num - 1) * 8 + HCOUT1SPILITCS));
 		}
 		status = -EPIPE;
@@ -1404,11 +1404,11 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 		if ((status == -EPIPE) || (status == -ENODEV)) 
 			writeb(HCINxERR_RESEND, ep->reg_hcerr);  /* resend. */
 		finish_request(acthcd, q, status);
-		dev_info(acthcd->dev, "%s ep %d error [0x%02X] error type [0x%02X], reset it...\n",
+		dev_dbg(acthcd->dev, "%s ep %d error [0x%02X] error type [0x%02X], reset it...\n",
 			    usb_pipeout(urb->pipe)?"HC OUT":"HC IN", ep->index, err_val, (err_val>>2)&0x7);
 	} else {
 		if ((status != -EPIPE) && (status != -ENODEV)) {
-			printk("td->err_count:%d\n", td->err_count);
+			pr_debug("td->err_count:%d\n", td->err_count);
 			td->err_count++;
 			
 			if (td->err_count < MAX_ERROR_COUNT) {				
@@ -1461,7 +1461,7 @@ static void aotg_hcd_err_handle(struct aotg_hcd *acthcd, u32 irqvector,
 			addr = ring_trb_virt_to_dma(ring, ring->dequeue_trb);
 			aotg_start_ring(ring, addr);
 		}*/
-		dev_info(acthcd->dev, "%s ep %d error [0x%02X] error type [0x%02X], reset it...\n",
+		dev_dbg(acthcd->dev, "%s ep %d error [0x%02X] error type [0x%02X], reset it...\n",
 			    is_in?"HC IN":"HC OUT", ep->index, err_val, (err_val>>2)&0x7);
 	}
 	
@@ -1721,7 +1721,7 @@ static irqreturn_t aotg_hub_irq(struct usb_hcd *hcd)
 				writeb(0x1<<2, acthcd->base + OTGIRQ);
 				otg_state = readb(acthcd->base + OTGSTATE);
 
-				printk("port_no:%d OTG IRQ, OTGSTATE: 0x%02X, USBIRQ:0x%02X\n", 
+				pr_debug("port_no:%d OTG IRQ, OTGSTATE: 0x%02X, USBIRQ:0x%02X\n", 
 					port_no, otg_state,
 					readb(acthcd->base + USBIRQ));
 
@@ -1851,12 +1851,12 @@ static irqreturn_t aotg_hub_irq(struct usb_hcd *hcd)
 
 		default:
 			if ((irqvector >= UIV_HCOUT0ERR) && (irqvector <= UIV_HCOUT15ERR)) {
-				printk("irqvector:%d, 0x%x\n", irqvector, irqvector);
+				pr_debug("irqvector:%d, 0x%x\n", irqvector, irqvector);
 				aotg_hcd_err_handle(acthcd, irqvector, (irqvector - UIV_HCOUT0ERR), 0);
 				break;
 			}
 			if ((irqvector >= UIV_HCIN0ERR) && (irqvector <= UIV_HCIN15ERR)) {				
-				printk("irqvector:%d, 0x%x\n", irqvector, irqvector);
+				pr_debug("irqvector:%d, 0x%x\n", irqvector, irqvector);
 				aotg_hcd_err_handle(acthcd, irqvector, (irqvector - UIV_HCIN0ERR), 1);
 				break;
 			}
@@ -1946,13 +1946,13 @@ static void aotg_hub_hotplug_timer(unsigned long data)
 		}
 	}
 
-	dev_info(acthcd->dev, "<USB> %s connection changed: %d, acthcd->inserted: %d\n", 
+	dev_dbg(acthcd->dev, "<USB> %s connection changed: %d, acthcd->inserted: %d\n", 
 			dev_name(hcd->self.controller), connect_changed, acthcd->inserted);
 	if (connect_changed) {
 		if (HC_IS_SUSPENDED(hcd->state)) {
 			usb_hcd_resume_root_hub(hcd);
 		}
-		ACT_HCD_DBG
+		//ACT_HCD_DBG
 		//aotg_hcd_flush_queue(acthcd);
 		usb_hcd_poll_rh_status(hcd);
 	}
@@ -1983,8 +1983,8 @@ static inline int aotg_print_ep_timeout(struct aotg_hcep *ep)
 
 		if (time_after(jiffies, ep->q->timeout)) {
 			ret = 1;
-			printk("ep->index:%x ep->mask:%x\n", ep->index, ep->mask);
-			printk("timeout:0x%x!\n", (unsigned int)ep->q->timeout);
+			pr_debug("ep->index:%x ep->mask:%x\n", ep->index, ep->mask);
+			pr_debug("timeout:0x%x!\n", (unsigned int)ep->q->timeout);
 			ep->q->timeout = jiffies + HZ;
 		}
 	}
@@ -2068,7 +2068,7 @@ static void aotg_hub_trans_wait_timer(unsigned long data)
 
 		if (ep->fifo_busy) {
 			if ((ep->fifo_busy > 80) && (ep->fifo_busy % 80 == 0))  {
-				printk("ep->fifo_busy:%d\n", ep->fifo_busy);
+				pr_debug("ep->fifo_busy:%d\n", ep->fifo_busy);
 			}
 			if (ret == 0) {
 				tasklet_hi_schedule(&acthcd->urb_tasklet);
@@ -2201,7 +2201,7 @@ static struct aotg_hcep	*aotg_hcep_alloc(struct usb_hcd *hcd, struct urb *urb)
 		if (urb->dev->tt) {
 			/* calculate in ns. */
 			think_time = (urb->dev->tt->think_time / 666);
-			printk("think_time:%d\n", think_time);
+			pr_debug("think_time:%d\n", think_time);
 			if (think_time <= 0) {
 				think_time = 1;
 			} else if (think_time > 4) {
@@ -2209,7 +2209,7 @@ static struct aotg_hcep	*aotg_hcep_alloc(struct usb_hcd *hcd, struct urb *urb)
 			}
 			think_time = think_time * 20;
 			writeb(think_time, acthcd->base + HCTRAINTERVAL);
-			printk("think_time:0x%x\n", readb(acthcd->base + HCTRAINTERVAL));
+			pr_debug("think_time:0x%x\n", readb(acthcd->base + HCTRAINTERVAL));
 			//printk("urb->dev->tt->hub:%p \n", urb->dev->tt->hub);
 		}
 
@@ -2257,7 +2257,7 @@ static struct aotg_hcep	*aotg_hcep_alloc(struct usb_hcd *hcd, struct urb *urb)
 			} else {
 				writeb(usb_pipedevice(urb->pipe), acthcd->base + FNADDR);
 			}
-			dev_info(acthcd->dev, "device addr : 0x%08x\n", readb(acthcd->base + FNADDR));
+			dev_dbg(acthcd->dev, "device addr : 0x%08x\n", readb(acthcd->base + FNADDR));
 		} else {
 			ACT_HCD_ERR
 		}
@@ -2293,7 +2293,7 @@ static struct aotg_hcep	*aotg_hcep_alloc(struct usb_hcd *hcd, struct urb *urb)
 		ep->interval = urb->ep->desc.bInterval;
 		writeb(ep->interval, ep->reg_hcep_interval);
 		usb_setb(ep->iso_packets << 4, ep->reg_hcepcon);
-		printk("iso_packets:%d, bInterval:%d, urb_interval:%d, reg_con:0x%x\n",
+		pr_debug("iso_packets:%d, bInterval:%d, urb_interval:%d, reg_con:0x%x\n",
 					ep->iso_packets, ep->interval, urb->interval, readb(ep->reg_hcepcon));				
 		break;
 
@@ -2706,7 +2706,7 @@ void urb_tasklet_func(unsigned long data)
 		status = (int)spin_is_locked(&acthcd->tasklet_lock);
 		if (status) {
 			acthcd->tasklet_retry = 1;
-			printk("locked, urb retry later!\n");
+			pr_debug("locked, urb retry later!\n");
 			return;
 		}
 		cnt++;
@@ -2717,7 +2717,7 @@ void urb_tasklet_func(unsigned long data)
 		status = spin_trylock(&acthcd->tasklet_lock);
 		if ((!status) && (cnt > 10))  {
 			acthcd->tasklet_retry = 1;
-			printk("urb retry later!\n");
+			pr_debug("urb retry later!\n");
 			return;
 		}
 	} while (status == 0);
@@ -2816,7 +2816,7 @@ DO_FINISH_TASK:
 				//ACT_HCD_DBG
 				if ((acthcd->ep0_block_cnt % 10) == 0) {
 					ACT_HCD_DBG
-					printk("cnt:%d\n", acthcd->ep0_block_cnt);
+					pr_debug("cnt:%d\n", acthcd->ep0_block_cnt);
 					acthcd->ep0_block_cnt = 0;
 					//aotg_hub_urb_dequeue(hcd, acthcd->active_ep0->q->urb, -ETIMEDOUT);
 				}
@@ -2935,18 +2935,18 @@ static void aotg_hub_endpoint_disable(struct usb_hcd *hcd, struct usb_host_endpo
 	hep->hcpriv = NULL;
 
 	if(ep->ring){
-		printk("%s\n", __FUNCTION__);
+		pr_debug("%s\n", __FUNCTION__);
 		
 		aotg_stop_ring(ep->ring);
 		if (ep->ring->type == PIPE_INTERRUPT) {
-			printk("%s, ep%d dma buf free\n", __FUNCTION__, ep->index);
+			pr_debug("%s, ep%d dma buf free\n", __FUNCTION__, ep->index);
 			aotg_intr_dma_buf_free(acthcd, ep->ring);
 		}
 			
 		aotg_free_ring(acthcd, ep->ring);
 	}
 		
-	dev_info(acthcd->dev, "<EP DISABLE> ep%d index %d from ep [%s]\n", 
+	dev_dbg(acthcd->dev, "<EP DISABLE> ep%d index %d from ep [%s]\n", 
 			ep->epnum, index, 
 			ep->mask & USB_HCD_OUT_MASK ? "out":"in");
 
@@ -3024,7 +3024,7 @@ static int aotg_hcd_start(struct usb_hcd *hcd)
 	int retval = 0;
 	unsigned long flags;
 	
-	dev_info(acthcd->dev, "<HCD> start\n");
+	dev_dbg(acthcd->dev, "<HCD> start\n");
 	
 	local_irq_save(flags);
 	hcd->state = HC_STATE_RUNNING;
@@ -3042,7 +3042,7 @@ static void aotg_hcd_stop(struct usb_hcd *hcd)
 	//struct aotg_plat_data *data = dev->platform_data;
 	unsigned long flags;
 	
-	dev_info(acthcd->dev, "<HCD> stop\n");
+	dev_dbg(acthcd->dev, "<HCD> stop\n");
 	
 	local_irq_save(flags);
 	hcd->state = HC_STATE_HALT;
@@ -3381,7 +3381,7 @@ static int aotg_hcd_controller_reset(struct aotg_hcd *acthcd)
 	}
 
 	if (!(readb(acthcd->base + USBERESET) & USBERES_USBRESET)) {
-		dev_info(acthcd->dev, "usb reset OK: %x.\n", readb(acthcd->base + USBERESET));
+		dev_dbg(acthcd->dev, "usb reset OK: %x.\n", readb(acthcd->base + USBERESET));
 	} else {
 		dev_err(acthcd->dev, "usb reset ERROR: %x.\n", readb(acthcd->base + USBERESET));
 		return -EBUSY;
@@ -3594,7 +3594,7 @@ static int aotg_platform_device_init(struct platform_device *pdev)
 	}
 
 	if (!of_find_property(of_node, "vbus_otg_en_gpio", NULL)) {
-		pr_info("can't find vbus_otg_en_gpio config\n");
+		pr_debug("can't find vbus_otg_en_gpio config\n");
 		vbus_otg_en_gpio[pdev->id][0] = -1;
 	} else {
 		vbus_otg_en_gpio[pdev->id][0] = of_get_named_gpio_flags(of_node, "vbus_otg_en_gpio",0, &flags);
@@ -3606,7 +3606,7 @@ static int aotg_platform_device_init(struct platform_device *pdev)
 		gpio_direction_output(vbus_otg_en_gpio[pdev->id][0], 1);
 	}
 	
-	pr_info("vbus_otg_en_gpio:%d\n",vbus_otg_en_gpio[pdev->id][0]);
+	pr_debug("vbus_otg_en_gpio:%d\n",vbus_otg_en_gpio[pdev->id][0]);
 	
 	aotg_power_onoff(pdev->id,1);
 
@@ -3632,7 +3632,7 @@ static int aotg_hub_probe(struct platform_device *pdev)
 		retval = -ENODEV;
 		goto err0;
 	}
-	printk("res_mem->start--end = 0x%x--0x%x\n",res_mem->start,res_mem->end);
+	pr_debug("res_mem->start--end = 0x%x--0x%x\n",res_mem->start,res_mem->end);
 
 	hcd = usb_create_hcd(&act_hc_driver, &pdev->dev, dev_name(&pdev->dev));
 	if (!hcd) {
@@ -3650,7 +3650,7 @@ static int aotg_hub_probe(struct platform_device *pdev)
 		retval = -ENODEV;
 		goto err1;
 	}
-	printk("irq = %d\n",irq);
+	pr_debug("irq = %d\n",irq);
 
 	if (!request_mem_region(res_mem->start, res_mem->end - res_mem->start + 1, dev_name(&pdev->dev))) {
 		dev_err(&pdev->dev, "<HCD_PROBE>request_mem_region failed\n");
@@ -3678,8 +3678,8 @@ static int aotg_hub_probe(struct platform_device *pdev)
 	acthcd->hcd_exiting = 0;
 	acthcd->uhc_irq = irq;
 	acthcd->id = pdev->id;
-	dev_info(&pdev->dev, "pdev->id probe:%d\n", pdev->id);
-
+	dev_dbg(&pdev->dev, "pdev->id probe:%d\n", pdev->id);
+	
 	aotg_hcd_hardware_init(acthcd);
 #if 0    
 #ifdef	CONFIG_PM
@@ -3714,7 +3714,7 @@ static int aotg_hub_probe(struct platform_device *pdev)
 				readb(acthcd->base + OTGSTATE));
 
 		writeb(readb(acthcd->base + USBEIRQ), acthcd->base + USBEIRQ);
-		printk("USBEIRQ(0x%p): 0x%02X\n", acthcd->base + USBEIRQ, readb(acthcd->base + USBEIRQ));
+		pr_debug("USBEIRQ(0x%p): 0x%02X\n", acthcd->base + USBEIRQ, readb(acthcd->base + USBEIRQ));
 
 		// if (readb(acthcd->base + OTGSTATE) == AOTG_STATE_A_HOST) {
 			// acthcd->put_aout_msg = 0;
@@ -3878,7 +3878,7 @@ static int aotg_hub_remove(struct platform_device *pdev)
 	}
 	
 	usb_put_hcd(hcd);
-	printk("pdev->id remove:%d\n", pdev->id);
+	pr_debug("pdev->id remove:%d\n", pdev->id);
 	
 	if (!port_host_plug_detect[acthcd->id])
 		aotg_power_onoff(pdev->id,0);
@@ -3896,7 +3896,7 @@ static int aotg_hcd_hub_suspend(struct platform_device *pdev, pm_message_t state
 		ACT_HCD_ERR
 		return 0;
 	}
-	dev_info(acthcd->dev, " ==> %s\n", __func__);
+	dev_dbg(acthcd->dev, " ==> %s\n", __func__);
 	/*do {
 		i++;
 		msleep(1);
@@ -3935,7 +3935,7 @@ static int aotg_hcd_hub_resume(struct platform_device *pdev)
 	aotg_power_onoff(pdev->id,1);
 	msleep(10);
 
-	dev_info(acthcd->dev, " ==> %s\n", __func__);
+	dev_dbg(acthcd->dev, " ==> %s\n", __func__);
 	aotg_hcd_hardware_init(acthcd);
 
 	//INIT_LIST_HEAD(&acthcd->hcd_enqueue_list);
@@ -3970,7 +3970,7 @@ void aotg_hcd_shutdown(struct platform_device *pdev)
 {	
 	struct usb_hcd *hcd	= platform_get_drvdata(pdev);
 	struct aotg_hcd	*acthcd	= hcd_to_aotg(hcd);
-	printk("usb2-%d shutdown\n", acthcd->id);
+	printk(KERN_INFO "usb2-%d shutdown\n", acthcd->id);
 	
 	//gpio_set_value_cansleep(vbus_otg_en_gpio[pdev->id][0], 0);
 	aotg_power_onoff(pdev->id,0);
@@ -4021,7 +4021,7 @@ int aotg_device_init(int dev_id)
 	mutex_lock(&aotg_onoff_mutex);
 	if (aotg_initialized[dev_id]) {
 		aotg_initialized[dev_id]++;
-		printk("aotg%d initialized allready! cnt:%d\n", dev_id, aotg_initialized[dev_id]);
+		pr_debug("aotg%d initialized allready! cnt:%d\n", dev_id, aotg_initialized[dev_id]);
 		mutex_unlock(&aotg_onoff_mutex);
 		return 0;
 	}
@@ -4087,14 +4087,14 @@ void aotg_device_exit(int dev_id)
 {
 	mutex_lock(&aotg_onoff_mutex);
 	if (!aotg_initialized[dev_id]) {
-		printk("aotg%d exit allready!\n",dev_id);
+		pr_debug("aotg%d exit allready!\n",dev_id);
 		mutex_unlock(&aotg_onoff_mutex);
 		return;
 	}
 	
 	aotg_initialized[dev_id]--;
 	if (aotg_initialized[dev_id] > 0) {
-		printk("aotg%d_exit cnt:%d\n", dev_id, aotg_initialized[dev_id]);
+		pr_debug("aotg%d_exit cnt:%d\n", dev_id, aotg_initialized[dev_id]);
 		mutex_unlock(&aotg_onoff_mutex);
 		return;
 	}

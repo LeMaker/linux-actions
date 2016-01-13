@@ -219,7 +219,7 @@ int __dwc3_set_plugstate(struct dwc3	*dwc,int s)
         	return -ENODEV;
 	}        
 	if((s==PLUGSTATE_A_OUT)||(s==PLUGSTATE_B_OUT)||(s==PLUGSTATE_B_SUSPEND)){    
-		printk("\n----udc_set_plugstate--PLUGSTATE_OUT--\n");
+		printk(KERN_DEBUG "\n----udc_set_plugstate--PLUGSTATE_OUT--\n");
         	dwc3_plug_out(dwc,s);
 		if(owl_powergate_is_powered(OWL_POWERGATE_USB3))
 			owl_powergate_power_off(OWL_POWERGATE_USB3);    
@@ -228,7 +228,7 @@ int __dwc3_set_plugstate(struct dwc3	*dwc,int s)
 		
 	}
 	else if((s==PLUGSTATE_A_IN)||(s==PLUGSTATE_B_IN)){
-		printk("\n----udc_set_plugstate--PLUGSTATE_IN-%d--\n",s);
+		printk(KERN_DEBUG "\n----udc_set_plugstate--PLUGSTATE_IN-%d--\n",s);
 		if(dwc3_clk_open)
 			dwc3_clk_open();
 		dwc3_plug_in(dwc,s);

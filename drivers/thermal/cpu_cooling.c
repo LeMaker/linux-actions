@@ -273,7 +273,7 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
 int cputherm_register_notifier(struct notifier_block *nb, unsigned int list)
 {
 	int ret = 0;
-	pr_info("cputherm_register_notifier list %d\n",list);
+	pr_debug("cputherm_register_notifier list %d\n",list);
 	switch (list) {
 	case CPUFREQ_COOLING_START:
 	case CPUFREQ_COOLING_STOP:

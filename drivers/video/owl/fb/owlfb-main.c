@@ -854,7 +854,7 @@ static int owlfb_set_par(struct fb_info *fbi)
 	struct owlfb_info *ofbi = FB2OFB(fbi);
 	int r;
 
-	printk("set_par(%d)\n", FB2OFB(fbi)->id);
+	DBG("set_par(%d)\n", FB2OFB(fbi)->id);
 	
 	owlfb_set_display_mode(fbi);
 
@@ -1580,7 +1580,7 @@ static void owlfb_hotplug_notify(struct owl_dss_device *dssdev, int state)
 {
 	struct owl_overlay_manager *primary_mgr = owl_dss_get_overlay_manager(OWL_DSS_OVL_MGR_PRIMARY);
 	int vid ;		 
-	printk("owlfb_hotplug_notify %d ~~~~~~ \n",state);	
+	DBG("owlfb_hotplug_notify %d ~~~~~~ \n",state);	
 	if(state == 1){
 		dssdev->driver->disable(dssdev);
 		dssdev->driver->get_vid(dssdev,&vid);
@@ -1695,7 +1695,7 @@ static int owlfb_create_framebuffers(struct owlfb_device *fbdev)
 		fbdev->num_fbs++;
 	}
 
-	printk("fb_infos allocated\n");
+	DBG("fb_infos allocated\n");
 	
 	/* assign managers for the fbs */
 	DBG("assign managers for the fbs fbdev->def_display %p \n",fbdev->def_display);

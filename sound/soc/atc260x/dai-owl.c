@@ -561,10 +561,10 @@ static int atm7059_dai_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-        printk(KERN_ERR"%s,SNDRV_PCM_FORMAT_S16_LE\n", __func__);
+        printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S16_LE\n", __func__);
         break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-        printk(KERN_ERR"%s,SNDRV_PCM_FORMAT_S32_LE\n", __func__);
+        printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S32_LE\n", __func__);
 		break;
 	default:
 		return -EINVAL;
@@ -741,7 +741,7 @@ static int atm7059_dai_probe(struct platform_device *pdev)
 			return -ENXIO;
 		}
 		
-		snd_err("it's ok %d\n", i);
+	snd_dbg("it's ok %d\n", i);
 	}
 
 
@@ -763,7 +763,7 @@ static int atm7059_dai_probe(struct platform_device *pdev)
 	}
 
 	
-	dev_warn(&pdev->dev, "atm7059_dai_probe\n");
+	dev_dbg(&pdev->dev, "atm7059_dai_probe\n");
 	//snd_err("dai probe fine\n");
 	
 	pdev->dev.init_name = "owl-audio-i2s";

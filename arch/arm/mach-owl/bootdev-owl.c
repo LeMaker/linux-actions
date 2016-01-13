@@ -157,7 +157,7 @@ module_init(proc_bootdev_init);
 
 static int __init boot_dev_process(char *str)
 {
-	printk("boot_mode_process\n");
+	//printk("boot_mode_process\n");
 	if (str == NULL || *str == '\0')
 		return 0;
 		
@@ -188,7 +188,7 @@ __setup("boot_dev=", boot_dev_process);
 static  int boot_mode = OWL_BOOT_MODE_NORMAL;
 static int __init boot_mode_process(char *str)
 {
-	printk("boot_mode_process\n");
+	//printk("boot_mode_process\n");
 	if (str == NULL || *str == '\0')
 		return 0;
 		

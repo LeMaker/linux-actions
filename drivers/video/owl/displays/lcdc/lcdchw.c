@@ -469,7 +469,7 @@ static int lcdchw_power_enable(struct platform_device *lcdcdev, bool enable) {
         }
 		
 		if (gpio_is_valid(lcdc->reset_gpio.gpio)){
-			printk("reset_gpio  is ok %d\n", lcdc->reset_gpio.active_low);
+			DSSDBG("reset_gpio  is ok %d\n", lcdc->reset_gpio.active_low);
 	        gpio_direction_output(lcdc->reset_gpio.gpio,
                                   lcdc->reset_gpio.active_low);
 			mdelay(10);
@@ -531,7 +531,7 @@ int owl_lcdc_display_enable(struct owl_dss_device *dssdev)
     if (r)
         goto err_mgr_enable;
     
-    if (lcdc->lcdc_enabled) {
+    if (!lcdc->lcdc_enabled) {
         lcdchw_power_enable(lcdcdev, true);
 
         lcdchw_display_init_lcdc(dssdev);
@@ -799,7 +799,7 @@ static int lcdchw_parse_params(struct platform_device *pdev,
 	    if (of_property_read_u32(of_node, "lvds_alg_ctl0", &lcdc->lvds_alg_ctl0)) {
 	        lcdc->lvds_alg_ctl0 = 0xc141a030;
 	    } 
-	    printk("lvds_ctl 0x%x lvds_alg_ctl0 0x%x \n",lcdc->lvds_ctl,lcdc->lvds_alg_ctl0);
+	    DSSDBG("lvds_ctl 0x%x lvds_alg_ctl0 0x%x \n",lcdc->lvds_ctl,lcdc->lvds_alg_ctl0);
 	}
 
     if (of_property_read_u32(of_node, "lightness", &lcdc->lightness)) {

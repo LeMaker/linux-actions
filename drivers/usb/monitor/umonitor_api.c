@@ -214,8 +214,8 @@ static int usb_check_msg_and_drv_state(void)
 	return 0;
 
 mon_adjust_state:
-	printk("xhci_status:%d, dwc3:%d\n", my_mon->xhci_status, my_mon->dwc3_status);
-	printk("udisk_con:%d, pc:%d\n", my_mon->port_status.udisk_connected, my_mon->port_status.pc_connected);
+	printk(KERN_DEBUG "xhci_status:%d, dwc3:%d\n", my_mon->xhci_status, my_mon->dwc3_status);
+	printk(KERN_DEBUG "udisk_con:%d, pc:%d\n", my_mon->port_status.udisk_connected, my_mon->port_status.pc_connected);
 
 	/* process host unnormal state. */
 	if (my_mon->xhci_status == PLUGSTATE_A_SUSPEND) {
@@ -223,12 +223,12 @@ mon_adjust_state:
 		my_mon->dwc3_set_plugstate(PLUGSTATE_A_RESUME);
 		my_mon->xhci_set_plugstate(PLUGSTATE_A_RESUME);
 		wake_lock_timeout(&my_mon->monitor_wake_lock, 12*HZ);
-		printk("----now lock for 12*HZ\n");
+		printk(KERN_DEBUG "----now lock for 12*HZ\n");
 	}
 	if (my_mon->port_status.udisk_connected == 0) {
 		if ((my_mon->xhci_status == PLUGSTATE_A_IN) || (my_mon->xhci_status == PLUGSTATE_A_RESUME)) {
 			if (my_mon->xhci_timeout_cnt > 4) {
-				printk("%s:%d! \n", __func__, __LINE__);
+				printk(KERN_DEBUG "%s:%d! \n", __func__, __LINE__);
 				my_mon->xhci_timeout_cnt = 0;
 				my_mon->xhci_set_plugstate(PLUGSTATE_A_OUT);
 				my_mon->dwc3_set_plugstate(PLUGSTATE_A_OUT);
@@ -238,7 +238,7 @@ mon_adjust_state:
 	} else {
 		if (my_mon->xhci_status != PLUGSTATE_A_IN) {
 			if (my_mon->xhci_timeout_cnt > 10) {
-				printk("%s:%d! \n", __func__, __LINE__);
+				printk(KERN_DEBUG "%s:%d! \n", __func__, __LINE__);
 				my_mon->xhci_timeout_cnt = 0;
 				pStatus->core_ops->putt_msg(MON_MSG_USB_A_OUT);
 				pStatus->message_status &= ~(0x1 << MONITOR_A_IN);
@@ -252,7 +252,7 @@ mon_adjust_state:
 	if (my_mon->port_status.pc_connected == 0) {
 		if (my_mon->dwc3_status == PLUGSTATE_B_IN) {
 			if (my_mon->dwc3_timeout_cnt > 10) {
-				printk("%s:%d! \n", __func__, __LINE__);
+				printk(KERN_DEBUG "%s:%d! \n", __func__, __LINE__);
 				my_mon->dwc3_timeout_cnt = 0;
 				pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 				pStatus->message_status &= ~(0x1 << MONITOR_B_IN);
@@ -264,7 +264,7 @@ mon_adjust_state:
 	} else {
 		if (my_mon->dwc3_status != PLUGSTATE_B_IN) {
 			if (my_mon->dwc3_timeout_cnt > 10) {
-				printk("%s:%d! \n", __func__, __LINE__);
+				printk(KERN_DEBUG "%s:%d! \n", __func__, __LINE__);
 				my_mon->dwc3_timeout_cnt = 0;
 				pStatus->core_ops->putt_msg(MON_MSG_USB_B_OUT);
 				pStatus->message_status &= ~(0x1 << MONITOR_B_IN);
@@ -366,7 +366,7 @@ static void monitor_release_wakelock(struct work_struct *work)
 {
 	if (wake_lock_register_cnt > 0) {
 		wake_lock_register_cnt--;
-		printk("\n monitor_release_wakelock  wake_unlock  %d-\n",wake_lock_register_cnt);
+		printk(KERN_DEBUG "\n monitor_release_wakelock  wake_unlock  %d-\n",wake_lock_register_cnt);
 		wake_unlock(&my_mon->monitor_wake_lock);;
 	}
 }
@@ -449,7 +449,7 @@ static int get_configuration_from_dts(struct of_device_id *id )
 				return -1;	                	
 			}else{
 				gpio_direction_input(port_config->idpin_gpio_no);
-				printk("<umonitor> : idpin_type is GPIO_IDPIN, gpio_no=%d\n",port_config->idpin_gpio_no);
+				printk(KERN_DEBUG "<umonitor> : idpin_type is GPIO_IDPIN, gpio_no=%d\n",port_config->idpin_gpio_no);
 			}
 		}else{
 			port_config->idpin_type = UMONITOR_USB_IDPIN;	
@@ -610,7 +610,7 @@ static int monitor_probe(struct platform_device *_dev)
 	}
 
 	/*WAKE_LOCK_SUSPEND 为suspend lock，还有一种idle lock*/
-	MONITOR_PRINTK(KERN_EMERG"%s--%d, initalize a wake_lock\n", __FILE__, __LINE__);
+	MONITOR_PRINTK(KERN_EMERG"%s--%d, initalize a wake_lock\n", __func__, __LINE__);
 	wake_lock_init(&my_mon->monitor_wake_lock, WAKE_LOCK_SUSPEND, "usb_monitor");
 
 	init_waitqueue_head(&my_mon->mon_wait);
@@ -777,7 +777,7 @@ static int monitor_pm_notify(struct notifier_block *nb, unsigned long event, voi
 	/*in ubuntu ,will close controller after resume finish,so usb device driver is ready*/    
 #ifdef CONFIG_USB_PLATFORM_LINUX 			
 	if(event ==PM_POST_SUSPEND){
-		printk("\n monitor_pm_notify %d\n",__LINE__);
+		printk(KERN_DEBUG "\n monitor_pm_notify %d\n",__LINE__);
 		if(my_mon->resume_status == 1)        
         		schedule_delayed_work(&monitor_resume_work, msecs_to_jiffies(500));		
         }
@@ -881,7 +881,7 @@ static ssize_t mon_status_show(struct kobject *kobj, struct kobj_attribute *attr
 	struct mon_sysfs_status *p_status;
     
     	if(my_mon->probe_fail ==1){
-		printk("\n monitor: probe_fail =1!!");
+		printk(KERN_DEBUG "\n monitor: probe_fail =1!!");
         	return -ENOENT;
 	}
 	if (kobj == my_mon->mon_port) {
@@ -907,7 +907,7 @@ static ssize_t mon_config_show(struct kobject *kobj,
 	umon_port_config_t *pconfig;
     
     	if(my_mon->probe_fail ==1){
-		printk("\n  monitor: probe_fail =1!!");
+		printk(KERN_DEBUG "\n  monitor: probe_fail =1!!");
         	return -ENOENT;
 	}
 	if (kobj == my_mon->mon_port) {
@@ -966,7 +966,7 @@ static ssize_t mon_config_store(struct kobject *kobj, struct kobj_attribute *att
 	umon_port_config_t *pconfig;
     
     	if(my_mon->probe_fail ==1){
-		printk("\n monitor: probe_fail =1!!");
+		printk(KERN_DEBUG "\n monitor: probe_fail =1!!");
         	return -ENOENT;
 	}
 	mutex_lock(&my_mon->mon_mutex);
@@ -1036,22 +1036,22 @@ static ssize_t mon_config_store(struct kobject *kobj, struct kobj_attribute *att
 	}else if(ATTRCMP(idpin_debug)) {
 		pconfig->idpin_debug = val;
         	if((val ==0)||(val ==1))
-			printk("\n debug idpin set =%d !!\n",pconfig->idpin_debug);         
+			printk(KERN_DEBUG "\n debug idpin set =%d !!\n",pconfig->idpin_debug);         
 		else
-			printk("\n debug idpin clear!!\n");
+			printk(KERN_DEBUG "\n debug idpin clear!!\n");
 	}else if(ATTRCMP(vbus_debug)) {
 		pconfig->vbus_debug = val;
 		if((val ==0)||(val ==1))
-			printk("\n debug vbus set =%d!!\n",pconfig->vbus_debug);  
+			printk(KERN_DEBUG "\n debug vbus set =%d!!\n",pconfig->vbus_debug);  
 		else
-			printk("\n debug vbus clear!!\n");
+			printk(KERN_DEBUG "\n debug vbus clear!!\n");
 	} 
 #ifndef CONFIG_USB_PLATFORM_LINUX    
 #ifdef SUPPORT_NOT_RMMOD_USBDRV    
     	else if(ATTRCMP(usb_con_msg)) {
 		strcpy(pconfig->usb_con_msg,instr);
 		monitor_handle_plug_in_out_msg(instr);     
-		printk("\n write usb_con_msg %s\n",instr);
+		printk(KERN_DEBUG "\n write usb_con_msg %s\n",instr);
 	}
 #endif        
 #endif        
@@ -1117,7 +1117,7 @@ static int usb_detect_plugout_event(void)
 			   ((message & (0x1 << MONITOR_CHARGER_IN)) != 0)) {
 				if(( my_mon->port_status.charger_connected == CONNECT_USB_ADAPTOR) && 
 				   (wake_lock_register_cnt > 0)) {
-					printk("wakelock release!!!!!!!!\n");
+					printk(KERN_DEBUG "wakelock release!!!!!!!!\n");
 					wake_lock_register_cnt--;
 					wake_unlock(&my_mon->monitor_wake_lock);
 				}
@@ -1126,7 +1126,7 @@ static int usb_detect_plugout_event(void)
 				if((umonitor_status->vbus_status == USB_VBUS_LOW)||(ret==USB_ID_STATE_HOST)) {
 					my_mon->port_status.charger_connected = 0;
 					umonitor_detection(1);
-					printk("\n========usb_detect_plugout_event===start det!!========\n");
+					printk(KERN_DEBUG "\n========usb_detect_plugout_event===start det!!========\n");
 					//wake_up(&my_mon->mon_wait);
 				}
 			}
@@ -1172,13 +1172,13 @@ static void mon_port_putt_msg(unsigned int msg)
 
 	switch (msg) {
 		case MON_MSG_USB_B_IN:
-			//printk("%s--%d, wake_lock !!! \n", __FILE__, __LINE__);
+			//printk("%s--%d, wake_lock !!! \n", __func__, __LINE__);
 			if(monitor_work_pending == 1) {
 				cancel_delayed_work_sync(&monitor_work);
 				monitor_work_pending = 0;
 			}
 			if(!wake_lock_register_cnt) {
-				printk("%s--%d, wake_lock !!! \n", __FILE__, __LINE__);
+				printk(KERN_DEBUG "%s--%d, wake_lock !!! \n", __func__, __LINE__);
 				wake_lock(&my_mon->monitor_wake_lock);
 				wake_lock_register_cnt++;
 			}
@@ -1193,7 +1193,7 @@ static void mon_port_putt_msg(unsigned int msg)
 #endif            
 			break;
 		case MON_MSG_USB_B_OUT:
-			//printk("%s--%d, wake_unlock !!! \n", __FILE__, __LINE__);
+			//printk("%s--%d, wake_unlock !!! \n", __func__, __LINE__);
 			if(wake_lock_register_cnt) {
 				schedule_delayed_work(&monitor_work, msecs_to_jiffies(1000));
 				monitor_work_pending = 1;
@@ -1209,7 +1209,7 @@ static void mon_port_putt_msg(unsigned int msg)
 			break;
 		case MON_MSG_USB_A_IN:
 			pStatus->udisk_connected = 1;
-			printk("%s--%d, wake_lock !!! \n", __FILE__, __LINE__);
+			printk(KERN_DEBUG "%s--%d, wake_lock !!! \n", __func__, __LINE__);
 			//wake_lock(&my_mon->monitor_wake_lock);
 			sprintf(my_mon->port_dev.state_msg, "USB_A_IN");
 #ifdef CONFIG_USB_PLATFORM_LINUX
@@ -1218,11 +1218,11 @@ static void mon_port_putt_msg(unsigned int msg)
 			switch_set_state(&my_mon->port_dev.sdev, msg);			    //handle usb msg through vold
 #endif    
 			wake_lock_timeout(&my_mon->monitor_wake_lock, 10*HZ);
-			printk("----monitor_wake_lock for 10s \n");
+			printk(KERN_DEBUG "----monitor_wake_lock for 10s \n");
 			break;
 		case MON_MSG_USB_A_OUT:
 			pStatus->udisk_connected = 0;
-			printk("%s--%d, wake_unlock !!! \n", __FILE__, __LINE__);
+			printk(KERN_DEBUG "%s--%d, wake_unlock !!! \n", __func__, __LINE__);
 			//wake_unlock(&my_mon->monitor_wake_lock);
 			sprintf(my_mon->port_dev.state_msg, "USB_A_OUT");
 #ifdef CONFIG_USB_PLATFORM_LINUX
@@ -1234,7 +1234,7 @@ static void mon_port_putt_msg(unsigned int msg)
 			break;
 		case MON_MSG_USB_CHARGER_IN:
 			pStatus->charger_connected = 1;
-			//printk("%s--%d, wake_lock !!! \n", __FILE__, __LINE__);
+			//printk("%s--%d, wake_lock !!! \n", __func__, __LINE__);
 			wake_lock(&my_mon->monitor_wake_lock);
 			sprintf(my_mon->port_dev.state_msg, "USB_CHARGER_IN");
 #ifdef CONFIG_USB_PLATFORM_LINUX
@@ -1245,7 +1245,7 @@ static void mon_port_putt_msg(unsigned int msg)
 			break;
 		case MON_MSG_USB_CHARGER_OUT:
 			pStatus->charger_connected = 0;
-			printk("%s--%d, wake_unlock !!! \n", __FILE__, __LINE__);
+			printk(KERN_DEBUG "%s--%d, wake_unlock !!! \n", __func__, __LINE__);
 			wake_unlock(&my_mon->monitor_wake_lock);
 			sprintf(my_mon->port_dev.state_msg, "USB_CHARGER_OUT");
 #ifdef CONFIG_USB_PLATFORM_LINUX
@@ -1274,7 +1274,7 @@ void monitor_set_usb_plugin_type(int value)
 	 *  at this point maybe we have released wakelock;so we get wakelock again here!
 	 */    	
 	if((wake_lock_active(&my_mon->monitor_wake_lock)==false)&&(value==CONNECT_USB_PORT)&&(my_mon->run==1)){
-		printk("\n usb reset interrupt,get wakelock!!\n");
+		printk(KERN_DEBUG "\n usb reset interrupt,get wakelock!!\n");
 		wake_lock_register_cnt=1;
 		wake_lock(&my_mon->monitor_wake_lock);
 	}

@@ -400,7 +400,7 @@ static int acts_mmc_request_pinctrl(struct gl520xmmc_host *host)
 		}
 		pinctrl_put(host->pcl);
 		req_pinctr_num = 1;
-		printk("host%d,platfrom request already\n",host->id);
+		printk(KERN_DEBUG "host%d,platfrom request already\n",host->id);
 	}
 	
 	return 0;
@@ -869,7 +869,7 @@ static int acts_mmc_send_command(struct gl520xmmc_host *host,
 					SD_CTL_WDELAY(host->write_delay_chain),
 					HOST_CTL(host));
 				
-				printk("cmd:try read delay chain:%d\n",
+				printk(KERN_DEBUG "cmd:try read delay chain:%d\n",
 				host->read_delay_chain);
 				
 				pr_err("cmd:SDC%d send CMD%d, CMD_RSP_CRC_ERR\n",
@@ -906,7 +906,7 @@ static  void  acts_mmc_dma_complete(struct gl520xmmc_host *host)
 	
 	if(host->dma_terminate == true){
 		host->dma_terminate = false;
-		printk("%s:return for  dmaengine_terminate_all\n",__FUNCTION__);
+		printk(KERN_DEBUG "%s:return for  dmaengine_terminate_all\n",__FUNCTION__);
 		return ;
 	}
 	
@@ -1235,7 +1235,7 @@ out:
 			host->read_delay_chain = 0xf;
 		}
 		
-		printk("try read delay chain:%d\n",
+		printk(KERN_DEBUG "try read delay chain:%d\n",
 				host->read_delay_chain);
  		
 	}else if(data->error == DATA_WR_CRC_ERR){
@@ -1245,7 +1245,7 @@ out:
 			host->write_delay_chain = 0xf;
 		}
 		
-		printk("try write delay chain:%d\n",
+		printk(KERN_DEBUG "try write delay chain:%d\n",
 			host->write_delay_chain);
 	}
 
@@ -1525,7 +1525,7 @@ static void mmc_early_suspend(struct early_suspend *handler)
 	if((mmc_card_expected_mem(host->type_expected))&&\
 		(mmc->caps& MMC_CAP_NEEDS_POLL)){
 		host->mmc_early_suspend = 1;
-		printk("hostid:%d,mmc_early_suspend:host->mmc_early_suspend=%d\n",host->id,host->mmc_early_suspend);
+		printk(KERN_DEBUG "hostid:%d,mmc_early_suspend:host->mmc_early_suspend=%d\n",host->id,host->mmc_early_suspend);
 	}
 
 }
@@ -1542,7 +1542,7 @@ static void mmc_late_resume(struct early_suspend *handler)
 		(mmc->caps& MMC_CAP_NEEDS_POLL))){
 		host->mmc_early_suspend = 0;
 		start_mmc_work(mmc);
-		printk("hostid:%d,mmc_late_resume:host->mmc_early_suspend=%d\n",host->id,host->mmc_early_suspend);
+		printk(KERN_DEBUG "hostid:%d,mmc_late_resume:host->mmc_early_suspend=%d\n",host->id,host->mmc_early_suspend);
 	}
 }
 #endif
@@ -1552,7 +1552,7 @@ static int owl_upgrade_flag = OWL_NORMAL_BOOT;
 static int __init owl_check_upgrade(char *__unused)
 {
 	owl_upgrade_flag = OWL_UPGRADE;
-	printk("%s:owl_upgrade_flag is OWL_UPGRADE\n",__FUNCTION__);
+	printk(KERN_DEBUG "%s:owl_upgrade_flag is OWL_UPGRADE\n",__FUNCTION__);
 	return 0 ;
 }
 
@@ -1566,7 +1566,7 @@ static int owl_mmc_resan(struct gl520xmmc_host * host,
 	bootdev = owl_get_boot_dev();
 	if(mmc_card_expected_mem(host->type_expected)||
 		mmc_card_expected_wifi(host->type_expected)	){
-		printk("host%d: sure rescan mmc\n",host->id);
+		printk(KERN_DEBUG "host%d: sure rescan mmc\n",host->id);
 		queue_delayed_work(host->add_host_wq, &host->host_add_work, delay);
 	}else if(mmc_card_expected_emmc(host->type_expected)){
 		if((owl_upgrade_flag == OWL_UPGRADE)||((bootdev !=OWL_BOOTDEV_NAND)&&\
@@ -1581,7 +1581,7 @@ static int owl_mmc_resan(struct gl520xmmc_host * host,
 			}
 			pinctrl_put(host->pcl);
 			pinctrl_put(host->pcl);
-			printk("host%d:there is no need to resan emmc\n",host->id);
+			printk(KERN_DEBUG "host%d:there is no need to resan emmc\n",host->id);
 		}
 	}else{
 		printk("!!!!!error: mmc type is error\n");
