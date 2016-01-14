@@ -961,7 +961,7 @@
 		compatible = "actions,owl-ethernet";
 		
 		phy0: ethernet-phy@0 {
-			compatible = "SR8201G,sr8201g";
+			compatible = "realtek-corechip,xxx8201";
 			reg = <0>;
 		};
 	};
