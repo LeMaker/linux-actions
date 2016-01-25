@@ -34,6 +34,9 @@ config SND_SOC_GENERIC_DMAENGINE_PCM
 	select SND_SOC_DMAENGINE_PCM
 
 # All the supported SoCs
+# Modify by LeMaker -- begin
+source "sound/soc/atc260x/Kconfig"
+# Modify by LeMaker -- end
 source "sound/soc/atmel/Kconfig"
 source "sound/soc/au1x/Kconfig"
 source "sound/soc/blackfin/Kconfig"

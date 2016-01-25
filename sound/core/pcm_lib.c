@@ -1894,7 +1894,10 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
 		}
 		wait_time = msecs_to_jiffies(wait_time * 1000);
 	}
-
+	
+	//* Modify by LeMaker -- begin
+	wait_time = 50;
+	//* Modify by LeMaker -- end
 	for (;;) {
 		if (signal_pending(current)) {
 			err = -ERESTARTSYS;
@@ -1968,8 +1971,19 @@ static int snd_pcm_lib_write_transfer(struct snd_pcm_substream *substream,
 			return err;
 	} else {
 		char *hwbuf = runtime->dma_area + frames_to_bytes(runtime, hwoff);
+		//* Modify by LeMaker -- begin
+#if 0
 		if (copy_from_user(hwbuf, buf, frames_to_bytes(runtime, frames)))
 			return -EFAULT;
+#else
+		if(runtime->format == SNDRV_PCM_FORMAT_S16_LE){
+			memcpy(hwbuf, buf, frames_to_bytes(runtime, frames));
+		}else{
+			if (copy_from_user(hwbuf, buf, frames_to_bytes(runtime, frames)))
+				return -EFAULT;
+		}
+#endif
+		//* Modify by LeMaker -- end
 	}
 	return 0;
 }
@@ -2104,8 +2118,13 @@ snd_pcm_sframes_t snd_pcm_lib_write(struct snd_pcm_substream *substream, const v
 	if (err < 0)
 		return err;
 	runtime = substream->runtime;
+	//* Modify by LeMaker -- begin
+#if 0
 	nonblock = !!(substream->f_flags & O_NONBLOCK);
-
+#else
+	nonblock = 0;
+#endif
+	//* Modify by LeMaker -- end
 	if (runtime->access != SNDRV_PCM_ACCESS_RW_INTERLEAVED &&
 	    runtime->channels > 1)
 		return -EINVAL;
@@ -2190,8 +2209,19 @@ static int snd_pcm_lib_read_transfer(struct snd_pcm_substream *substream,
 			return err;
 	} else {
 		char *hwbuf = runtime->dma_area + frames_to_bytes(runtime, hwoff);
+		//* Modify by LeMaker -- begin
+#if 0
 		if (copy_to_user(buf, hwbuf, frames_to_bytes(runtime, frames)))
 			return -EFAULT;
+#else
+		if(runtime->format == SNDRV_PCM_FORMAT_S16_LE){
+	        memcpy(buf, hwbuf, frames_to_bytes(runtime, frames));
+		}else{
+		    if (copy_to_user(buf, hwbuf, frames_to_bytes(runtime, frames)))
+				return -EFAULT;
+		}
+#endif
+		//* Modify by LeMaker -- end
 	}
 	return 0;
 }
