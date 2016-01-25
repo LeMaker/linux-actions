@@ -46,7 +46,8 @@ obj-y				+= tty/
 obj-y				+= char/
 
 # gpu/ comes after char for AGP vs DRM startup
-obj-y				+= gpu/
+# Modify by LeMaker : obj-y --> obj-m
+obj-m				+= gpu/
 
 obj-$(CONFIG_CONNECTOR)		+= connector/
 
