@@ -634,4 +634,13 @@ endif
 
 endmenu
 
+# Modify by LeMaker -- begin
+config ACTIONS_CAMERA
+	tristate "actions camera driver"
+	depends on VIDEO_V4L2 
+menu "Sensors used on Actions driver"
+	source "drivers/media/i2c/camera/Kconfig"
+endmenu
+# Modify by LeMaker -- end
+
 endif
