@@ -8,6 +8,13 @@ obj-$(CONFIG_MFD_88PM800)	+= 88pm800.o 88pm80x.o
 obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
 obj-$(CONFIG_MFD_SM501)		+= sm501.o
 obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+# Modify by LeMaker -- begin
+atc260x-objs			:= atc260x-core.o atc260x-spi.o atc260x-i2c.o
+atc260x-objs			+= atc260x-auxadc.o atc260x-cmu.o atc260x-pstore.o atc260x-ex-api.o
+obj-$(CONFIG_MFD_ATC260X)	+= atc260x.o
+obj-$(CONFIG_MFD_ATC260X)	+= atc260x-pm.o
+obj-$(CONFIG_ATC260X_PWM) += atc260x-pwm.o
+# Modify by LeMaker -- end
 obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
 obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
 obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o

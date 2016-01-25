@@ -1116,6 +1116,17 @@ config MFD_WM8994
 	  core support for the WM8994, in order to use the actual
 	  functionaltiy of the device other drivers must be enabled.
 
+# Modify by LeMaker -- begin
+config MFD_ATC260X
+	tristate "Actions atc260x multifunctions device"
+	depends on SPI_OWL
+	select MFD_CORE
+	select REGMAP_I2C
+	select REGMAP_SPI
+	select REGMAP_IRQ
+	help
+	  ATC260X PMIC core driver.
+# Modify by LeMaker -- end
 endmenu
 endif
 
@@ -1156,3 +1167,10 @@ config VEXPRESS_SPC
 	depends on VEXPRESS_CONFIG
 	help
 	  Serial Power Controller driver for ARM Ltd. test chips.
+
+# Modify by LeMaker -- begin
+config ATC260X_PWM
+	tristate "Actions atc260x PWM support"
+	help
+	  Say Y here if you want to use the pwm on atc260x PMIC.
+# Modify by LeMaker -- end
