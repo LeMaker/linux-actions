@@ -1872,7 +1872,9 @@ int update_console_cmdline(char *name, int idx, char *name_new, int idx_new, cha
 	return -1;
 }
 
-bool console_suspend_enabled = 1;
+//* Modify by LeMaker -- begin 1 -- > 0
+bool console_suspend_enabled = 0;
+//* Modify by LeMaker -- end
 EXPORT_SYMBOL(console_suspend_enabled);
 
 static int __init console_suspend_disable(char *str)
@@ -2045,6 +2047,9 @@ void console_unlock(void)
 	/* flush buffered message fragment immediately to console */
 	console_cont_flush(text, sizeof(text));
 again:
+	//* Modify by LeMaker -- begin
+	retry = 0;
+	//* Modify by LeMaker -- end
 	for (;;) {
 		struct log *msg;
 		size_t len;

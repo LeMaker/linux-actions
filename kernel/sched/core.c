@@ -2071,6 +2071,16 @@ unsigned long nr_running(void)
 	return sum;
 }
 
+//* Modify by LeMaker -- begin
+unsigned long get_cpu_nr_running(unsigned int cpu)
+{
+	if(cpu < NR_CPUS)
+		return cpu_rq(cpu)->nr_running;
+	else
+		return 0;
+}
+//* Modify by LeMaker -- end
+
 unsigned long long nr_context_switches(void)
 {
 	int i;

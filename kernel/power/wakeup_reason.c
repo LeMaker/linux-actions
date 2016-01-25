@@ -84,7 +84,10 @@ static ssize_t last_suspend_time_show(struct kobject *kobj,
 				sleep_time.tv_sec, sleep_time.tv_nsec);
 }
 
+//* Modify by LeMaker -- begin : for_linaro_3.10.94
+//static struct kobj_attribute resume_reason = __ATTR_RO(last_resume_reason);
 static struct kobj_attribute resume_reason = __ATTR_RO(last_resume_reason);
+//* Modify by LeMaker -- end
 static struct kobj_attribute suspend_time = __ATTR_RO(last_suspend_time);
 
 static struct attribute *attrs[] = {

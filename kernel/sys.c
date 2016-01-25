@@ -388,6 +388,13 @@ static void migrate_to_reboot_cpu(void)
 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
 }
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+void *owl_watchdog_start(int timeout, void (*callback)(unsigned long data), unsigned long data);
+void owl_watchdog_stop(void *owl_watchdog);
+#endif
+//* Modify by LeMaker -- end
+
 /**
  *	kernel_restart - reboot the system
  *	@cmd: pointer to buffer containing command to execute for restart
@@ -398,6 +405,11 @@ static void migrate_to_reboot_cpu(void)
  */
 void kernel_restart(char *cmd)
 {
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	void *owl_watchdog = owl_watchdog_start(HZ * 20, NULL, 0);
+#endif
+	//* Modify by LeMaker -- end
 	kernel_restart_prepare(cmd);
 	migrate_to_reboot_cpu();
 	syscore_shutdown();
@@ -407,6 +419,11 @@ void kernel_restart(char *cmd)
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
 	kmsg_dump(KMSG_DUMP_RESTART);
 	machine_restart(cmd);
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	owl_watchdog_stop(owl_watchdog);
+#endif
+	//* Modify by LeMaker -- end
 }
 EXPORT_SYMBOL_GPL(kernel_restart);
 
@@ -425,12 +442,22 @@ static void kernel_shutdown_prepare(enum system_states state)
  */
 void kernel_halt(void)
 {
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	void *owl_watchdog = owl_watchdog_start(HZ * 20, NULL, 0);
+#endif
+	//* Modify by LeMaker -- end
 	kernel_shutdown_prepare(SYSTEM_HALT);
 	migrate_to_reboot_cpu();
 	syscore_shutdown();
 	printk(KERN_EMERG "System halted.\n");
 	kmsg_dump(KMSG_DUMP_HALT);
 	machine_halt();
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	owl_watchdog_stop(owl_watchdog);
+#endif
+	//* Modify by LeMaker -- end
 }
 
 EXPORT_SYMBOL_GPL(kernel_halt);
@@ -442,6 +469,11 @@ EXPORT_SYMBOL_GPL(kernel_halt);
  */
 void kernel_power_off(void)
 {
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	void *owl_watchdog = owl_watchdog_start(HZ * 20, NULL, 0);
+#endif
+	//* Modify by LeMaker -- end
 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
 	if (pm_power_off_prepare)
 		pm_power_off_prepare();
@@ -450,6 +482,11 @@ void kernel_power_off(void)
 	printk(KERN_EMERG "Power down.\n");
 	kmsg_dump(KMSG_DUMP_POWEROFF);
 	machine_power_off();
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+		owl_watchdog_stop(owl_watchdog);
+#endif
+	//* Modify by LeMaker -- end
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);
 

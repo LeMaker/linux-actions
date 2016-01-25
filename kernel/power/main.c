@@ -277,6 +277,9 @@ static inline void pm_print_times_init(void) {}
 #endif /* CONFIG_PM_SLEEP_DEBUG */
 
 struct kobject *power_kobj;
+//* Modify by LeMaker -- begin
+EXPORT_SYMBOL(power_kobj);
+//* Modify by LeMaker -- end
 
 /**
  *	state - control system power state.
@@ -346,6 +349,8 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 	if (error)
 		return error;
 
+//* Modify by LeMaker -- begin
+#if 0
 	if (pm_autosleep_state() > PM_SUSPEND_ON) {
 		error = -EBUSY;
 		goto out;
@@ -360,6 +365,37 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 		error = -EINVAL;
 
  out:
+#else
+
+#ifdef CONFIG_SUSPEND
+	/* kernel/power/suspend.c */
+	extern bool valid_state(suspend_state_t state);
+#else /* !CONFIG_SUSPEND */
+	static inline int suspend_devices_and_enter(suspend_state_t state)
+	{
+			return -ENOSYS;
+	}
+	static inline bool valid_state(suspend_state_t state) { return false; }
+#endif /* !CONFIG_SUSPEND */
+
+	state = decode_state(buf, n);
+		
+	if (state < PM_SUSPEND_MAX) {
+#ifdef CONFIG_EARLYSUSPEND
+		if (state == PM_SUSPEND_ON || valid_state(state)) {
+			error = 0;
+			request_suspend_state(state);
+		}
+#else
+		error = pm_suspend(state);
+#endif
+	}
+	else if (state == PM_SUSPEND_MAX)
+		error = hibernate();
+	else
+		error = -EINVAL;
+#endif
+//* Moidfy by LeMaker -- end
 	pm_autosleep_unlock();
 	return error ? error : n;
 }

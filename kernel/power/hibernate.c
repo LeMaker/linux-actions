@@ -28,6 +28,9 @@
 #include <linux/syscore_ops.h>
 #include <linux/ctype.h>
 #include <linux/genhd.h>
+//* Modify by LeMaker -- begin
+#include <mach/power.h>
+//* Modify by LeMaker -- end
 
 #include "power.h"
 
@@ -286,6 +289,9 @@ static int create_image(int platform_mode)
 		goto Power_up;
 
 	in_suspend = 1;
+//* Modify by LeMaker -- begin
+	owl_pm_do_save();
+//* Modify by LeMaker -- end
 	save_processor_state();
 	error = swsusp_arch_suspend();
 	if (error)
@@ -293,6 +299,9 @@ static int create_image(int platform_mode)
 			error);
 	/* Restore control flow magically appears here */
 	restore_processor_state();
+//* Modify by LeMaker -- begin
+	owl_pm_do_restore();
+//* Modify by LeMaker -- end
 	if (!in_suspend) {
 		events_check_enabled = false;
 		platform_leave(platform_mode);
@@ -657,6 +666,9 @@ int hibernate(void)
 
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
+//* Modify by LeMaker -- begin
+	fs_drop_page_caches();
+//* Modify by LeMaker -- end
 	printk("done.\n");
 
 	error = freeze_processes();

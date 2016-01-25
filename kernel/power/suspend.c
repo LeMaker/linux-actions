@@ -32,6 +32,11 @@
 #include "power.h"
 
 struct pm_sleep_state pm_states[PM_SUSPEND_MAX] = {
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_EARLYSUSPEND
+	[PM_SUSPEND_ON]		= "on",
+#endif
+//* Modify by LeMaker -- end
 	[PM_SUSPEND_FREEZE] = { .label = "freeze", .state = PM_SUSPEND_FREEZE },
 	[PM_SUSPEND_STANDBY] = { .label = "standby", },
 	[PM_SUSPEND_MEM] = { .label = "mem", },
@@ -64,7 +69,8 @@ void freeze_wake(void)
 }
 EXPORT_SYMBOL_GPL(freeze_wake);
 
-static bool valid_state(suspend_state_t state)
+//* Modify by LeMaker : remvoe static
+bool valid_state(suspend_state_t state)
 {
 	/*
 	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEM states need low level
@@ -235,7 +241,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
-
+//* Modify by LeMaker -- begin
+	outer_resume();
+//* Modify by LeMaker -- end
  Enable_cpus:
 	enable_nonboot_cpus();
 

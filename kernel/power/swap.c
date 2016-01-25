@@ -30,6 +30,9 @@
 #include <linux/atomic.h>
 #include <linux/kthread.h>
 #include <linux/crc32.h>
+//* Modify by LeMaker -- begin
+#include <linux/zlib.h>
+//* Modify by LeMaker -- end
 
 #include "power.h"
 
@@ -232,6 +235,9 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
 			swsusp_header->crc32 = handle->crc32;
 		error = hib_bio_write_page(swsusp_resume_block,
 					swsusp_header, NULL);
+		//* Modify by LeMaker -- begin
+		blkdev_ioctl(hib_resume_bdev, 0, BLKFLSBUF, 0);
+		//* Modify by LeMaker -- end
 	} else {
 		printk(KERN_ERR "PM: Swap header not found!\n");
 		error = -ENODEV;
@@ -431,6 +437,52 @@ static int swap_writer_finish(struct swap_map_handle *handle,
 #define LZO_MIN_RD_PAGES	1024
 #define LZO_MAX_RD_PAGES	8192
 
+//* Modify by LeMaker -- begin
+/* #define COMPRESS_USE_ZLIB */
+#ifdef COMPRESS_USE_ZLIB
+#define DEFLATE_DEF_LEVEL		Z_DEFAULT_COMPRESSION
+#define DEFLATE_DEF_WINBITS		12
+#define DEFLATE_DEF_MEMLEVEL	MAX_MEM_LEVEL
+
+#define zlib_worst_compress(s) (s + ((s + 7) >> 3) + ((s + 63) >> 6) + 11)
+#define ZLIB_CMP_PAGES DIV_ROUND_UP(zlib_worst_compress(LZO_UNC_SIZE) + \
+						LZO_HEADER, PAGE_SIZE)
+#define ZLIB_CMP_SIZE	(ZLIB_CMP_PAGES * PAGE_SIZE)
+
+static int deflate_comp_init(struct z_stream_s *stream)
+{
+	int ret = 0;
+
+	stream->workspace = kzalloc(
+			zlib_deflate_workspacesize(DEFLATE_DEF_WINBITS, MAX_MEM_LEVEL),
+			GFP_KERNEL);
+	if (!stream->workspace) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	ret = zlib_deflateInit2(stream, DEFLATE_DEF_LEVEL, Z_DEFLATED,
+				-DEFLATE_DEF_WINBITS, DEFLATE_DEF_MEMLEVEL,
+				Z_DEFAULT_STRATEGY);
+	if (ret != Z_OK) {
+		pr_err("zlib_deflateInit2 fail\n");
+		ret = -EINVAL;
+		goto out_free;
+	}
+out:
+	return ret;
+out_free:
+	kfree(stream->workspace);
+	goto out;
+}
+
+static void deflate_comp_exit(struct z_stream_s *stream)
+{
+	zlib_deflateEnd(stream);
+	kfree(stream->workspace);
+}
+#endif
+
+//* Modify by LeMaker -- end
 
 /**
  *	save_image - save the suspend image data
@@ -533,8 +585,15 @@ struct cmp_data {
 	size_t unc_len;                           /* uncompressed length */
 	size_t cmp_len;                           /* compressed length */
 	unsigned char unc[LZO_UNC_SIZE];          /* uncompressed buffer */
+	//* Modify by LeMaker -- begin
+#ifdef COMPRESS_USE_ZLIB
+	unsigned char cmp[ZLIB_CMP_SIZE];         /* compressed buffer */
+	struct z_stream_s stream;
+#else
 	unsigned char cmp[LZO_CMP_SIZE];          /* compressed buffer */
 	unsigned char wrk[LZO1X_1_MEM_COMPRESS];  /* compression workspace */
+#endif
+	//* Modify by LeMaker -- end
 };
 
 /**
@@ -556,9 +615,21 @@ static int lzo_compress_threadfn(void *data)
 		}
 		atomic_set(&d->ready, 0);
 
+		//* Moidfy by LeMaker -- begin
+#ifdef COMPRESS_USE_ZLIB
+		zlib_deflateReset(&d->stream);
+		d->stream.next_in = d->unc;
+		d->stream.avail_in = d->unc_len;
+		d->stream.next_out = d->cmp + LZO_HEADER;
+		d->stream.avail_out = ZLIB_CMP_SIZE;
+		d->ret = zlib_deflate(&d->stream, Z_FINISH);
+		d->cmp_len = ZLIB_CMP_SIZE - d->stream.avail_out;
+#else
 		d->ret = lzo1x_1_compress(d->unc, d->unc_len,
 		                          d->cmp + LZO_HEADER, &d->cmp_len,
 		                          d->wrk);
+#endif
+		//* Modify by LeMaker -- end
 		atomic_set(&d->stop, 1);
 		wake_up(&d->done);
 	}
@@ -626,6 +697,11 @@ static int save_image_lzo(struct swap_map_handle *handle,
 		init_waitqueue_head(&data[thr].go);
 		init_waitqueue_head(&data[thr].done);
 
+		//* Modify by LeMaker -- begin
+#ifdef COMPRESS_USE_ZLIB
+		deflate_comp_init(&data[thr].stream);
+#endif
+		//* Modify by LeMaker -- end
 		data[thr].thr = kthread_run(lzo_compress_threadfn,
 		                            &data[thr],
 		                            "image_compress/%u", thr);
@@ -772,9 +848,15 @@ out_clean:
 		kfree(crc);
 	}
 	if (data) {
-		for (thr = 0; thr < nr_threads; thr++)
+		for (thr = 0; thr < nr_threads; thr++){
 			if (data[thr].thr)
 				kthread_stop(data[thr].thr);
+			//* Modify by LeMaker -- begin
+#ifdef COMPRESS_USE_ZLIB
+			deflate_comp_exit(&data[thr].stream);
+#endif
+			//* Modify by LeMaker -- end
+		}
 		vfree(data);
 	}
 	if (page) free_page((unsigned long)page);
