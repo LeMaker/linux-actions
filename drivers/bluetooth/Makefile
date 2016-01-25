@@ -19,6 +19,9 @@ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
 obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
 obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
 obj-$(CONFIG_BT_WILINK)		+= btwilink.o
+# Modify by LeMaker -- begin
+obj-y	+= rtk_btusb_8723bu.o
+# Modify by LeMaker -- end
 
 btmrvl-y			:= btmrvl_main.o
 btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
@@ -29,4 +32,7 @@ hci_uart-$(CONFIG_BT_HCIUART_BCSP)	+= hci_bcsp.o
 hci_uart-$(CONFIG_BT_HCIUART_LL)	+= hci_ll.o
 hci_uart-$(CONFIG_BT_HCIUART_ATH3K)	+= hci_ath.o
 hci_uart-$(CONFIG_BT_HCIUART_3WIRE)	+= hci_h5.o
+# Modify by LeMaker -- begin
+hci_uart-$(CONFIG_BT_HCIUART_RTKH5) += hci_rtk_h5.o
+# Modify by LeMaker -- end
 hci_uart-objs				:= $(hci_uart-y)

@@ -611,7 +611,14 @@ static int __init hci_uart_init(void)
 #ifdef CONFIG_BT_HCIUART_3WIRE
 	h5_init();
 #endif
-
+//* Modify by LeMaker -- begin
+//Realtek_add_start	
+//add realtek h5 support	
+#ifdef CONFIG_BT_HCIUART_RTKH5
+	rtk_h5_init();
+#endif
+//Realtek_add_end
+//* Modify by LeMaker -- end
 	return 0;
 }
 
@@ -634,6 +641,11 @@ static void __exit hci_uart_exit(void)
 #ifdef CONFIG_BT_HCIUART_3WIRE
 	h5_deinit();
 #endif
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_BT_HCIUART_RTKH5
+	rtk_h5_deinit();
+#endif
+	//* Modify by LeMaker -- end
 
 	/* Release tty registration of line discipline */
 	if ((err = tty_unregister_ldisc(N_HCI)))
