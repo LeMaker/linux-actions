@@ -471,7 +471,8 @@ static int magicmouse_input_mapping(struct hid_device *hdev,
 	return 0;
 }
 
-static void magicmouse_input_configured(struct hid_device *hdev,
+//* Modify by LeMaker : void -- > int 
+static int magicmouse_input_configured(struct hid_device *hdev,
 		struct hid_input *hi)
 
 {
@@ -483,6 +484,7 @@ static void magicmouse_input_configured(struct hid_device *hdev,
 		/* clean msc->input to notify probe() of the failure */
 		msc->input = NULL;
 	}
+	return ret;
 }
 
 
