@@ -107,6 +107,16 @@ config WM8350_WATCHDOG
 
 # ARM Architecture
 
+# Modify by LeMaker -- begin
+config OWL_WATCHDOG
+	bool "owl watchdog"
+	depends on ARCH_OWL
+	select WATCHDOG_CORE
+	help
+	  Watchdog timer embedded into OWL chips. This will reboot your
+	  system when the timeout is reached.
+# Modify by LeMaker -- end
+
 config ARM_SP805_WATCHDOG
 	tristate "ARM SP805 Watchdog"
 	depends on ARM && ARM_AMBA
