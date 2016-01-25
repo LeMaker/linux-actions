@@ -354,9 +354,11 @@ static ssize_t iio_trigger_write_current(struct device *dev,
 	return len;
 }
 
-static DEVICE_ATTR(current_trigger, S_IRUGO | S_IWUSR,
+//* Modify by LeMaker -- begin
+static DEVICE_ATTR(current_trigger, S_IRUGO | S_IWUGO,
 		   iio_trigger_read_current,
 		   iio_trigger_write_current);
+//* Modify by LeMaker -- end
 
 static struct attribute *iio_trigger_consumer_attrs[] = {
 	&dev_attr_current_trigger.attr,

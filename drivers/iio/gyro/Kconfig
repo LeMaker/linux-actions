@@ -78,4 +78,13 @@ config ITG3200
 	  Say yes here to add support for the InvenSense ITG3200 digital
 	  3-axis gyroscope sensor.
 
+# Modify by LeMaker -- begin
+config IIO_INV_MPU6515
+	tristate "InvenSense MPU6515 Gyrosensor&Gsensor&Magsensor Three-in-one I2C driver"
+	depends on I2C
+	help
+	  Say yes here to add support for the InvenSense 
+	  mpu6515 Gyrosensor&Gsensor&Magsensor Three-in-one Sensor
+# Modify by LeMaker -- end
+
 endmenu

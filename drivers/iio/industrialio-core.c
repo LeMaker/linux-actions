@@ -66,6 +66,9 @@ static const char * const iio_chan_type_name_spec[] = {
 	[IIO_ALTVOLTAGE] = "altvoltage",
 	[IIO_CCT] = "cct",
 	[IIO_PRESSURE] = "pressure",
+	//* Modify by LeMaker -- begin
+	[IIO_QUATERNION] = "quaternion",
+	//* Modify by LeMaker -- end
 };
 
 static const char * const iio_modifier_names[] = {
@@ -80,6 +83,9 @@ static const char * const iio_modifier_names[] = {
 	[IIO_MOD_LIGHT_RED] = "red",
 	[IIO_MOD_LIGHT_GREEN] = "green",
 	[IIO_MOD_LIGHT_BLUE] = "blue",
+	//* Modify by LeMaker -- begin
+	[IIO_MOD_R]  = "r",
+	//* Modify by LeMaker -- end
 };
 
 /* relies on pairs of these shared then separate */
@@ -611,7 +617,9 @@ int __iio_device_attr_init(struct device_attribute *dev_attr,
 	}
 
 	if (writefunc) {
-		dev_attr->attr.mode |= S_IWUSR;
+		//* Modify by LeMaker -- begin
+		dev_attr->attr.mode |= S_IWUGO;
+		//* Modify by LeMaker -- end
 		dev_attr->store = writefunc;
 	}
 	kfree(name_format);

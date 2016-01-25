@@ -18,3 +18,6 @@ st_gyro-$(CONFIG_IIO_BUFFER) += st_gyro_buffer.o
 
 obj-$(CONFIG_IIO_ST_GYRO_I2C_3AXIS) += st_gyro_i2c.o
 obj-$(CONFIG_IIO_ST_GYRO_SPI_3AXIS) += st_gyro_spi.o
+# Modify by LeMaker -- begin
+obj-$(CONFIG_IIO_INV_MPU6515) += inv_mpu6515/
+# Modify by LeMaker -- end
