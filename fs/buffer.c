@@ -974,8 +974,10 @@ grow_dev_page(struct block_device *bdev, sector_t block,
 	sector_t end_block;
 	int ret = 0;		/* Will call free_more_memory() */
 
+	//* Modify by LeMaker -- begin
 	page = find_or_create_page(inode->i_mapping, index,
-		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
+		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)& ~__GFP_MOVABLE);
+	//* Modify by LeMaker -- end
 	if (!page)
 		return ret;
 

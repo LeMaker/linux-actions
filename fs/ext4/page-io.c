@@ -219,7 +219,65 @@ static void buffer_io_error(struct buffer_head *bh)
 			(unsigned long long)bh->b_blocknr);
 }
 
-static void ext4_end_bio(struct bio *bio, int error)
+//* Modify by LeMaker -- begin
+void ext4_end_bio1(struct bio *bio, int error)
+{
+	sector_t bi_sector = bio->bi_sector;
+	int i;
+				
+	bio->bi_private = NULL;
+	bio->bi_end_io = NULL;
+	if (test_bit(BIO_UPTODATE, &bio->bi_flags))
+		error = 0;
+	for (i = 0; i < bio->bi_vcnt; i++) {
+		struct bio_vec *bvec = &bio->bi_io_vec[i];
+		struct page *page = bvec->bv_page;
+		struct buffer_head *bh, *head;
+		unsigned bio_start = bvec->bv_offset;
+		unsigned bio_end = bio_start + bvec->bv_len;
+		unsigned under_io = 0;
+		unsigned long flags;		
+																							
+		if (!page) 
+			continue;
+		//printk("pfn__ %d\n", page_to_pfn(page));
+		trace_printk("pfn__ %d\n", page_to_pfn(page));
+	
+		if (error) {
+			SetPageError(page);
+			set_bit(AS_EIO, &page->mapping->flags);
+		}
+		bh = head = page_buffers(page);
+		/*
+		 * We check all buffers in the page under BH_Uptodate_Lock
+		 * to avoid races with other end io clearing async_write flags
+		 */
+		local_irq_save(flags);
+		bit_spin_lock(BH_Uptodate_Lock, &head->b_state);
+		do {
+			if (bh_offset(bh) < bio_start ||
+				 bh_offset(bh) + 512 > bio_end) {
+				if (buffer_async_write(bh))
+					under_io++;
+				continue;
+			}
+			clear_buffer_async_write(bh);
+			if (error)
+				buffer_io_error(bh);
+		} while ((bh = bh->b_this_page) != head);
+		bit_spin_unlock(BH_Uptodate_Lock, &head->b_state);
+		local_irq_restore(flags);
+		if (!under_io) {			
+			end_page_writeback(page);
+		}
+	}
+	BUG_ON(!atomic_read(&bio->bi_cnt));
+	bio_put(bio);
+}
+//* Modify by LeMaker -- end
+
+//* Modify by LeMaker : remove static
+void ext4_end_bio(struct bio *bio, int error)
 {
 	ext4_io_end_t *io_end = bio->bi_private;
 	struct inode *inode;

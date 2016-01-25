@@ -113,6 +113,7 @@ SYSCALL_DEFINE0(sync)
 		laptop_sync_completion();
 	return 0;
 }
+EXPORT_SYMBOL(sys_sync); //* Modify by LeMaker
 
 static void do_sync_work(struct work_struct *work)
 {

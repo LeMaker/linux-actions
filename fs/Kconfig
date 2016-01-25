@@ -269,3 +269,9 @@ source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
 
 endmenu
+
+# Modify by LeMaker -- begin
+# readdump for readahead
+config DEBUG_READDUMP
+	bool "readdump for readahead"
+# Modify by LeMaker -- end

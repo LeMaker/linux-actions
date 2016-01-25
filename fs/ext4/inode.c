@@ -1655,6 +1655,9 @@ static void ext4_print_free_blocks(struct inode *inode)
  * The function skips space we know is already mapped to disk blocks.
  *
  */
+//* Modify by LeMaker -- begin
+static int ext4_da_writepages_trans_blocks(struct inode *inode);
+//* Modify by LeMaker -- end
 static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 {
 	int err, blks, get_blocks_flags;
@@ -1663,6 +1666,9 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 	unsigned max_blocks = mpd->b_size >> mpd->inode->i_blkbits;
 	loff_t disksize = EXT4_I(mpd->inode)->i_disksize;
 	handle_t *handle = NULL;
+	//* Modify by LeMaker -- begin
+	int needed_blocks;
+	//* Modify by LeMaker -- end
 
 	/*
 	 * If the blocks are mapped already, or we couldn't accumulate
@@ -1674,7 +1680,17 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 	     !(mpd->b_state & (1 << BH_Unwritten))))
 		goto submit_io;
 
+	//* Modify by LeMaker -- begin
+#if 0
 	handle = ext4_journal_current_handle();
+#else
+	needed_blocks = ext4_da_writepages_trans_blocks(mpd->inode);
+	handle = ext4_journal_start(mpd->inode, EXT4_HT_WRITE_PAGE,needed_blocks);
+	if (IS_ERR(handle)) {
+		return;
+	}
+#endif
+	//* Modify by LeMaker -- end
 	BUG_ON(!handle);
 
 	/*
@@ -1754,6 +1770,11 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 
 		/* Mark this page range as having been completed */
 		mpd->io_done = 1;
+		//* Modify by LeMaker -- begin
+		if (handle) {
+			ext4_journal_stop(handle);
+		}
+		//* Modify by LeMaker -- end
 		return;
 	}
 	BUG_ON(blks == 0);
@@ -1783,6 +1804,11 @@ static void mpage_da_map_and_submit(struct mpage_da_data *mpd)
 	}
 
 submit_io:
+	//* Modify by LeMaker -- begin
+	if (handle) {
+		ext4_journal_stop(handle);	
+	}
+	//* Modify by LeMaker -- end
 	mpage_da_submit_io(mpd, mapp);
 	mpd->io_done = 1;
 }
@@ -2450,6 +2476,7 @@ out:
 }
 
 
+//* Modify by LeMaker : remove needed_blocks
 static int ext4_da_writepages(struct address_space *mapping,
 			      struct writeback_control *wbc)
 {
@@ -2461,7 +2488,7 @@ static int ext4_da_writepages(struct address_space *mapping,
 	int pages_written = 0;
 	unsigned int max_pages;
 	int range_cyclic, cycled = 1, io_done = 0;
-	int needed_blocks, ret = 0;
+	int ret = 0;
 	long desired_nr_to_write, nr_to_writebump = 0;
 	loff_t range_start = wbc->range_start;
 	struct ext4_sb_info *sbi = EXT4_SB(mapping->host->i_sb);
@@ -2556,6 +2583,8 @@ retry:
 		 * by delalloc
 		 */
 		BUG_ON(ext4_should_journal_data(inode));
+		//* Modify by LeMaker -- begin
+#if 0
 		needed_blocks = ext4_da_writepages_trans_blocks(inode);
 
 		/* start a new transaction*/
@@ -2569,7 +2598,8 @@ retry:
 			blk_finish_plug(&plug);
 			goto out_writepages;
 		}
-
+#endif
+		//* Modify by LeMaker -- end
 		/*
 		 * Now call write_cache_pages_da() to find the next
 		 * contiguous region of logical blocks that need
@@ -2589,8 +2619,12 @@ retry:
 		trace_ext4_da_write_pages(inode, &mpd);
 		wbc->nr_to_write -= mpd.pages_written;
 
+		//* Modify by LeMaker -- begin
+#if 0
 		ext4_journal_stop(handle);
-
+#endif
+		//* Modify by LeMaker -- end
+	
 		if ((mpd.retval == -ENOSPC) && sbi->s_journal) {
 			/* commit the transaction which would
 			 * free blocks released in the transaction
@@ -2633,7 +2667,7 @@ retry:
 		 */
 		mapping->writeback_index = done_index;
 
-out_writepages:
+//out_writepages: // Modify by LeMaker
 	wbc->nr_to_write -= nr_to_writebump;
 	wbc->range_start = range_start;
 	trace_ext4_da_writepages_result(inode, wbc, ret, pages_written);

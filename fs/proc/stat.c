@@ -50,10 +50,17 @@ static u64 get_idle_time(int cpu)
 	if (cpu_online(cpu))
 		idle_time = get_cpu_idle_time_us(cpu, NULL);
 
-	if (idle_time == -1ULL)
+	if (idle_time == -1ULL){
+		//* Modify by LeMaker -- begin
 		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+#if 0
 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-	else
+#else
+		struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+				 idle = usecs_to_cputime64(ktime_to_us(ts->idle_sleeptime));
+#endif
+		//* Modify by LeMaker -- end
+	}else
 		idle = usecs_to_cputime64(idle_time);
 
 	return idle;
@@ -66,10 +73,17 @@ static u64 get_iowait_time(int cpu)
 	if (cpu_online(cpu))
 		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
 
-	if (iowait_time == -1ULL)
+	if (iowait_time == -1ULL){
+		//* Modify by LeMaker -- begin
 		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+#if 0
 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-	else
+#else
+		struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+		iowait = usecs_to_cputime64(ktime_to_us(ts->iowait_sleeptime));
+#endif
+		//* Modify by LeMaker -- end
+	}else
 		iowait = usecs_to_cputime64(iowait_time);
 
 	return iowait;
@@ -129,8 +143,10 @@ static int show_stat(struct seq_file *p, void *v)
 	seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(guest));
 	seq_put_decimal_ull(p, ' ', cputime64_to_clock_t(guest_nice));
 	seq_putc(p, '\n');
-
-	for_each_online_cpu(i) {
+	
+	//* Modify by LeMaker : for_each_online_cpu --> for_each_possible_cpu
+	//for_each_online_cpu(i) {
+	for_each_possible_cpu(i) {	
 		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
 		user = kcpustat_cpu(i).cpustat[CPUTIME_USER];
 		nice = kcpustat_cpu(i).cpustat[CPUTIME_NICE];

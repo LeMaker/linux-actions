@@ -348,6 +348,53 @@ out:
 	return NULL;
 }
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_CLOSE_PATCH
+static char* vde_name = "vde";
+static char* vce_name = "vce";
+static char* camera_name0 = "video0";
+static char* camera_name3 = "video3";
+
+static int is_first_close(struct dentry * dentry)
+{
+	if((strcmp(dentry->d_iname, vde_name)==0)
+		|| (strcmp(dentry->d_iname, vce_name)==0)
+		|| (strcmp(dentry->d_iname, camera_name0)==0)
+		|| (strcmp(dentry->d_iname, camera_name3)==0))
+	{
+		printk("is_first_close find: %s \n", dentry->d_iname);
+		return 1;
+	}
+	return 0;
+}
+
+static void owl_close_patch(struct fdtable *fdt, struct files_struct * files)
+{
+	int i=0, j=0;
+	for (;;) {
+		unsigned long set;
+		i = j * BITS_PER_LONG;
+		if (i >= fdt->max_fds)
+			break;
+		set = fdt->open_fds[j++];
+		while (set) {
+			if (set & 1) {
+				struct file * file = fdt->fd[i];
+				struct dentry *dentry = file->f_path.dentry;
+				if (file && is_first_close(dentry)) {
+					filp_close(file, files);
+					fdt->fd[i] = NULL;
+					cond_resched();
+				}
+			}
+			i++;
+			set >>= 1;
+		}
+	}
+}
+#endif
+//* Modify by LeMaker -- end
+
 static void close_files(struct files_struct * files)
 {
 	int i, j;
@@ -363,6 +410,11 @@ static void close_files(struct files_struct * files)
 	rcu_read_lock();
 	fdt = files_fdtable(files);
 	rcu_read_unlock();
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_CLOSE_PATCH
+	owl_close_patch(fdt, files);
+#endif
+	//* Modify by LeMaker -- end
 	for (;;) {
 		unsigned long set;
 		i = j * BITS_PER_LONG;
