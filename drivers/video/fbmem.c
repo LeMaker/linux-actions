@@ -1960,7 +1960,10 @@ __setup("video=", video_setup);
     /*
      *  Visible symbols for modules
      */
-
+//* Modify by LeMaker -- begin
+EXPORT_SYMBOL(fb_new_modelist);
+EXPORT_SYMBOL(fb_prepare_logo);
+//* Modfiy by LeMaker -- end
 EXPORT_SYMBOL(register_framebuffer);
 EXPORT_SYMBOL(unregister_framebuffer);
 EXPORT_SYMBOL(num_registered_fb);

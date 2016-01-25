@@ -15,6 +15,12 @@ config SH_MIPI_DSI
 config SH_LCD_MIPI_DSI
 	bool
 
+# Modify by LeMaker -- begin
+source "drivers/gpu/stub/Kconfig"
+
+source "drivers/gpu/pvr/Kconfig"
+# Modify by LeMaker -- end
+
 source "drivers/char/agp/Kconfig"
 
 source "drivers/gpu/vga/Kconfig"
@@ -2497,6 +2503,10 @@ source "drivers/video/exynos/Kconfig"
 source "drivers/video/mmp/Kconfig"
 source "drivers/video/backlight/Kconfig"
 source "drivers/video/adf/Kconfig"
+
+# Modfiy by LeMaker -- begin
+source "drivers/video/owl/Kconfig"
+# Modify by Lemaker -- end
 
 if VT
 	source "drivers/video/console/Kconfig"
