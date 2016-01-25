@@ -535,6 +535,14 @@ config SPI_TLE62X0
 # Add new SPI protocol masters in alphabetical order above this line
 #
 
+# Moidfy by LeMaker -- begin
+config SPI_OWL
+	tristate "Actions SOC SPI controller"
+	depends on ARCH_OWL
+	help
+	  SPI driver for Actions SOC
+# Modify by LeMaker -- end
+
 endif # SPI_MASTER
 
 # (slave support would go here)
