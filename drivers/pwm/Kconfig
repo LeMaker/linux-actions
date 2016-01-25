@@ -201,4 +201,15 @@ config PWM_VT8500
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-vt8500.
 
+# Modify by LeMaker -- begin
+config PWM_OWL
+	tristate "OWL PWM support"
+	depends on ARCH_OWL
+	help
+		ACTIONS OWL PWM device support for generic pwm framework
+
+		To compile this driver as a module, choose M here: the module
+		will be called pwm-owl
+# Modify by LeMaker -- end
+
 endif
