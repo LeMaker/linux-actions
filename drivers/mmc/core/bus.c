@@ -25,6 +25,14 @@
 #include "sdio_cis.h"
 #include "bus.h"
 
+//* Modify by LeMaker -- begin
+#include <mach/bootdev.h>
+#include "./../host/gl520x_mmc.h"
+
+/* wait 3 s to card init ok ,then goto tsd proble*/ 
+#define WAIT_CARD_TIMEOUT	300 
+//* Modfiy by LeMaker -- end
+
 #define to_mmc_driver(d)	container_of(d, struct mmc_driver, drv)
 
 static ssize_t mmc_type_show(struct device *dev,
@@ -225,9 +233,13 @@ static void mmc_release_card(struct device *dev)
 
 	sdio_free_common_cis(card);
 
-	kfree(card->info);
-
+	//* Modify by LeMaker -- beign
+	if ( card->info )
+		kfree(card->info);
+	
 	kfree(card);
+	card = NULL;
+	//* Modify by LeMaker -- end
 }
 
 /*
@@ -253,6 +265,72 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
 	return card;
 }
 
+
+//* Modify by LeMaker -- begin
+struct mmc_card *slot0_card = NULL;
+struct mmc_card *slot2_card = NULL;
+
+int owl_set_carddev_match_name(void)
+{
+	int ret = 0;
+	int boot_dev;
+	int timeout = WAIT_CARD_TIMEOUT;
+    boot_dev = owl_get_boot_dev();
+	printk("%s: bootdev 0x%x\n", __FUNCTION__, boot_dev);
+							
+	switch (boot_dev) {
+		case OWL_BOOTDEV_SD0:
+			while((!slot0_card)&&(--timeout)){
+				msleep(10);
+			}
+			if( timeout <= 0){
+				printk("err:%s:slot0_card NULL\n",__FUNCTION__);
+				ret = -1;
+				goto out;
+			}else{
+				printk("%s,sd0 as boot card,sd0 name tsd_card\n", __FUNCTION__);
+				dev_set_name(&slot0_card->dev,"%s","tsd_card");
+			}
+			break;
+		case OWL_BOOTDEV_SD2:
+			while((!slot2_card)&&(--timeout)){
+				msleep(10);
+			}
+			if( timeout < 0){
+				printk("err:%s:slot2_card NULL\n",__FUNCTION__);
+				ret = -1;
+				goto out;
+			}else{
+				printk("%s,sd2 as boot card,sd2 name tsd_card\n", __FUNCTION__);
+				dev_set_name(&slot2_card->dev,"%s","tsd_card");
+			}
+			break;
+		case OWL_BOOTDEV_SD02SD2:
+			while((!slot2_card)&&(--timeout)){
+				msleep(10);
+			}
+			if(timeout < 0){
+				printk("err:%s:slot2_card NULL\n",__FUNCTION__);
+				ret = -1;
+				goto out;
+			}else{
+				printk("%s,sd0 as boot card,sd2 name card_to_card\n", __FUNCTION__);
+				dev_set_name(&slot2_card->dev,"%s","card_to_card");
+			}	
+			break;
+		default:
+			printk("ERR:%s: bootdev 0x%x\n", __FUNCTION__, boot_dev);
+			ret = -1 ;	
+			break;	
+	}
+out:
+	return ret;
+}
+
+EXPORT_SYMBOL(owl_set_carddev_match_name);
+//* Modify by LeMaker -- end
+
+
 /*
  * Register a new MMC card with the driver model.
  */
@@ -261,6 +339,10 @@ int mmc_add_card(struct mmc_card *card)
 	int ret;
 	const char *type;
 	const char *uhs_bus_speed_mode = "";
+	//* Modify by LeMaker -- begin
+	struct gl520xmmc_host *hcd;
+	int boot_dev;
+	//* Modify by LeMaker -- end
 	static const char *const uhs_speeds[] = {
 		[UHS_SDR12_BUS_SPEED] = "SDR12 ",
 		[UHS_SDR25_BUS_SPEED] = "SDR25 ",
@@ -269,9 +351,44 @@ int mmc_add_card(struct mmc_card *card)
 		[UHS_DDR50_BUS_SPEED] = "DDR50 ",
 	};
 
-
+//* Modify by LeMaker -- begin
+#if 0
 	dev_set_name(&card->dev, "%s:%04x", mmc_hostname(card->host), card->rca);
+#else
+	boot_dev = owl_get_boot_dev();
+	printk("%s: bootdev 0x%x\n", __FUNCTION__, boot_dev);
 
+	hcd = mmc_priv(card->host);
+	if(SDC0_SLOT == hcd->id)
+	{
+		slot0_card = card;
+	    //if (boot_dev == OWL_BOOTDEV_NAND || boot_dev == OWL_BOOTDEV_SD2) {
+			printk("force sd0/sd1 host ext-card\n");
+			dev_set_name(&card->dev,"%s","sd_card");
+		//}
+		//else{
+		//	dev_set_name(&card->dev, "%s", "sd_boot_card");
+		//}
+														    
+	}
+	else if(SDC1_SLOT == hcd->id)
+	{
+		 dev_set_name(&card->dev,"%s:%04x",mmc_hostname(card->host),card->rca);
+	}
+	else if(SDC2_SLOT == hcd->id)
+	{
+		slot2_card = card;	
+		if(boot_dev == OWL_BOOTDEV_SD0){
+			printk("force sd2(emmc) host ext-card\n");
+			dev_set_name(&card->dev, "%s", "emmc");				
+		} else{
+			printk("force sd2(emmc) host emmc_boot_card\n");
+			dev_set_name(&card->dev, "%s", "emmc_boot_card");
+			//return 0;
+		}
+	}
+#endif
+//* Modify by LeMaker -- begin
 	switch (card->type) {
 	case MMC_TYPE_MMC:
 		type = "MMC";

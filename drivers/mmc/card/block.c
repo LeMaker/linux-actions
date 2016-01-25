@@ -48,6 +48,11 @@
 
 #include "queue.h"
 
+//* Modify by LeMaker -- begin
+#include <mach/bootdev.h>
+#include "./../host/gl520x_mmc.h"
+//* Modify by LeMaker -- end
+
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -885,6 +890,11 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 {
 	int err;
 
+//* Modify by LeMaker -- begin
+#if 1
+	err= sd_mmc_reinit(host);
+	return err;
+#else
 	if (md->reset_done & type)
 		return -EEXIST;
 
@@ -906,6 +916,8 @@ static int mmc_blk_reset(struct mmc_blk_data *md, struct mmc_host *host,
 		}
 	}
 	return err;
+#endif
+//* Modify by LeMaker -- end
 }
 
 static inline void mmc_blk_reset_success(struct mmc_blk_data *md, int type)
@@ -1036,12 +1048,14 @@ retry:
 			goto out;
 	}
 
+	//* Modify by LeMaker -- begin
 	if (mmc_can_sanitize(card)) {
-		trace_mmc_blk_erase_start(EXT_CSD_SANITIZE_START, 0, 0);
+		//trace_mmc_blk_erase_start(EXT_CSD_SANITIZE_START, 0, 0);
 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_SANITIZE_START, 1, 0);
-		trace_mmc_blk_erase_end(EXT_CSD_SANITIZE_START, 0, 0);
+		//trace_mmc_blk_erase_end(EXT_CSD_SANITIZE_START, 0, 0);
 	}
+	//* Modify by LeMaker -- end
 out_retry:
 	if (err && !mmc_blk_reset(md, card->host, type))
 		goto retry;
@@ -1840,14 +1854,16 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 			}
 			break;
 		case MMC_BLK_CMD_ERR:
-			ret = mmc_blk_cmd_err(md, card, brq, req, ret);
+			//* Modify by LeMaker -- begin
+			//ret = mmc_blk_cmd_err(md, card, brq, req, ret);
+			//* Modify by LeMaker -- end
 			if (mmc_blk_reset(md, card->host, type))
 				goto cmd_abort;
 			if (!ret)
 				goto start_new_req;
 			break;
 		case MMC_BLK_RETRY:
-			if (retry++ < 5)
+			if (retry++ < 16) //* Modify by LeMaker : 5 -- > 16
 				break;
 			/* Fall through */
 		case MMC_BLK_ABORT:
@@ -2026,6 +2042,13 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	struct mmc_blk_data *md;
 	int devidx, ret;
 
+	//* Modify by LeMaker -- begin
+	int boot_dev;
+	struct gl520xmmc_host *hcd;
+
+	hcd = mmc_priv(card->host);
+	//* Modfiy by LeMaker -- end
+
 	devidx = find_first_zero_bit(dev_use, max_devices);
 	if (devidx >= max_devices)
 		return ERR_PTR(-ENOSPC);
@@ -2044,8 +2067,23 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	 * index anymore so we keep track of a name index.
 	 */
 	if (!subname) {
+	//* Modify by LeMaker -- begin
+#if 0
 		md->name_idx = find_first_zero_bit(name_use, max_devices);
 		__set_bit(md->name_idx, name_use);
+#else
+		__set_bit(0, name_use);
+		boot_dev = owl_get_boot_dev();
+		if(boot_dev > 0 && (boot_dev - OWL_BOOTDEV_SD0 == hcd->id)){
+			md->name_idx = 0;
+		} else {
+			md->name_idx = find_first_zero_bit(name_use, max_devices);
+		}
+		__set_bit(md->name_idx, name_use);
+										
+		//printk("## md->name_idx: %d\n", md->name_idx);
+#endif
+	//* Modify by LeMaker -- end
 	} else
 		md->name_idx = ((struct mmc_blk_data *)
 				dev_to_disk(parent)->private_data)->name_idx;
@@ -2470,7 +2508,7 @@ static int mmc_blk_resume(struct mmc_card *card)
 
 static struct mmc_driver mmc_driver = {
 	.drv		= {
-		.name	= "mmcblk",
+		.name	= "sd_card", //* Modify by LeMaker : mmcblk -- > sd_card
 	},
 	.probe		= mmc_blk_probe,
 	.remove		= mmc_blk_remove,

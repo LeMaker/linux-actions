@@ -62,6 +62,10 @@ obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
 obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
 obj-$(CONFIG_MMC_SDHCI_BCM2835)		+= sdhci-bcm2835.o
 
+# Modify by LeMaker -- begin
+obj-$(CONFIG_MMC_OWL)			+= act_mmc_host.o 
+act_mmc_host-y					:= wlan_device.o wlan_driver.o gl520x_mmc.o
+# Modify by LeMaker -- end
 ifeq ($(CONFIG_CB710_DEBUG),y)
 	CFLAGS-cb710-mmc	+= -DDEBUG
 endif

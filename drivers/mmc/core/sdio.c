@@ -1255,6 +1255,9 @@ int sdio_reset_comm(struct mmc_card *card)
 	mmc_claim_host(host);
 
 	mmc_go_idle(host);
+	//* Modify by LeMaker -- begin
+	mmc_set_timing(card->host, 0);
+	//* Modify by LeMaker -- end
 
 	mmc_set_clock(host, host->f_min);
 
@@ -1267,6 +1270,10 @@ int sdio_reset_comm(struct mmc_card *card)
 		err = -EINVAL;
 		goto err;
 	}
+	//* Modify by LeMaker -- begin
+	if (mmc_host_uhs(host))
+		host->ocr |= R4_18V_PRESENT;
+	//* Modify by LeMaker -- end
 
 	err = mmc_sdio_init_card(host, host->ocr, card, 0);
 	if (err)

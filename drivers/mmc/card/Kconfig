@@ -14,11 +14,31 @@ config MMC_BLOCK
 	  mount the filesystem. Almost everyone wishing MMC support
 	  should say Y or M here.
 
+# Modfiy by LeMaker -- begin
+config TSD_MMC_BLOCK
+	tristate "ACTION TSD MMC block device driver"
+	depends on BLOCK
+	help
+	 Say Y here to enable the tsd MMC block device driver support.
+	 This provides a tsd block device driver, which you can use to
+	 mount the filesystem. Almost everyone wishing MMC support
+	 should say Y or M here.	  
+								
+config CARD_TO_CARD_MMC_BLOCK
+	tristate "ACTION CARD_TO_CARD MMC block device driver"
+	depends on BLOCK
+	help
+	  Say Y here to enable the  MMC block device driver support.
+	  This provides a card to card block device driver, which you can use to
+	  mount the filesystem. Almost everyone wishing MMC support
+	  should say Y or M here.
+# Modify by LeMaker -- end
+
 config MMC_BLOCK_MINORS
 	int "Number of minors per block device"
 	depends on MMC_BLOCK
 	range 4 256
-	default 8
+	default 16
 	help
 	  Number of minors per block device. One is needed for every
 	  partition on the disk (plus one for the whole disk).
@@ -27,10 +47,10 @@ config MMC_BLOCK_MINORS
 	  of supported block devices will be limited to 256 divided
 	  by this number.
 
-	  Default is 8 to be backwards compatible with previous
+	  Default is 16 to be backwards compatible with previous
 	  hardwired device numbering.
 
-	  If unsure, say 8 here.
+	  If unsure, say 16 here.
 
 config MMC_BLOCK_BOUNCE
 	bool "Use bounce buffer for simple hosts"

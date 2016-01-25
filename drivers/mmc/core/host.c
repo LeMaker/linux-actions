@@ -30,6 +30,10 @@
 #include "core.h"
 #include "host.h"
 
+//* Modify by LeMaker -- begin
+#include <linux/of_device.h>
+#include <mach/bootdev.h>
+//* Modify by LeMaker -- end
 #define cls_dev_to_mmc_host(d)	container_of(d, struct mmc_host, class_dev)
 
 static void mmc_host_classdev_release(struct device *dev)
@@ -429,6 +433,11 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 	int err;
 	struct mmc_host *host;
 
+	//* Modify by LeMaker -- begin
+	int boot_dev, host_id;
+	const __be32 *addr;
+	struct device_node *dn = dev->of_node;
+	//* Modify by LeMaker -- end
 	host = kzalloc(sizeof(struct mmc_host) + extra, GFP_KERNEL);
 	if (!host)
 		return NULL;
@@ -437,7 +446,24 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 	host->rescan_disable = 1;
 	idr_preload(GFP_KERNEL);
 	spin_lock(&mmc_host_lock);
+	//* Modify by LeMaker -- begin
+#if 0
 	err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
+#else
+	addr = of_get_property(dn, "reg", &host_id);
+	if (!addr || (host_id < sizeof(int)))
+		return NULL;
+			
+	host_id = (int)((be32_to_cpu(*addr) - 0xB0230000) >> 14);
+	boot_dev = owl_get_boot_dev();
+						
+	if(boot_dev > 0 && (boot_dev - OWL_BOOTDEV_SD0 == host_id)){
+		err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
+	} else {
+		err = idr_alloc(&mmc_host_idr, host, 1, 0, GFP_NOWAIT);
+	}
+#endif
+	//* Modify by LeMaker -- end
 	if (err >= 0)
 		host->index = err;
 	spin_unlock(&mmc_host_lock);
@@ -445,6 +471,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 	if (err < 0)
 		goto free;
 
+	//* Modify by LeMaker -- begin
+	printk("## host_id: %d boot_dev %x host->index: %d\n", host_id, boot_dev, host->index);	
+	//* Modify by LeMaekr -- end
 	dev_set_name(&host->class_dev, "mmc%d", host->index);
 
 	host->parent = dev;

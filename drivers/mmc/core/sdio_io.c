@@ -319,6 +319,10 @@ static int sdio_io_rw_ext_helper(struct sdio_func *func, int write,
 			blocks = remainder / func->cur_blksize;
 			if (blocks > max_blocks)
 				blocks = max_blocks;
+			//* Modify by LeMaker -- begin
+			if (remainder > 512)
+				blocks = (remainder & ~((1<<9)-1)) / func->cur_blksize;
+			//* Modify by LeMaker -- end
 			size = blocks * func->cur_blksize;
 
 			ret = mmc_io_rw_extended(func->card, write,

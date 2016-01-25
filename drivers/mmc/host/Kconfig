@@ -394,6 +394,19 @@ config MMC_SPI
 
 	  If unsure, or if your system has no SPI master driver, say N.
 
+# Modify by LeMaker -- begin
+config MMC_OWL
+	tristate " Actions MMC "
+	help
+	  Say Y here if you have MMC_OWL 
+	  connected to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called CONFIG_MMC_OWL.
+# Modify by LeMaker -- end
+
 config MMC_S3C
 	tristate "Samsung S3C SD/MMC Card Interface support"
 	depends on ARCH_S3C24XX

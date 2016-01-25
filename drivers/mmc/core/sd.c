@@ -831,6 +831,12 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 		/* Erase init depends on CSD and SSR */
 		mmc_init_erase(card);
 
+		//* Modify by LeMaker -- begin
+		// fix bug cmd 6 crc7 error
+		// we must set 2M high clk
+		mmc_set_clock(host, 2000000);
+		//* Modify by LeMaker - end
+
 		/*
 		 * Fetch switch information from card.
 		 */
@@ -1210,10 +1216,28 @@ int mmc_attach_sd(struct mmc_host *host)
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
 
+	//* Modify by LeMaker -- begin
+	//switch pin :only cmd and clk , uart tx rx
+	if(host->ops->switch_uart_pinctr(host)){
+		printk("Err:switch uart pin:%s\n",__FUNCTION__);
+		err = -1;
+		return err;
+	}
+	//* Modify by LeMaker -- end
+	
 	err = mmc_send_app_op_cond(host, 0, &ocr);
 	if (err)
 		return err;
 
+	//* Modify by LeMaker -- begin
+	// switch pin : clk cmd d0-d3
+	if(host->ops->switch_sd_pinctr(host)){
+		printk("Err:switch sd pin:%s\n",__FUNCTION__);
+		err = -1;
+		return err;
+	}
+	//* Modify by LeMaker -- end
+	
 	mmc_sd_attach_bus_ops(host);
 	if (host->ocr_avail_sd)
 		host->ocr_avail = host->ocr_avail_sd;
