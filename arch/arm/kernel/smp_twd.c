@@ -31,10 +31,17 @@ static void __iomem *twd_base;
 
 static struct clk *twd_clk;
 static unsigned long twd_timer_rate;
+//* Modify by LeMaker -- begin
+static bool common_setup_called;
+//* Modify by LeMaker -- end 
 static DEFINE_PER_CPU(bool, percpu_setup_called);
 
 static struct clock_event_device __percpu **twd_evt;
 static int twd_ppi;
+
+//* Modify by LeMaker -- begin
+static void twd_get_clock(struct device_node *np);
+//* Modify by LeMaker -- end
 
 static void twd_set_mode(enum clock_event_mode mode,
 			struct clock_event_device *clk)
@@ -282,7 +289,31 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
 	}
 	per_cpu(percpu_setup_called, cpu) = true;
 
+//* Modify by LeMaker -- begin
+#if 1
+	/*
+	 * This stuff only need to be done once for the entire TWD cluster
+	 * during the runtime of the system.
+	 */
+	if (!common_setup_called) {
+	/*
+	 * We use IS_ERR_OR_NULL() here, because if the clock stubs
+	 * are active we will get a valid clk reference which is
+	 * however NULL and will return the rate 0. In that case we
+	  * need to calibrate the rate instead.
+	 */
+		if (!IS_ERR_OR_NULL(twd_clk))
+			twd_timer_rate = clk_get_rate(twd_clk);
+		else
+			twd_calibrate_rate();
+
+		common_setup_called = true;
+	}
+#endif
+#if 0
 	twd_calibrate_rate();
+#endif
+//* Modify by LeMaker -- end
 
 	/*
 	 * The following is done once per CPU the first time .setup() is

@@ -55,6 +55,38 @@ ENDPROC(cpu_suspend_abort)
 	.align	5
 	.pushsection	.idmap.text,"ax"
 ENTRY(cpu_resume_mmu)
+@ Modify by LeMaker -- begin
+	mov	r8, #0
+	mcr	p15, 2, r8, c0, c0, 0
+	mrc	p15, 1, r8, c0, c0, 0
+
+	ldr	r1, =0x7fff
+	and	r2, r1, r0, lsr #13
+
+	ldr	r1, =0x3ff
+
+	and	r3, r1, r8, lsr #3	@ NumWays - 1
+	add	r2, r2, #1		@ NumSets
+
+	and	r8, r8, #0x7
+	add	r8, r8, #4	@ SetShift
+
+	clz	r1, r3		@ WayShift
+	add	r4, r3, #1	@ NumWays
+1:	sub	r2, r2, #1	@ NumSets--
+	mov	r3, r4		@ Temp = NumWays
+2:	subs	r3, r3, #1	@ Temp--
+	mov	r5, r3, lsl r1
+	mov	r6, r2, lsl r8
+	orr	r5, r5, r6	@ Reg = (Temp<<WayShift)|(NumSets<<SetShift)
+	mcr	p15, 0, r5, c7, c6, 2
+	bgt	2b
+	cmp	r2, #0
+	bgt	1b
+	dsb
+	isb
+@ Modify by LeMaker -- end
+
 	ldr	r3, =cpu_resume_after_mmu
 	instr_sync
 	mcr	p15, 0, r0, c1, c0, 0	@ turn on MMU, I-cache, etc

@@ -363,6 +363,9 @@ struct usb_bus {
 					 * the ep queue on a short transfer
 					 * with the URB_SHORT_NOT_OK flag set.
 					 */
+	//* Modify by LeMaker -- begin
+	unsigned no_sg_constraint:1;	/* no sg constraint */
+	//* Modify by LeMaker -- end
 	unsigned sg_tablesize;		/* 0 or largest number of sg list entries */
 
 	int devnum_next;		/* Next open device number in
@@ -418,6 +421,24 @@ enum usb_port_connect_type {
 	USB_PORT_CONNECT_TYPE_HARD_WIRED,
 	USB_PORT_NOT_USED,
 };
+
+//* Modify by LeMaker -- begin
+/*
+ * USB 2.0 Link Power Management (LPM) parameters.
+ */
+struct usb2_lpm_parameters {
+	/* Best effort service latency indicate how long the host will drive
+	 * resume on an exit from L1.
+	 */
+	unsigned int besl;
+
+	/* Timeout value in microseconds for the L1 inactivity (LPM) timer.
+	 * When the timer counts to zero, the parent hub will initiate a LPM
+	 * transition to L1.
+	 */
+	int timeout;
+};
+//* Modify by LeMaker -- end
 
 /*
  * USB 3.0 Link Power Management (LPM) parameters.
@@ -564,7 +585,9 @@ struct usb_device {
 	unsigned wusb:1;
 	unsigned lpm_capable:1;
 	unsigned usb2_hw_lpm_capable:1;
+	unsigned usb2_hw_lpm_besl_capable:1; //* Modify by LeMaker
 	unsigned usb2_hw_lpm_enabled:1;
+	unsigned usb2_hw_lpm_allowed:1;		//* Modify by LeMaker
 	unsigned usb3_lpm_enabled:1;
 	int string_langid;
 
@@ -592,9 +615,11 @@ struct usb_device {
 	struct wusb_dev *wusb_dev;
 	int slot_id;
 	enum usb_device_removable removable;
+	struct usb2_lpm_parameters l1_params; //* Modify by LeMaker
 	struct usb3_lpm_parameters u1_params;
 	struct usb3_lpm_parameters u2_params;
 	unsigned lpm_disable_count;
+	unsigned hub_initiated_lpm_disable_count; //* Modify by LeMaker
 };
 #define	to_usb_device(d) container_of(d, struct usb_device, dev)
 
@@ -700,6 +725,13 @@ static inline bool usb_device_supports_ltm(struct usb_device *udev)
 		return false;
 	return udev->bos->ss_cap->bmAttributes & USB_LTM_SUPPORT;
 }
+
+//* Modify by LeMaker -- begin
+static inline bool usb_device_no_sg_constraint(struct usb_device *udev)
+{
+	return udev && udev->bus && udev->bus->no_sg_constraint;
+}
+//* Modify by LeMaker -- end
 
 
 /*-------------------------------------------------------------------------*/
@@ -1220,6 +1252,9 @@ struct usb_anchor {
 
 static inline void init_usb_anchor(struct usb_anchor *anchor)
 {
+	//* Modify by LeMaker -- begin
+	memset(anchor, 0, sizeof(*anchor));
+	//* Modify by LeMaker -- end
 	INIT_LIST_HEAD(&anchor->urb_list);
 	init_waitqueue_head(&anchor->wait);
 	spin_lock_init(&anchor->lock);
@@ -1550,8 +1585,13 @@ static inline void usb_fill_int_urb(struct urb *urb,
 	urb->transfer_buffer_length = buffer_length;
 	urb->complete = complete_fn;
 	urb->context = context;
-	if (dev->speed == USB_SPEED_HIGH || dev->speed == USB_SPEED_SUPER)
+	if (dev->speed == USB_SPEED_HIGH || dev->speed == USB_SPEED_SUPER) {
+		//* Modify by LeMaker -- begin
+		/* make sure interval is within allowed range */
+		interval = clamp(interval, 1, 16);
+		//* Modify by LeMaker -- end
 		urb->interval = 1 << (interval - 1);
+	}
 	else
 		urb->interval = interval;
 	urb->start_frame = -1;

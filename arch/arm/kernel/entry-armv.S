@@ -387,6 +387,11 @@ ENDPROC(__dabt_usr)
 __irq_usr:
 	usr_entry
 	kuser_cmpxchg_check
+@ Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_DEBUG_IRQ_STACK
+	kuser_stack_chg_save
+#endif
+@ Modify by LeMaker -- end
 	irq_handler
 	get_thread_info tsk
 	mov	why, #0

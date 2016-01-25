@@ -587,6 +587,12 @@ static void __free_from_contiguous(struct device *dev, struct page *page,
 
 static inline pgprot_t __get_dma_pgprot(struct dma_attrs *attrs, pgprot_t prot)
 {
+//* Modify by LeMaker -- begin
+	if (dma_get_attr(DMA_ATTR_NON_CONSISTENT, attrs)) {
+		pgprot_t prot_new = __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_WRITEALLOC);
+		return prot_new;
+	}
+//* Modify by LeMaker -- end
 	prot = dma_get_attr(DMA_ATTR_WRITE_COMBINE, attrs) ?
 			    pgprot_writecombine(prot) :
 			    pgprot_dmacoherent(prot);
@@ -828,6 +834,10 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
 			}
 		} else {
 			vaddr = page_address(page) + offset;
+			//* Modify by LeMaker -- begin
+			if ((vaddr + len) > high_memory)
+				len = PAGE_SIZE;
+			//* Modify by LeMaker -- end
 			op(vaddr, len, dir);
 		}
 		offset = 0;
@@ -842,8 +852,11 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
  * platforms with CONFIG_DMABOUNCE.
  * Use the driver DMA support - see dma-mapping.h (dma_sync_*)
  */
-static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
-	size_t size, enum dma_data_direction dir)
+//* Modify by LeMaker -- begin
+//static void __dma_page_cpu_to_dev(struct page *page, unsigned long off, size_t size, enum dma_data_direction dir)
+void __dma_page_cpu_to_dev(struct page *page, unsigned long off, 
+		size_t size, enum dma_data_direction dir)
+//* Modify by LeMaker -- end
 {
 	unsigned long paddr;
 

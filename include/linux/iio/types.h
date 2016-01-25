@@ -26,6 +26,9 @@ enum iio_chan_type {
 	IIO_ANGL,
 	IIO_TIMESTAMP,
 	IIO_CAPACITANCE,
+	//* Modify by LeMaker -- begin
+	IIO_QUATERNION,
+	//* Modify by LeMaker -- end
 	IIO_ALTVOLTAGE,
 	IIO_CCT,
 	IIO_PRESSURE,
@@ -46,6 +49,9 @@ enum iio_modifier {
 	IIO_MOD_X_OR_Y_OR_Z,
 	IIO_MOD_LIGHT_BOTH,
 	IIO_MOD_LIGHT_IR,
+	//* Modify by LeMaker -- begin
+	IIO_MOD_R,
+	//* Modify by LeMaker -- end
 	IIO_MOD_ROOT_SUM_SQUARED_X_Y,
 	IIO_MOD_SUM_SQUARED_X_Y_Z,
 	IIO_MOD_LIGHT_CLEAR,

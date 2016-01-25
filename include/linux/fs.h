@@ -1500,6 +1500,13 @@ struct dir_context {
 	loff_t pos;
 };
 
+//* Modify by LeMaker -- begin
+struct uparam {
+	unsigned int flash_partition;
+	unsigned int devnum_in_phypart;
+};
+//* Modify by LeMaker -- end
+
 static inline bool dir_emit(struct dir_context *ctx,
 			    const char *name, int namelen,
 			    u64 ino, unsigned type)

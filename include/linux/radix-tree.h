@@ -231,6 +231,9 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
 unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
 				unsigned long index, unsigned long max_scan);
 int radix_tree_preload(gfp_t gfp_mask);
+//* Modify by LeMaker -- begin
+int radix_tree_maybe_preload(gfp_t gfp_mask);
+//* Modify by LeMaker -- end
 void radix_tree_init(void);
 void *radix_tree_tag_set(struct radix_tree_root *root,
 			unsigned long index, unsigned int tag);

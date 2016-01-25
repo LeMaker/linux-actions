@@ -1023,8 +1023,14 @@ out_mdbgen:
 static int __cpuinit dbg_reset_notify(struct notifier_block *self,
 				      unsigned long action, void *cpu)
 {
+	//* Modify by LeMaker -- begin
 	if ((action & ~CPU_TASKS_FROZEN) == CPU_ONLINE)
+	{
+		register_undef_hook(&debug_reg_hook);
 		smp_call_function_single((int)cpu, reset_ctrl_regs, NULL, 1);
+		unregister_undef_hook(&debug_reg_hook);
+	}
+	//* Modify by LeMaker -- end
 
 	return NOTIFY_OK;
 }
@@ -1037,8 +1043,14 @@ static struct notifier_block __cpuinitdata dbg_reset_nb = {
 static int dbg_cpu_pm_notify(struct notifier_block *self, unsigned long action,
 			     void *v)
 {
+	//* Modify by LeMaker -- begin
 	if (action == CPU_PM_EXIT)
+	{
+		register_undef_hook(&debug_reg_hook);
 		reset_ctrl_regs(NULL);
+		unregister_undef_hook(&debug_reg_hook);
+	}
+	//* Modify by LeMaker -- end
 
 	return NOTIFY_OK;
 }
@@ -1060,9 +1072,12 @@ static inline void pm_init(void)
 
 static int __init arch_hw_breakpoint_init(void)
 {
+	//* Modify by LeMaker -- begin
+	register_undef_hook(&debug_reg_hook);
 	debug_arch = get_debug_arch();
 
 	if (!debug_arch_supported()) {
+		unregister_undef_hook(&debug_reg_hook);
 		pr_info("debug architecture 0x%x unsupported.\n", debug_arch);
 		return 0;
 	}
@@ -1078,7 +1093,8 @@ static int __init arch_hw_breakpoint_init(void)
 	 * driven low on this core and there isn't an architected way to
 	 * determine that.
 	 */
-	register_undef_hook(&debug_reg_hook);
+	//register_undef_hook(&debug_reg_hook);
+	//* Modify by LeMaker -- end
 
 	/*
 	 * Reset the breakpoint resources. We assume that a halting

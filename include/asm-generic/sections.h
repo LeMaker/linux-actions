@@ -20,7 +20,10 @@ extern char __start_rodata[], __end_rodata[];
 /* Start and end of .ctors section - used for constructor calls. */
 extern char __ctors_start[], __ctors_end[];
 
-extern __visible const void __nosave_begin, __nosave_end;
+//* Modify by LeMaker -- begin : for_linaro_3.10.94
+//* extern __visible const void __nosave_begin, __nosave_end;
+extern const unsigned long __nosave_begin[], __nosave_end[];
+//* Modify by Lemaker -- end
 
 /* function descriptor handling (if any).  Override
  * in asm/sections.h */

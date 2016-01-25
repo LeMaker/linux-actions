@@ -99,6 +99,8 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
  * Dummy noncoherent implementation.  We don't provide a dma_cache_sync
  * function so drivers using this API are highlighted with build warnings.
  */
+//* Modify by LeMaker -- begin
+#if 0
 static inline void *dma_alloc_noncoherent(struct device *dev, size_t size,
 		dma_addr_t *handle, gfp_t gfp)
 {
@@ -109,6 +111,8 @@ static inline void dma_free_noncoherent(struct device *dev, size_t size,
 		void *cpu_addr, dma_addr_t handle)
 {
 }
+#endif
+//* Modify by LeMaker -- end
 
 extern int dma_supported(struct device *dev, u64 mask);
 
@@ -172,6 +176,30 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
 	debug_dma_free_coherent(dev, size, cpu_addr, dma_handle);
 	ops->free(dev, size, cpu_addr, dma_handle, attrs);
 }
+
+//* Modify by LeMaker -- begin
+/*
+ * Dummy noncoherent implementation.  We don't provide a dma_cache_sync
+ * function so drivers using this API are highlighted with build warnings.
+ */
+static inline void *dma_alloc_noncoherent(struct device *dev, size_t size,
+				dma_addr_t *handle, gfp_t gfp)
+{
+	/* add by actions */
+	DEFINE_DMA_ATTRS(attrs);
+	dma_set_attr(DMA_ATTR_NON_CONSISTENT, &attrs);
+	return dma_alloc_attrs(dev, size, handle, gfp, &attrs);
+}
+
+static inline void dma_free_noncoherent(struct device *dev, size_t size,
+				void *cpu_addr, dma_addr_t handle)
+{
+	/* add by actions */
+	DEFINE_DMA_ATTRS(attrs);
+	dma_set_attr(DMA_ATTR_NON_CONSISTENT, &attrs);
+	return dma_free_attrs(dev, size, cpu_addr, handle, &attrs);
+}
+//* Modify by LeMaker -- end
 
 /**
  * arm_dma_mmap - map a coherent DMA allocation into user space

@@ -157,6 +157,14 @@ enum omap_display_caps {
 	OMAP_DSS_DISPLAY_CAP_TEAR_ELIM		= 1 << 1,
 };
 
+//* Modify by LeMaker -- begin
+enum omap_dss_update_mode {
+	OMAP_DSS_UPDATE_DISABLED = 0,
+	OMAP_DSS_UPDATE_AUTO,
+	OMAP_DSS_UPDATE_MANUAL,
+};
+//* Modify by LeMaker -- end
+
 enum omap_dss_display_state {
 	OMAP_DSS_DISPLAY_DISABLED = 0,
 	OMAP_DSS_DISPLAY_ACTIVE,
@@ -692,6 +700,10 @@ struct omap_dss_driver {
 	void (*disable)(struct omap_dss_device *display);
 	int (*run_test)(struct omap_dss_device *display, int test);
 
+	//* Modify by LeMaker -- begin
+	int (*set_update_mode)(struct omap_dss_device *dssdev, enum omap_dss_update_mode);
+	enum omap_dss_update_mode (*get_update_mode)(struct omap_dss_device *dssdev);
+	//* Modify by LeMaker -- end
 	int (*update)(struct omap_dss_device *dssdev,
 			       u16 x, u16 y, u16 w, u16 h);
 	int (*sync)(struct omap_dss_device *dssdev);

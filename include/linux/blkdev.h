@@ -1004,7 +1004,10 @@ struct blk_plug {
 	struct list_head list; /* requests */
 	struct list_head cb_list; /* md requires an unplug callback */
 };
-#define BLK_MAX_REQUEST_COUNT 16
+
+//* Modify by LeMaker -- begin 16--> 1
+#define BLK_MAX_REQUEST_COUNT 1
+//* Modify by LeMaker -- end
 
 struct blk_plug_cb;
 typedef void (*blk_plug_cb_fn)(struct blk_plug_cb *, bool);
@@ -1525,6 +1528,18 @@ struct block_device_operations {
 	/* this callback is with swap_lock and sometimes page table lock held */
 	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
 	struct module *owner;
+	//* Modify by LeMaker -- begin
+	/*
+	 * following code added by actions 2012-07-09
+	 */
+	unsigned int (*blk_read)(unsigned long, unsigned long, void * ,struct inode *);
+	unsigned int (*blk_write)(unsigned long, unsigned long, void * ,struct inode *);
+
+	int (*adfu_read)(unsigned long start, unsigned long nsector, void *buf, struct uparam * i);
+	int (*adfu_write)(unsigned long start, unsigned long nsector, void *buf, struct uparam * i);	
+						
+	void (*flush_disk_cache)(void);
+	//* Modify by LeMaker -- end
 };
 
 extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,

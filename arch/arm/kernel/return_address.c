@@ -59,9 +59,13 @@ void *return_address(unsigned int level)
 
 #else /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) */
 
+//* Modify by LeMaker -- begin
+#if 0
 #if defined(CONFIG_ARM_UNWIND)
 #warning "TODO: return_address should use unwind tables"
 #endif
+#endif 
+//* Modify by LeMaker -- end
 
 void *return_address(unsigned int level)
 {

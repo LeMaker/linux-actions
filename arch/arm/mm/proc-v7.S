@@ -177,8 +177,13 @@ ENDPROC(cpu_pj4b_do_idle)
  *	It is assumed that:
  *	- cache type register is implemented
  */
-__v7_ca5mp_setup:
+@ Modify by LeMaker -- begin
 __v7_ca9mp_setup:
+	mrc	p15, 0, r0, c1, c0, 1
+	orr	r0, r0, #((1 << 1) | (1 << 2))
+	mcr	p15, 0, r0, c1, c0, 1
+__v7_ca5mp_setup:
+@ Modify by LeMaker -- end
 	mov	r10, #(1 << 0)			@ TLB ops broadcasting
 	b	1f
 __v7_ca7mp_setup:

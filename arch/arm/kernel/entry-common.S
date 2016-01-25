@@ -57,6 +57,11 @@ work_pending:
 	bl	do_work_pending
 	cmp	r0, #0
 	beq	no_work_pending
+	@ Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_DEBUG_IRQ_STACK
+	kuser_stack_chg_clear
+#endif
+	@ Modify by LeMaker -- end
 	movlt	scno, #(__NR_restart_syscall - __NR_SYSCALL_BASE)
 	ldmia	sp, {r0 - r6}			@ have to reload r0 - r6
 	b	local_restart			@ ... and off we go
@@ -77,7 +82,11 @@ no_work_pending:
 	/* perform architecture specific actions before user return */
 	arch_ret_to_user r1, lr
 	ct_user_enter save = 0
-
+@ Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_DEBUG_IRQ_STACK
+	kuser_stack_chg_check
+#endif
+@ Modify by LeMaker -- end
 	restore_user_regs fast = 0, offset = 0
 ENDPROC(ret_to_user_from_irq)
 ENDPROC(ret_to_user)

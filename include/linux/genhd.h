@@ -55,7 +55,9 @@ enum {
 	UNIXWARE_PARTITION = 0x63,	/* Same as GNU_HURD and SCO Unix */
 };
 
-#define DISK_MAX_PARTS			256
+//* Modify by LeMaker -- begin  256 --> 16
+#define DISK_MAX_PARTS			16
+//* Modify by LeMaker -- end
 #define DISK_NAME_LEN			32
 
 #include <linux/major.h>

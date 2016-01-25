@@ -68,6 +68,13 @@ struct thread_info {
 	unsigned long		thumbee_state;	/* ThumbEE Handler Base register */
 #endif
 	struct restart_block	restart_block;
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_OWL_DEBUG_IRQ_STACK
+	void *hbp;
+	int regs_init;
+	struct pt_regs regs;
+#endif
+//* Modify by LeMaker -- end
 };
 
 #define INIT_THREAD_INFO(tsk)						\

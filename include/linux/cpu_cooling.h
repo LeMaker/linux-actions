@@ -29,6 +29,32 @@
 #include <linux/cpumask.h>
 
 #ifdef CONFIG_CPU_THERMAL
+
+//* Modify by LeMaker -- begin
+#define CPUFREQ_COOLING_START		0
+#define CPUFREQ_COOLING_STOP		1
+
+/**
+  * cputherm_register_notifier - Register a notifier with cpu cooling interface.
+  * @nb:	struct notifier_block * with callback info.
+  * @list: integer value for which notification is needed. possible values are
+  *	CPUFREQ_COOLING_TYPE and CPUHOTPLUG_COOLING_TYPE.
+  *
+  * This exported function registers a driver with cpu cooling layer. The driver
+  * will be notified when any cpu cooling action is called.
+  */
+int cputherm_register_notifier(struct notifier_block *nb, unsigned int list);
+
+/**
+  * cputherm_unregister_notifier - Un-register a notifier.
+  * @nb:	struct notifier_block * with callback info.
+  * @list: integer value for which notification is needed. values possible are
+  *	CPUFREQ_COOLING_TYPE.
+  *
+  * This exported function un-registers a driver with cpu cooling layer.
+  */
+int cputherm_unregister_notifier(struct notifier_block *nb, unsigned int list);
+//* Modify by LeMaker -- end
 /**
  * cpufreq_cooling_register - function to create cpufreq cooling device.
  * @clip_cpus: cpumask of cpus where the frequency constraints will happen

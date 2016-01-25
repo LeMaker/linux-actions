@@ -47,6 +47,16 @@ int opp_enable(struct device *dev, unsigned long freq);
 int opp_disable(struct device *dev, unsigned long freq);
 
 struct srcu_notifier_head *opp_get_notifier(struct device *dev);
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_OF
+int of_init_opp_table(struct device *dev);
+#else
+static inline int of_init_opp_table(struct device *dev)
+{
+	return -EINVAL;
+}
+#endif /* CONFIG_OF */
+//* Modify by LeMaker -- end
 #else
 static inline unsigned long opp_get_voltage(struct opp *opp)
 {

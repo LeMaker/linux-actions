@@ -774,6 +774,9 @@ struct fb_videomode {
 	u32 sync;
 	u32 vmode;
 	u32 flag;
+	//* Modify by LeMaker -- begin
+	u32 vid;		/*optional*/
+	//* Modify by LeMaker -- end
 };
 
 extern const char *fb_mode_option;

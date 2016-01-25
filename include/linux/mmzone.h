@@ -361,6 +361,17 @@ struct zone {
 	unsigned long		compact_cached_free_pfn;
 	unsigned long		compact_cached_migrate_pfn;
 #endif
+
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_MEMORY_ISOLATION
+	/*
+	 * Number of isolated pageblock. It is used to solve incorrect
+	 * freepage counting problem due to racy retrieving migratetype
+	 * of pageblock. Protected by zone->lock.
+	 */
+	unsigned long		nr_isolate_pageblock;
+#endif
+//* Modify by LeMaker -- end
 #ifdef CONFIG_MEMORY_HOTPLUG
 	/* see spanned/present_pages for more description */
 	seqlock_t		span_seqlock;
@@ -386,6 +397,21 @@ struct zone {
 	int			compact_order_failed;
 #endif
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_CMA
+	unsigned long managed_cma_pages;
+	/*
+	 * Number of allocation attempt on each movable/cma type
+	 * without switching type. max_try(movable/cma) maintain
+	 * predefined calculated counter and replenish nr_try_(movable/cma)
+	 * with each of them whenever both of them are 0.
+	 */
+	int nr_try_movable;
+	int nr_try_cma;
+	int max_try_movable;
+	int max_try_cma;
+#endif
+//* Modfiy by LeMaker -- end
 	ZONE_PADDING(_pad1_)
 
 	/* Fields commonly accessed by the page reclaim scanner */

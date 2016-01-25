@@ -211,8 +211,13 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 
 void show_stack(struct task_struct *tsk, unsigned long *sp)
 {
+//* Modif by LeMaker -- begin
+	int console_save = console_loglevel;
+	console_loglevel = 15;
 	dump_backtrace(NULL, tsk);
 	barrier();
+	console_loglevel = console_save;
+//* Modify by LeMaker -- end
 }
 
 #ifdef CONFIG_PREEMPT
@@ -231,12 +236,23 @@ void show_stack(struct task_struct *tsk, unsigned long *sp)
 #define S_ISA " ARM"
 #endif
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+extern void owl_switch_jtag(void);
+#endif
+//* Modify by LeMaker -- end
+
 static int __die(const char *str, int err, struct pt_regs *regs)
 {
 	struct task_struct *tsk = current;
 	static int die_counter;
 	int ret;
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_MACH_OWL
+	owl_switch_jtag();
+#endif
+//* Modify by LeMaker -- end
 	printk(KERN_EMERG "Internal error: %s: %x [#%d]" S_PREEMPT S_SMP
 	       S_ISA "\n", str, err, ++die_counter);
 

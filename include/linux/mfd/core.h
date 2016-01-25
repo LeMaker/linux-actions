@@ -97,8 +97,9 @@ static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
 	return pdev->mfd_cell;
 }
 
+//* Modify by LeMaker : add const
 extern int mfd_add_devices(struct device *parent, int id,
-			   struct mfd_cell *cells, int n_devs,
+		       const struct mfd_cell *cells, int n_devs,
 			   struct resource *mem_base,
 			   int irq_base, struct irq_domain *irq_domain);
 

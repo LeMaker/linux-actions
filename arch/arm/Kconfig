@@ -70,6 +70,11 @@ config ARM
 	  Europe.  There is an ARM Linux project with a web page at
 	  <http://www.arm.linux.org.uk/>.
 
+# Modify by LeMaker -- begin
+config ARCH_HIBERNATION_POSSIBLE
+	def_bool y
+# Moidfy by LeMaker -- end`
+
 config ARM_HAS_SG_CHAIN
 	bool
 
@@ -867,6 +872,25 @@ config ARCH_OMAP1
 	help
 	  Support for older TI OMAP1 (omap7xx, omap15xx or omap16xx)
 
+# Modify by LeMaker -- begin
+config ARCH_OWL
+	bool "Actions OWL Platform"
+	select CPU_V7
+	select GENERIC_CLOCKEVENTS
+	select ARCH_REQUIRE_GPIOLIB
+	select COMMON_CLK
+	select CLKDEV_LOOKUP
+	select ARM_GIC
+	select HAVE_SMP
+	select ARM_HAS_SG_CHAIN
+	select ARCH_HAS_OPP
+	select ARCH_HAS_CPUFREQ
+	select MIGHT_HAVE_CACHE_L2X0
+	select USB_GADGET_DUALSPEED
+	select PM_OPP if PM	
+	help
+		Support for Actions OWL Platform
+# Modify by LeMaker -- end
 endchoice
 
 menu "Multiple platform selection"
@@ -1030,6 +1054,10 @@ source "arch/arm/mach-vt8500/Kconfig"
 source "arch/arm/mach-w90x900/Kconfig"
 
 source "arch/arm/mach-zynq/Kconfig"
+
+# Modify by LeMaker -- begin
+source "arch/arm/mach-owl/Kconfig"
+# Modify by LeMaker -- end
 
 # Definitions to make life easier
 config ARCH_ACORN

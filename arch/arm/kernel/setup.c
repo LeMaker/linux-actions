@@ -143,7 +143,9 @@ static union { char c[4]; unsigned long l; } endian_test __initdata = { { 'l', '
 #define ENDIANNESS ((char)endian_test.l)
 
 DEFINE_PER_CPU(struct cpuinfo_arm, cpu_data);
-
+//* Modify by LeMaker -- begin
+EXPORT_PER_CPU_SYMBOL(cpu_data);
+//* Modify by LeMaker -- end
 /*
  * Standard memory resources
  */
@@ -924,7 +926,12 @@ static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
 	u32 cpuid;
-
+	
+	//* Modify by LeMaker -- begin
+	cpuid = is_smp() ? per_cpu(cpu_data, 0).cpuid : read_cpuid_id();
+	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
+			   cpu_name, cpuid & 15, elf_platform);
+	//* Modify by LeMaker -- end
 	for_each_online_cpu(i) {
 		/*
 		 * glibc reads /proc/cpuinfo to determine the number of

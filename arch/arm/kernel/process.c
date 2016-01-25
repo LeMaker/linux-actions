@@ -288,8 +288,15 @@ void machine_power_off(void)
  */
 void machine_restart(char *cmd)
 {
-	smp_send_stop();
-
+	//* Modify by LeMaker -- begin
+	
+	printk("%s\n", __FUNCTION__); //* for_debug_lemaker
+	/* ensure run at the cpu0. https://lkml.org/lkml/2012/8/25/50 */
+	disable_nonboot_cpus();
+	//smp_send_stop();
+	
+	//* Modify by LeMaker -- end
+	//
 	/* Flush the console to make sure all the relevant messages make it
 	 * out to the console drivers */
 	arm_machine_flush_console();

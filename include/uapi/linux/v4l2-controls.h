@@ -90,12 +90,14 @@
 #define V4L2_CID_VFLIP			(V4L2_CID_BASE+21)
 
 #define V4L2_CID_POWER_LINE_FREQUENCY	(V4L2_CID_BASE+24)
+//* Modify by LeMaker -- begin
 enum v4l2_power_line_frequency {
 	V4L2_CID_POWER_LINE_FREQUENCY_DISABLED	= 0,
-	V4L2_CID_POWER_LINE_FREQUENCY_50HZ	= 1,
-	V4L2_CID_POWER_LINE_FREQUENCY_60HZ	= 2,
-	V4L2_CID_POWER_LINE_FREQUENCY_AUTO	= 3,
+	V4L2_CID_POWER_LINE_FREQUENCY_AUTO	= 1,
+	V4L2_CID_POWER_LINE_FREQUENCY_50HZ	= 2,
+	V4L2_CID_POWER_LINE_FREQUENCY_60HZ	= 3,
 };
+//* Modify by LeMaker -- end
 #define V4L2_CID_HUE_AUTO			(V4L2_CID_BASE+25)
 #define V4L2_CID_WHITE_BALANCE_TEMPERATURE	(V4L2_CID_BASE+26)
 #define V4L2_CID_SHARPNESS			(V4L2_CID_BASE+27)
@@ -630,6 +632,8 @@ enum  v4l2_exposure_auto_type {
 #define V4L2_CID_AUTO_EXPOSURE_BIAS		(V4L2_CID_CAMERA_CLASS_BASE+19)
 
 #define V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE	(V4L2_CID_CAMERA_CLASS_BASE+20)
+//* Modify by LeMaker -- beign
+#if 0
 enum v4l2_auto_n_preset_white_balance {
 	V4L2_WHITE_BALANCE_MANUAL		= 0,
 	V4L2_WHITE_BALANCE_AUTO			= 1,
@@ -642,6 +646,23 @@ enum v4l2_auto_n_preset_white_balance {
 	V4L2_WHITE_BALANCE_CLOUDY		= 8,
 	V4L2_WHITE_BALANCE_SHADE		= 9,
 };
+#endif
+#if 1
+enum v4l2_auto_n_preset_white_balance {
+	V4L2_WHITE_BALANCE_INCANDESCENT		= 0,
+	V4L2_WHITE_BALANCE_FLUORESCENT,
+	V4L2_WHITE_BALANCE_DAYLIGHT,
+	V4L2_WHITE_BALANCE_CLOUDY,
+	V4L2_WHITE_BALANCE_FLUORESCENT_H,
+	V4L2_WHITE_BALANCE_HORIZON,
+	V4L2_WHITE_BALANCE_SHADE,
+
+	V4L2_WHITE_BALANCE_FLASH,
+	V4L2_WHITE_BALANCE_MANUAL,
+	V4L2_WHITE_BALANCE_AUTO,
+};
+#endif
+//* Modify by LeMaker -- beign
 
 #define V4L2_CID_WIDE_DYNAMIC_RANGE		(V4L2_CID_CAMERA_CLASS_BASE+21)
 #define V4L2_CID_IMAGE_STABILIZATION		(V4L2_CID_CAMERA_CLASS_BASE+22)
@@ -677,6 +698,9 @@ enum v4l2_scene_mode {
 	V4L2_SCENE_MODE_SPORTS			= 11,
 	V4L2_SCENE_MODE_SUNSET			= 12,
 	V4L2_SCENE_MODE_TEXT			= 13,
+	//* Modify by LeMaker -- begin
+	V4L2_SCENE_MODE_HDR				= 14,
+	//* Modify by LeMaker -- end
 };
 
 #define V4L2_CID_3A_LOCK			(V4L2_CID_CAMERA_CLASS_BASE+27)
@@ -693,6 +717,35 @@ enum v4l2_scene_mode {
 #define V4L2_AUTO_FOCUS_STATUS_FAILED		(1 << 2)
 
 #define V4L2_CID_AUTO_FOCUS_RANGE		(V4L2_CID_CAMERA_CLASS_BASE+31)
+
+//* Modify by LeMaker -- begin
+#define V4L2_CID_EXPOSURE_COMP		(V4L2_CID_CAMERA_CLASS_BASE+33)
+#define V4L2_CID_AF_MODE	(V4L2_CID_CAMERA_CLASS_BASE+34)
+//#define V4L2_CID_AF_MODE	(V4L2_CID_BASE+12)
+
+enum af_mode{
+	NONE_AF = 0,
+	SINGLE_AF = (0x1<<1),
+	CONTINUE_AF = (0x1<<2),
+	ZONE_AF = (0x1<<3),
+	MACRO_AF = (0x1<<4),
+	MANUAL_AF = (0x1<<5),
+	FACE_AF = (0x1<<6),
+	UNDEFINED_AF = (1<<30),
+};
+
+#define V4L2_CID_AF_STATUS	(V4L2_CID_CAMERA_CLASS_BASE+35)
+
+enum af_status{
+	AF_STATUS_DISABLE = 0,
+	AF_STATUS_UNFINISH,
+	AF_STATUS_OK,
+	AF_STATUS_FAIL,
+ };
+
+#define V4L2_CID_AF_REGION	(V4L2_CID_CAMERA_CLASS_BASE+36)
+//* Modify by LeMaker -- end
+
 enum v4l2_auto_focus_range {
 	V4L2_AUTO_FOCUS_RANGE_AUTO		= 0,
 	V4L2_AUTO_FOCUS_RANGE_NORMAL		= 1,
@@ -700,6 +753,15 @@ enum v4l2_auto_focus_range {
 	V4L2_AUTO_FOCUS_RANGE_INFINITY		= 3,
 };
 
+//* Modify by LeMaker -- begin
+/*用于同时写入HFLIP和VFLIP*/
+#define V4L2_CID_MIRRORFLIP			(V4L2_CID_CAMERA_CLASS_BASE+37)
+enum flip_mode{
+	NONE = 0,
+	HFLIP = (0x1<<1),
+	VFLIP = (0x1<<2),
+};
+//* Modify by LeMaker -- end
 
 /* FM Modulator class control IDs */
 
@@ -746,6 +808,9 @@ enum v4l2_flash_led_mode {
 	V4L2_FLASH_LED_MODE_NONE,
 	V4L2_FLASH_LED_MODE_FLASH,
 	V4L2_FLASH_LED_MODE_TORCH,
+	//* Modify by LeMaker -- begin
+	V4L2_FLASH_LED_MODE_AUTO,
+	//* Modify by LeMaker -- end
 };
 
 #define V4L2_CID_FLASH_STROBE_SOURCE		(V4L2_CID_FLASH_CLASS_BASE + 2)

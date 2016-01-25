@@ -67,6 +67,9 @@ struct device;
 
 extern struct cma *dma_contiguous_default_area;
 
+//* Modify by LeMaker -- begin
+void dma_contiguous_set_global_reserve_size(phys_addr_t new_size); /* add by actions */
+//* Modify by LeMaker -- end
 static inline struct cma *dev_get_cma_area(struct device *dev)
 {
 	if (dev && dev->cma_area)
@@ -123,6 +126,10 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 #else
 
 #define MAX_CMA_AREAS	(0)
+
+//* Modify by LeMaker -- begin
+static inline void dma_contiguous_set_global_reserve_size(phys_addr_t new_size) { }  /* add by actions */
+//* Modify by LeMaker -- end
 
 static inline struct cma *dev_get_cma_area(struct device *dev)
 {

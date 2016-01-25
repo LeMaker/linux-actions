@@ -22,6 +22,9 @@
 #include <linux/slab.h>
 #include <linux/scatterlist.h>
 #include <linux/types.h>
+//* Modify by LeMaker -- beign
+#include <linux/workqueue.h>
+//* Modify by LeMaker -- end
 #include <linux/usb/ch9.h>
 
 struct usb_ep;

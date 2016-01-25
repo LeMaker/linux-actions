@@ -34,12 +34,19 @@ struct usbnet {
 	struct mutex		phy_mutex;
 	unsigned char		suspend_count;
 	unsigned char		pkt_cnt, pkt_err;
+	//* Modify by LeMaker -- begin
+	unsigned short		rx_qlen, tx_qlen;
+	unsigned		can_dma_sg:1;
+	//* Modify by LeMaker -- end
 
 	/* i/o info: pipes etc */
 	unsigned		in, out;
 	struct usb_host_endpoint *status;
 	unsigned		maxpacket;
 	struct timer_list	delay;
+	//* Modify by LeMaker -- begin
+	const char		*padding_pkt;
+	//* Modify by LeMaker -- end
 
 	/* protocol/interface state */
 	struct net_device	*net;
@@ -75,6 +82,9 @@ struct usbnet {
 #		define EVENT_NO_RUNTIME_PM	9
 #		define EVENT_RX_KILL	10
 #		define EVENT_LINK_CHANGE	11
+//* Modify by LeMaker -- begin
+#		define EVENT_SET_RX_MODE	12
+//* Modify by LeMaker -- end
 };
 
 static inline struct usb_driver *driver_of(struct usb_interface *intf)
@@ -145,6 +155,11 @@ struct driver_info {
 	struct sk_buff	*(*tx_fixup)(struct usbnet *dev,
 				struct sk_buff *skb, gfp_t flags);
 
+	//* Modify by LeMaker -- begin
+	/* recover from timeout */
+	void	(*recover)(struct usbnet *dev);
+	//* Modify by LeMaker -- end
+	
 	/* early initialization code, can sleep. This is for minidrivers
 	 * having 'subminidrivers' that need to do extra initialization
 	 * right after minidriver have initialized hardware. */
@@ -153,6 +168,10 @@ struct driver_info {
 	/* called by minidriver when receiving indication */
 	void	(*indication)(struct usbnet *dev, void *ind, int indlen);
 
+	//* Modfiy by LeMaker -- begin
+	/* rx mode change (device changes address list filtering) */
+	void	(*set_rx_mode)(struct usbnet *dev);
+	//* Modify by LeMaker -- end
 	/* for new devices, use the descriptor-reading code instead */
 	int		in;		/* rx endpoint */
 	int		out;		/* tx endpoint */
@@ -217,8 +236,24 @@ struct skb_data {	/* skb->cb is one of these */
 	struct urb		*urb;
 	struct usbnet		*dev;
 	enum skb_state		state;
-	size_t			length;
+	//* Modify by LeMaker -- begin
+	//size_t			length;
+	long			length;
+	unsigned long		packets;
+	//* Modfiy by LeMaker -- end
 };
+
+//* Modify by LeMaker -- begin
+static inline void
+usbnet_set_skb_tx_stats(struct sk_buff *skb,
+			unsigned long packets, long bytes_delta)
+{
+	struct skb_data *entry = (struct skb_data *) skb->cb;
+
+	entry->packets = packets;
+	entry->length = bytes_delta;
+}
+//* Modify by LeMaker -- end
 
 extern int usbnet_open(struct net_device *net);
 extern int usbnet_stop(struct net_device *net);
@@ -252,5 +287,9 @@ extern void usbnet_link_change(struct usbnet *, bool, bool);
 
 extern int usbnet_status_start(struct usbnet *dev, gfp_t mem_flags);
 extern void usbnet_status_stop(struct usbnet *dev);
+
+//* Modify by LeMaker -- begin
+extern void usbnet_update_max_qlen(struct usbnet *dev);
+//* Modify by LeMaker -- end
 
 #endif /* __LINUX_USB_USBNET_H */
