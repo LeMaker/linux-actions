@@ -653,4 +653,8 @@ config INPUT_XEN_KBDDEV_FRONTEND
 	  To compile this driver as a module, choose M here: the
 	  module will be called xen-kbdfront.
 
+# Modify by LeMaker -- begin
+source "drivers/input/misc/gsensor/Kconfig"
+# Modify by LeMaker -- end
+
 endif

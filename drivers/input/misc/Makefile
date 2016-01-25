@@ -62,3 +62,6 @@ obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
 obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
 obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
 obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+# Modify by LeMaker -- begin
+obj-$(CONFIG_INPUT_GSENSOR)	+= gsensor/
+# Modify by LeMaker -- end
