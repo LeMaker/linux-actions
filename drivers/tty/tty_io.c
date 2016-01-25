@@ -297,6 +297,9 @@ static int check_tty_count(struct tty_struct *tty, const char *routine)
 	struct list_head *p;
 	int count = 0;
 
+	//* Modify by LeMaker -- begin
+	spin_lock(&tty->count_lock);
+	//* Modify by LeMaker -- end
 	spin_lock(&tty_files_lock);
 	list_for_each(p, &tty->tty_files) {
 		count++;
@@ -310,8 +313,14 @@ static int check_tty_count(struct tty_struct *tty, const char *routine)
 		printk(KERN_WARNING "Warning: dev (%s) tty->count(%d) "
 				    "!= #fd's(%d) in %s\n",
 		       tty->name, tty->count, count, routine);
+		//* Modify by LeMaker -- begin
+		spin_unlock(&tty->count_lock);
+		//* Modify by LeMaker -- end
 		return count;
 	}
+	//* Modify by LeMaker -- begin
+	spin_unlock(&tty->count_lock);
+	//* Modify by LeMaker -- end
 #endif
 	return 0;
 }
@@ -1333,7 +1342,9 @@ int tty_standard_install(struct tty_driver *driver, struct tty_struct *tty)
 		return ret;
 
 	tty_driver_kref_get(driver);
-	tty->count++;
+	//* Modify by LeMaker -- begin
+	//tty->count++;
+	//* Modify by LeMaker -- end
 	driver->ttys[tty->index] = tty;
 	return 0;
 }
@@ -1405,7 +1416,9 @@ static int tty_reopen(struct tty_struct *tty)
 
 		tty->link->count++;
 	}
-	tty->count++;
+	//* Modify by LeMaker -- begin
+	//tty->count++;
+	//* Modify by LeMaker -- end
 
 	WARN_ON(!test_bit(TTY_LDISC, &tty->flags));
 
@@ -1798,6 +1811,9 @@ int tty_release(struct inode *inode, struct file *filp)
 	 * We must *not* drop the tty_mutex until we ensure that a further
 	 * entry into tty_open can not pick up this tty.
 	 */
+	//* Modify by LeMaker -- begin
+	spin_lock(&tty->count_lock);
+	//* Modify by LeMaker -- end
 	if (pty_master) {
 		if (--o_tty->count < 0) {
 			printk(KERN_WARNING "%s: bad pty slave count (%d) for %s\n",
@@ -1821,7 +1837,10 @@ int tty_release(struct inode *inode, struct file *filp)
 	 *    something that needs to be handled for hangups.
 	 */
 	tty_del_file(filp);
-
+	
+	//* Modify by LeMaker -- begin
+	spin_unlock(&tty->count_lock);
+	//* Modify by LeMaker -- end
 	/*
 	 * Perform some housekeeping before deciding whether to return.
 	 *
@@ -2049,7 +2068,12 @@ retry_open:
 		goto err_file;
 	}
 
+	//* Modify by LeMaker -- begin
+	spin_lock(&tty->count_lock);
+	tty->count++;
 	tty_add_file(tty, filp);
+	spin_unlock(&tty->count_lock);
+	//* Modify by LeMaker -- end
 
 	check_tty_count(tty, __func__);
 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
@@ -3029,6 +3053,9 @@ void initialize_tty_struct(struct tty_struct *tty,
 	INIT_WORK(&tty->hangup_work, do_tty_hangup);
 	mutex_init(&tty->atomic_write_lock);
 	spin_lock_init(&tty->ctrl_lock);
+	//* Modify by LeMaker -- begin
+	spin_lock_init(&tty->count_lock);
+	//* Modify by LeMaker -- end
 	INIT_LIST_HEAD(&tty->tty_files);
 	INIT_WORK(&tty->SAK_work, do_SAK_work);
 
