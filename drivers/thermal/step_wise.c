@@ -26,6 +26,14 @@
 
 #include "thermal_core.h"
 
+//* Modify by LeMaker -- begin
+enum throttle_status{
+	THROTTLE_OVER_TRIP_TEMP,
+	THROTTLE_UNDER_TRIP_TEMP,
+	THROTTLE_UNDER_TRIP_FALLING
+};
+//* Modify by LeMaker -- end
+
 /*
  * If the temperature is higher than a trip point,
  *    a. if the trend is THERMAL_TREND_RAISING, use higher cooling
@@ -46,6 +54,8 @@
  *       if the cooling state already equals lower limit,
  *       deactive the thermal instance
  */
+//* Modify by LeMaker -- begin
+#if 0
 static unsigned long get_target_state(struct thermal_instance *instance,
 				enum thermal_trend trend, bool throttle)
 {
@@ -91,6 +101,57 @@ static unsigned long get_target_state(struct thermal_instance *instance,
 
 	return cur_state;
 }
+#else
+static unsigned long get_target_state(struct thermal_instance *instance,
+						enum thermal_trend trend, enum throttle_status throttle)
+{
+	struct thermal_cooling_device *cdev = instance->cdev;
+	unsigned long cur_state;
+
+	cdev->ops->get_cur_state(cdev, &cur_state);
+	dev_dbg(&cdev->device, "cur_state=%ld\n", cur_state);
+
+	switch (trend) {
+		case THERMAL_TREND_RAISING:
+			if (throttle == THROTTLE_OVER_TRIP_TEMP) {
+				cur_state = cur_state < instance->upper ? (cur_state + 1) : instance->upper;
+				if (cur_state < instance->lower)
+					cur_state = instance->lower;
+			}
+			break;
+		case THERMAL_TREND_RAISE_FULL:
+			if (throttle == THROTTLE_OVER_TRIP_TEMP)
+				cur_state = instance->upper;
+			break;
+		case THERMAL_TREND_DROPPING:
+			if (cur_state <= (instance->lower+1)) {
+				if (throttle == THROTTLE_UNDER_TRIP_FALLING) {
+					cur_state = cur_state != instance->lower ?(cur_state - 1) : -1;	
+				}
+			} else {
+				if((throttle == THROTTLE_UNDER_TRIP_TEMP) || (throttle == THROTTLE_UNDER_TRIP_FALLING)) {
+					cur_state -= 1;
+					if (cur_state > instance->upper)
+						cur_state = instance->upper;
+				}
+			}
+			break;
+		case THERMAL_TREND_DROP_FULL:
+			if (throttle == THROTTLE_UNDER_TRIP_FALLING) {
+				if (cur_state == instance->lower)
+					cur_state = -1;
+				else
+					cur_state = instance->lower;
+			}
+			break;
+		default:
+			break;
+	}
+
+	return cur_state;
+}
+#endif
+//* Modify by LeMaker -- end
 
 static void update_passive_instance(struct thermal_zone_device *tz,
 				enum thermal_trip_type type, int value)
@@ -105,11 +166,17 @@ static void update_passive_instance(struct thermal_zone_device *tz,
 
 static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
 {
+	//* Modify by LeMaker -- begin
+	long trip_temp_falling;
+	//* Modify by LeMaker -- end
 	long trip_temp;
 	enum thermal_trip_type trip_type;
 	enum thermal_trend trend;
 	struct thermal_instance *instance;
-	bool throttle = false;
+	//* Modify by LeMaker -- begin
+	//bool throttle = false;
+	enum throttle_status throttle = THROTTLE_UNDER_TRIP_FALLING;
+	//* Modify by LeMaker -- end
 	int old_target;
 
 	if (trip == THERMAL_TRIPS_NONE) {
@@ -118,12 +185,22 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
 	} else {
 		tz->ops->get_trip_temp(tz, trip, &trip_temp);
 		tz->ops->get_trip_type(tz, trip, &trip_type);
+		//* Modify by LeMaker -- begin
+		tz->ops->get_trip_hyst(tz, trip, &trip_temp_falling);
+		//* Modify by LeMaker -- end
 	}
 
 	trend = get_tz_trend(tz, trip);
 
+	//* Modify by LeMaker -- begin
 	if (tz->temperature >= trip_temp)
-		throttle = true;
+		throttle = THROTTLE_OVER_TRIP_TEMP;
+
+	if((trend == THERMAL_TREND_DROPPING) || (trend == THERMAL_TREND_DROP_FULL)) {
+		if(tz->temperature >= (trip_temp - trip_temp_falling))
+			throttle = THROTTLE_UNDER_TRIP_TEMP;
+	}
+	//* Modify by LeMaker -- end
 
 	dev_dbg(&tz->device, "Trip%d[type=%d,temp=%ld]:trend=%d,throttle=%d\n",
 				trip, trip_type, trip_temp, trend, throttle);

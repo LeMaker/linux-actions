@@ -171,6 +171,16 @@ config ARMADA_THERMAL
 	  Enable this option if you want to have support for thermal management
 	  controller present in Armada 370 and Armada XP SoC.
 
+# Modify by LeMaker -- begin
+config OWL_THERMAL
+	tristate "Actions Owl thermal management"
+	depends on ARCH_OWL
+	depends on OF
+	help
+	 Enable this option if you want to have support for thermal management
+	 controller present in Actions Owl SoC.
+# Modify by LeMaekr -- end
+
 config DB8500_CPUFREQ_COOLING
 	tristate "DB8500 cpufreq cooling"
 	depends on ARCH_U8500
