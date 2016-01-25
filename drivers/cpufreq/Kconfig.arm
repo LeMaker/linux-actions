@@ -159,3 +159,14 @@ config ARM_SPEAR_CPUFREQ
 	default y
 	help
 	  This adds the CPUFreq driver support for SPEAr SOCs.
+
+config ARM_OWL_CPUFREQ
+	tristate "Actions OWL CPUFreq support"
+	depends on ARCH_OWL
+	---help---
+	  This adds the CPUFreq driver for the Actions OWL SoC. 
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called owl_cpufreq.

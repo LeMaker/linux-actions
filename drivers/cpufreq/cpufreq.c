@@ -37,6 +37,11 @@
 
 #include <trace/events/power.h>
 
+//* Modify by LeMaker -- begin
+#include <mach/bootdev.h>
+#include <linux/mm.h>
+//* Modify by LeMaker -- end
+
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -426,6 +431,70 @@ out:
 }
 
 
+//* Modify by LeMaker -- begin
+static char procname[PAGE_SIZE];
+int proc_pid_cmdline_global(struct task_struct *task, char * buffer)
+{
+	int res = 0;
+	unsigned int len;
+	struct mm_struct *mm = get_task_mm(task);
+	if (!mm)
+		goto out;
+	if (!mm->arg_end)
+	    goto out_mm;    /* Shh! No looking before we're done */
+
+	len = mm->arg_end - mm->arg_start;
+
+	if (len > PAGE_SIZE)
+		len = PAGE_SIZE;
+
+	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
+
+	// If the nul at the end of args has been overwritten, then
+	// assume application is using setproctitle(3).
+	if (res > 0 && buffer[res-1] != '\0' && len < PAGE_SIZE) {
+		len = strnlen(buffer, res);
+		if (len < res) {
+			res = len;
+		} else {
+			len = mm->env_end - mm->env_start;
+			if (len > PAGE_SIZE - res)
+				len = PAGE_SIZE - res;
+			res += access_process_vm(task, mm->env_start, buffer+res, len, 0);
+			res = strnlen(buffer, res);
+		}
+	}
+out_mm:
+	mmput(mm);
+out:
+	return res;
+}
+
+static int is_game_mode(const char *str){
+	if ((strstr(str, "com.gameloft.android") != NULL 
+		|| strstr(str, "com.ea.games") != NULL
+		|| strstr(str, "pplive") != NULL
+		|| strstr(str, "sohu") != NULL
+		|| strstr(str, "xqiyi") != NULL
+		|| strstr(str, ".pps.") != NULL
+		|| strstr(str, "qqlive") != NULL
+		|| strstr(str, "com.g5e") != NULL
+		|| strstr(str, ".sega.") != NULL
+		|| strstr(str, "com.konami") != NULL
+		|| strstr(str, "com.chillingo") != NULL
+		|| strstr(str, "com.capcom") != NULL
+		|| strstr(str, "com.g2us") != NULL
+		|| strstr(str, "com.glu") != NULL
+		|| strstr(str, "com.disney") != NULL)
+		&&
+		(strcmp(str, "com.gameloft.android.ANMP.GloftA8HM")!=0)) {
+		return 1;
+	}else{
+		return 0;
+	}
+}
+//* Modify by LeMaker -- end
+
 /**
  * cpufreq_per_cpu_attr_read() / show_##file_name() -
  * print out cpufreq information
@@ -441,14 +510,32 @@ static ssize_t show_##file_name				\
 	return sprintf(buf, "%u\n", policy->object);	\
 }
 
+
+//* Modify by LeMaker -- begin
+static ssize_t show_cpuinfo_max_freq(struct cpufreq_policy *policy, char *buf)
+{
+	int isNFS = 0;  // determin if we're in NFS.
+
+	proc_pid_cmdline_global(current, procname);
+
+	if(is_game_mode(procname))
+		isNFS = 1;
+				
+	return sprintf(buf, "%u\n", isNFS?policy->cpuinfo.max_freq/2:policy->cpuinfo.max_freq);
+}
+//* Modify by LeMaker -- end
+
 show_one(cpuinfo_min_freq, cpuinfo.min_freq);
-show_one(cpuinfo_max_freq, cpuinfo.max_freq);
+//* Modify by LeMaker -- begin
+//show_one(cpuinfo_max_freq, cpuinfo.max_freq);
+//* Modify by LeMaker -- end
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
 show_one(scaling_cur_freq, cur);
 
-static int __cpufreq_set_policy(struct cpufreq_policy *data,
+//* Modify by LeMaker : remove static
+int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy);
 
 /**
@@ -485,9 +572,20 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 					char *buf)
 {
 	unsigned int cur_freq = __cpufreq_get(policy->cpu);
+	//* Moidfy by LeMaker -- begin
+	int isNFS = 0;  // determin if we're in NFS.
+
+	proc_pid_cmdline_global(current, procname);
+	if(is_game_mode(procname))
+		isNFS = 1;
+	//* Modify by LeMaker -- end
 	if (!cur_freq)
 		return sprintf(buf, "<unknown>");
-	return sprintf(buf, "%u\n", cur_freq);
+
+	//* Modify by LeMaker -- begin
+	//return sprintf(buf, "%u\n", cur_freq);
+	return sprintf(buf, "%u\n", isNFS?cur_freq/2:cur_freq);
+	//* Modify by LeMaker -- end
 }
 
 
@@ -1743,7 +1841,8 @@ EXPORT_SYMBOL(cpufreq_get_policy);
  * data   : current policy.
  * policy : policy to be set.
  */
-static int __cpufreq_set_policy(struct cpufreq_policy *data,
+//* Modify by LeMaker : remove static
+int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy)
 {
 	int ret = 0, failed = 1;
@@ -1952,6 +2051,13 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
 	if (cpufreq_disabled())
 		return -ENODEV;
 
+	//* Modify by LeMaker -- begin
+	if (owl_get_boot_mode() == OWL_BOOT_MODE_UPGRADE) {
+		printk("upgrade process cpufreq disabled!!\n");
+		return -ENODEV;
+	}
+	//* Modify by LeMaker -- end
+
 	if (!driver_data || !driver_data->verify || !driver_data->init ||
 	    ((!driver_data->setpolicy) && (!driver_data->target)))
 		return -EINVAL;
@@ -2042,6 +2148,13 @@ static int __init cpufreq_core_init(void)
 	if (cpufreq_disabled())
 		return -ENODEV;
 
+	//* Modify by LeMaker -- begin
+	if (owl_get_boot_mode() == OWL_BOOT_MODE_UPGRADE) {
+		printk("upgrade process cpufreq disabled!!\n");
+		return -ENODEV;
+	}
+	//* Modify by LeMaker -- end
+	
 	for_each_possible_cpu(cpu) {
 		per_cpu(cpufreq_policy_cpu, cpu) = -1;
 		init_rwsem(&per_cpu(cpu_policy_rwsem, cpu));
