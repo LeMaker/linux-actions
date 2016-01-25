@@ -38,6 +38,10 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/filemap.h>
 
+//* Modify by LeMaker -- begin
+#include <trace/events/readahead.h>
+//* Modify by LeMaker -- end
+
 /*
  * FIXME: remove all knowledge of the buffer layer from the core VM
  */
@@ -1617,6 +1621,11 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	pgoff_t size;
 	int ret = 0;
 
+	//* Modify by LeMaker -- begin
+	/*actions_code(jiangbin,add trace for readahead)*/
+	trace_do_file_map(inode,offset << PAGE_SHIFT,PAGE_SIZE);
+	/*end*/
+	//* Modify by LeMaker -- end
 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
 	if (offset >= size)
 		return VM_FAULT_SIGBUS;

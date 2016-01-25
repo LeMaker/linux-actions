@@ -1,4 +1,5 @@
-/* bounce buffer handling for block devices
+/* bounce buffe
+ * handling for block devices
  *
  * - Split from highmem.c
  */
@@ -147,10 +148,12 @@ static void bounce_end_io(struct bio *bio, mempool_t *pool, int err)
 	bio_put(bio);
 }
 
-static void bounce_end_io_write(struct bio *bio, int err)
+//* Modify by LeMaker -- begin : remove static
+void bounce_end_io_write(struct bio *bio, int err)
 {
 	bounce_end_io(bio, page_pool, err);
 }
+//* Modify by LeMaker -- end
 
 static void bounce_end_io_write_isa(struct bio *bio, int err)
 {
@@ -210,7 +213,9 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
 		if (page_to_pfn(from->bv_page) > queue_bounce_pfn(q))
 			goto bounce;
 
-	return;
+	//* Modify by LeMaker -- begin
+	//return;
+	//* Modify by LeMaker -- end
 bounce:
 	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
 
