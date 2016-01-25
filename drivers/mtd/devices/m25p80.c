@@ -326,6 +326,18 @@ static int m25p80_erase(struct mtd_info *mtd, struct erase_info *instr)
 	return 0;
 }
 
+//* Modify by LeMaker -- begin
+static unsigned m25p80_set_bits_per_word(unsigned a)
+{
+	if(a>=32 && a%32==0)
+		return 32;
+	else {
+		pr_debug("m25p80_set_bits_per_word %d\n", a);
+		return 8;
+	}
+}
+//* Modify by LeMaker -- end
+
 /*
  * Read an address range from the flash chip.  The address range
  * may be any size provided it is within the physical boundaries.
@@ -354,6 +366,10 @@ static int m25p80_read(struct mtd_info *mtd, loff_t from, size_t len,
 
 	t[1].rx_buf = buf;
 	t[1].len = len;
+	//* Modify by LeMaker -- begin
+	t[0].bits_per_word = m25p80_set_bits_per_word(t[0].len);
+	t[1].bits_per_word = m25p80_set_bits_per_word(t[1].len);
+	//* Modify by LeMaker -- end
 	spi_message_add_tail(&t[1], &m);
 
 	mutex_lock(&flash->lock);
@@ -411,6 +427,10 @@ static int m25p80_write(struct mtd_info *mtd, loff_t to, size_t len,
 	t[1].tx_buf = buf;
 	spi_message_add_tail(&t[1], &m);
 
+	//* Modify by LeMaker -- begin
+	t[0].bits_per_word = m25p80_set_bits_per_word(t[0].len);
+	t[1].bits_per_word = m25p80_set_bits_per_word(t[1].len);
+	//* Modify by LeMaker -- end
 	mutex_lock(&flash->lock);
 
 	/* Wait until finished previous write command. */
@@ -430,7 +450,9 @@ static int m25p80_write(struct mtd_info *mtd, loff_t to, size_t len,
 	/* do all the bytes fit onto one page? */
 	if (page_offset + len <= flash->page_size) {
 		t[1].len = len;
-
+		//* Modify by LeMaker -- begin
+		t[1].bits_per_word = m25p80_set_bits_per_word(t[1].len);
+		//* Modify by LeMaker -- end
 		spi_sync(flash->spi, &m);
 
 		*retlen = m.actual_length - m25p_cmdsz(flash);
@@ -441,6 +463,9 @@ static int m25p80_write(struct mtd_info *mtd, loff_t to, size_t len,
 		page_size = flash->page_size - page_offset;
 
 		t[1].len = page_size;
+		//* Modify by LeMaker -- begin
+		t[1].bits_per_word = m25p80_set_bits_per_word(t[1].len);
+		//* Modify by LeMaker -- end
 		spi_sync(flash->spi, &m);
 
 		*retlen = m.actual_length - m25p_cmdsz(flash);
@@ -456,6 +481,9 @@ static int m25p80_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 			t[1].tx_buf = buf + i;
 			t[1].len = page_size;
+			//* Modify by LeMaker -- begin
+			t[1].bits_per_word = m25p80_set_bits_per_word(t[1].len);
+			//* Modify by LeMaker -- end
 
 			wait_till_ready(flash);
 
@@ -835,6 +863,9 @@ static const struct spi_device_id m25p_ids[] = {
 	{ "w25x40", INFO(0xef3013, 0, 64 * 1024,  8,  SECT_4K) },
 	{ "w25x80", INFO(0xef3014, 0, 64 * 1024,  16, SECT_4K) },
 	{ "w25x16", INFO(0xef3015, 0, 64 * 1024,  32, SECT_4K) },
+	//* Modify by LeMaker -- begin
+	{ "w25q16", INFO(0xef4015, 0, 64 * 1024,  32, SECT_4K) },
+	//* Modify by LeMaker -- end
 	{ "w25x32", INFO(0xef3016, 0, 64 * 1024,  64, SECT_4K) },
 	{ "w25q32", INFO(0xef4016, 0, 64 * 1024,  64, SECT_4K) },
 	{ "w25q32dw", INFO(0xef6016, 0, 64 * 1024,  64, SECT_4K) },
