@@ -87,3 +87,6 @@ obj-$(CONFIG_GPIO_WM831X)	+= gpio-wm831x.o
 obj-$(CONFIG_GPIO_WM8350)	+= gpio-wm8350.o
 obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
 obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
+# Modify by LeMaker -- begin
+obj-$(CONFIG_GPIO_ATC260X)	+= gpio-atc260x.o gpio-atc2603c-sgpio.o
+# Modify by LeMaker --- end
