@@ -11,6 +11,12 @@ struct swsusp_info {
 	unsigned long		image_pages;
 	unsigned long		pages;
 	unsigned long		size;
+//* Modify by LeMaker -- begin
+	unsigned long		nosave_begin;
+	unsigned long		nosave_end;
+	unsigned long		swsusp_arch_resume_begin;
+	unsigned long		cpu_reset_begin;
+//* Modify by LeMaker -- end
 } __attribute__((aligned(PAGE_SIZE)));
 
 #ifdef CONFIG_HIBERNATION
@@ -297,3 +303,11 @@ extern int pm_wake_lock(const char *buf);
 extern int pm_wake_unlock(const char *buf);
 
 #endif /* !CONFIG_PM_WAKELOCKS */
+
+//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_EARLYSUSPEND
+/* kernel/power/earlysuspend.c */
+void request_suspend_state(suspend_state_t state);
+suspend_state_t get_suspend_state(void);
+#endif
+//* Modify by LeMaker -- end

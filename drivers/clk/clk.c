@@ -1058,7 +1058,8 @@ out:
 	return ret;
 }
 
-static void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
+//* Modify by LeMaker : remove static
+void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
 {
 	struct clk *child;
 
