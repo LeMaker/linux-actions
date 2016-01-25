@@ -7,4 +7,6 @@ endif
 
 obj-$(CONFIG_ION_DUMMY) += ion_dummy_driver.o
 obj-$(CONFIG_ION_TEGRA) += tegra/
-
+# Modify by LeMaker -- begin
+obj-$(CONFIG_ION_OWL) += owl/
+# Modify by LeMaker -- end

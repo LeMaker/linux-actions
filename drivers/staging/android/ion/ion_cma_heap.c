@@ -24,6 +24,10 @@
 #include "ion.h"
 #include "ion_priv.h"
 
+//* Modify by LeMaker -- begin
+#define ION_CMA_ENABLE_ALLOC_TIME_CHK 1
+//* Modify by LeMaker -- end
+
 #define ION_CMA_ALLOCATE_FAILED -1
 
 struct ion_cma_heap {
@@ -63,6 +67,12 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 			    unsigned long len, unsigned long align,
 			    unsigned long flags)
 {
+	//* Modify by LeMaker -- begin
+#if ION_CMA_ENABLE_ALLOC_TIME_CHK
+	struct timespec ts_alloc_start, ts_alloc_end, ts_tmp;
+	ulong alloc_time_ms;
+#endif
+	//* Modify by LeMaker -- end
 	struct ion_cma_heap *cma_heap = to_cma_heap(heap);
 	struct device *dev = cma_heap->dev;
 	struct ion_cma_buffer_info *info;
@@ -81,6 +91,8 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 		return ION_CMA_ALLOCATE_FAILED;
 	}
 
+	//* Modify by LeMaker -- begin
+#if 0
 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
 						GFP_HIGHUSER | __GFP_ZERO);
 
@@ -88,6 +100,37 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 		dev_err(dev, "Fail to allocate buffer\n");
 		goto err;
 	}
+#else
+#if ION_CMA_ENABLE_ALLOC_TIME_CHK
+		getnstimeofday(&ts_alloc_start);
+#endif
+
+	if (buffer->flags & ION_FLAG_CACHED) {
+		printk("++ION CMA 1 %ld \n", len);		
+		info->cpu_addr = dma_alloc_noncoherent(dev, len, &(info->handle),
+					GFP_HIGHUSER | __GFP_ZERO);
+		printk("--\n");
+	}else {
+		printk("++ION CMA 2 %ld \n", len);	
+		info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
+				GFP_HIGHUSER | __GFP_ZERO);
+		printk("--\n");	
+	}
+	if (!info->cpu_addr) {
+		dev_err(dev, "Fail to allocate CMA buffer\n");
+		goto err;
+	}
+
+#if ION_CMA_ENABLE_ALLOC_TIME_CHK
+	getnstimeofday(&ts_alloc_end);
+	ts_tmp = timespec_sub(ts_alloc_end, ts_alloc_start);
+	alloc_time_ms = div_u64(timespec_to_ns(&ts_tmp), 1000000U);
+	if (alloc_time_ms > 200U)
+		dev_info(dev, "%s() too slow (%lums), len=%lu align=%lu\n",
+			__func__, alloc_time_ms, len, align);
+#endif
+#endif
+	//* Modfiy by LeMaker -- end
 
 	info->table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
 	if (!info->table) {
@@ -106,7 +149,12 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 free_table:
 	kfree(info->table);
 free_mem:
-	dma_free_coherent(dev, len, info->cpu_addr, info->handle);
+	//* Modify by LeMaker -- begin
+	if (buffer->flags & ION_FLAG_CACHED)
+		dma_free_noncoherent(dev, len, info->cpu_addr, info->handle);
+	else
+	//* Modify by LeMaker -- end
+		dma_free_coherent(dev, len, info->cpu_addr, info->handle);
 err:
 	kfree(info);
 	return ION_CMA_ALLOCATE_FAILED;
@@ -120,7 +168,12 @@ static void ion_cma_free(struct ion_buffer *buffer)
 
 	dev_dbg(dev, "Release buffer %p\n", buffer);
 	/* release memory */
-	dma_free_coherent(dev, buffer->size, info->cpu_addr, info->handle);
+	//* Modify by LeMaker -- begin
+	if (buffer->flags & ION_FLAG_CACHED)
+		dma_free_noncoherent(dev, buffer->size, info->cpu_addr, info->handle);
+	else
+		dma_free_coherent(dev, buffer->size, info->cpu_addr, info->handle);
+	//* Modfiy by LeMaker -- end
 	/* release sg table */
 	sg_free_table(info->table);
 	kfree(info->table);
@@ -164,9 +217,15 @@ static int ion_cma_mmap(struct ion_heap *mapper, struct ion_buffer *buffer,
 	struct ion_cma_heap *cma_heap = to_cma_heap(buffer->heap);
 	struct device *dev = cma_heap->dev;
 	struct ion_cma_buffer_info *info = buffer->priv_virt;
-
-	return dma_mmap_coherent(dev, vma, info->cpu_addr, info->handle,
-				 buffer->size);
+	
+	//* Modify by LeMaker -- begin
+	if (buffer->flags & ION_FLAG_CACHED)
+		return dma_mmap_noncoherent(dev, vma, info->cpu_addr, info->handle,
+					buffer->size);
+	else
+		return dma_mmap_coherent(dev, vma, info->cpu_addr, info->handle,
+					 buffer->size);
+	//* Modify by LeMaker -- end
 }
 
 static void *ion_cma_map_kernel(struct ion_heap *heap,

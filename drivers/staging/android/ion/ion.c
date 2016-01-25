@@ -36,6 +36,13 @@
 #include <linux/dma-buf.h>
 #include <linux/idr.h>
 
+//* Modify by LeMaker -- begin
+#include <linux/cpu.h>
+
+#include <linux/smp.h>
+#include <asm/cacheflush.h>
+//* Modify by LeMaker -- end
+
 #include "ion.h"
 #include "ion_priv.h"
 #include "compat_ion.h"
@@ -251,8 +258,12 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	   allocation via dma_map_sg. The implicit contract here is that
 	   memory comming from the heaps is ready for dma, ie if it has a
 	   cached mapping that mapping has been invalidated */
-	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i)
+	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i){
 		sg_dma_address(sg) = sg_phys(sg);
+		//* Modify by LeMaker -- begin
+		sg_dma_len(sg) = sg->length;
+		//* Modify by LeMaker -- end
+	}
 	mutex_lock(&dev->buffer_lock);
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
@@ -400,6 +411,12 @@ static int ion_handle_put(struct ion_handle *handle)
 	return ret;
 }
 
+//* Modify by LeMaker -- begin
+int ion_handle_put_outter(struct ion_handle *handle)
+{
+	return ion_handle_put(handle);
+}
+//* Modify by LeMaker-- end
 static struct ion_handle *ion_handle_lookup(struct ion_client *client,
 					    struct ion_buffer *buffer)
 {
@@ -418,7 +435,8 @@ static struct ion_handle *ion_handle_lookup(struct ion_client *client,
 	return ERR_PTR(-EINVAL);
 }
 
-static struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
+//* Modify by LeMaker : remove static
+struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
 						int id)
 {
 	struct ion_handle *handle;
@@ -566,12 +584,26 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 
 	buffer = handle->buffer;
 
+	//* Modfiy by LeMaker -- begin
+#if 0
 	if (!buffer->heap->ops->phys) {
 		pr_err("%s: ion_phys is not implemented by this heap.\n",
 		       __func__);
 		mutex_unlock(&client->lock);
 		return -ENODEV;
 	}
+#else
+	if (!buffer->heap->ops->phys) {
+		int heap_id = buffer->heap->id;
+		enum ion_heap_type heap_type = buffer->heap->type;
+		const char *heap_name = buffer->heap->name;
+		mutex_unlock(&client->lock); /* unlock before print. */
+		pr_warn("%s: ion_phys is not implemented by this heap (id=%u type=%u name=%s).\n",
+			       __func__, heap_id, (uint)heap_type, heap_name);
+		return -ENODEV;
+	}
+#endif
+	//* Modfiy by LeMaker -- end
 	mutex_unlock(&client->lock);
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 	return ret;
@@ -626,6 +658,12 @@ static void ion_handle_kmap_put(struct ion_handle *handle)
 {
 	struct ion_buffer *buffer = handle->buffer;
 
+	//* Modfiy by LeMaker -- begin
+	if (!handle->kmap_cnt) {
+		WARN(1, "%s: Double unmap detected! bailing...\n", __func__);
+		return;
+	}
+	//* Modify by LeMaker -- end
 	handle->kmap_cnt--;
 	if (!handle->kmap_cnt)
 		ion_buffer_kmap_put(buffer);
@@ -1192,6 +1230,20 @@ end:
 }
 EXPORT_SYMBOL(ion_import_dma_buf);
 
+//* Modify by LeMaker -- begin
+static void _ion_local_l1_cache_flush_all(void *info)
+{
+	flush_cache_all();
+}
+
+static void ion_local_l1_cache_flush_all(void)
+{
+	get_online_cpus();
+	on_each_cpu(_ion_local_l1_cache_flush_all, NULL, 1);
+	put_online_cpus();
+}
+//* Modify by LeMaker -- end
+
 static int ion_sync_for_device(struct ion_client *client, int fd)
 {
 	struct dma_buf *dmabuf;
@@ -1210,11 +1262,179 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
+	//* Modify by LeMaker -- begin
+#if 0
 	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
 			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+#else
+	if (buffer->size >= 64*1024 && buffer->heap->ops->phys) {
+		ion_phys_addr_t phy_addr;
+		size_t phy_len;
+		int ret;
+
+		ret = buffer->heap->ops->phys(buffer->heap, buffer, &phy_addr, &phy_len);
+		if(ret == 0) {
+			/* L1 clean and invalidate all */
+			ion_local_l1_cache_flush_all();
+			/* L2 clean and invalidate, 内部会判断, >cache_size则全刷. */
+			outer_flush_range(phy_addr, phy_addr + phy_len);
+			goto out;
+		}
+	}
+
+	/* fallback to original implement */
+	/* must be paired to form a clean-and-invalidate operation. */
+	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
+						   buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+	dma_sync_sg_for_cpu(NULL, buffer->sg_table->sgl,
+						   buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+out:
+#endif
+	//* Modify by LeMaker -- end
 	dma_buf_put(dmabuf);
 	return 0;
 }
+
+//* Modify by LeMaker -- begin
+static int check_vaddr_bounds(unsigned long start, unsigned long end)
+{
+	struct mm_struct *mm = current->active_mm;
+	struct vm_area_struct *vma;
+	int ret = 1;
+
+	if (end < start)
+		goto out;
+
+	down_read(&mm->mmap_sem);
+	vma = find_vma(mm, start);
+	if (vma && vma->vm_start < end) {
+		if (start < vma->vm_start)
+			goto out_up;
+		if (end > vma->vm_end)
+			goto out_up;
+		ret = 0;
+	}
+
+out_up:
+	up_read(&mm->mmap_sem);
+out:
+	return ret;
+}
+
+static void _ion_outer_clean_range(phys_addr_t start, phys_addr_t end)
+{
+    outer_clean_range(start, end);
+}
+
+static void _ion_outer_inv_range(phys_addr_t start, phys_addr_t end)
+{
+    outer_inv_range(start, end);
+}
+
+static void _ion_outer_flush_range(phys_addr_t start, phys_addr_t end)
+{
+    outer_flush_range(start, end);
+}
+
+static int _ion_do_cache_op(struct ion_client *client, struct ion_handle *handle,
+					void *vaddr, unsigned long offset, unsigned long length,
+								unsigned int cmd)
+{
+	void (*outer_cache_op)(phys_addr_t, phys_addr_t);
+	struct ion_buffer *buffer;
+	ion_phys_addr_t phy_addr;
+	size_t phy_len;
+	int ret = -EINVAL;
+
+	mutex_lock(&client->lock);
+	if (!ion_handle_validate(client, handle)) {
+		pr_err("%s: invalid handle passed to do_cache_op.\n", __func__);
+		mutex_unlock(&client->lock);
+		return -EINVAL;
+	}
+	buffer = handle->buffer;
+	mutex_lock(&buffer->lock);
+
+	if ((buffer->flags & ION_FLAG_CACHED) == 0) {
+		pr_warn("%s: non-cached buffer, no need to do cache_op\n", __func__);
+		ret = 0;
+		goto out;
+	}
+
+	if (buffer->heap->ops->phys) {
+		switch (cmd) {
+			case ION_IOC_CLEAN_CACHES:
+				pr_debug("ION_IOC_CLEAN_CACHES");
+				__cpuc_flush_dcache_area(vaddr, length);
+				outer_cache_op = _ion_outer_clean_range;
+				break;
+			case ION_IOC_INV_CACHES:
+				pr_debug("ION_IOC_INV_CACHES");
+				__cpuc_flush_dcache_area(vaddr, length);
+				outer_cache_op = _ion_outer_inv_range;
+				break;
+			case ION_IOC_CLEAN_INV_CACHES:
+				pr_debug("ION_IOC_CLEAN_INV_CACHES");
+				__cpuc_flush_dcache_area(vaddr, length);
+				outer_cache_op = _ion_outer_flush_range;
+				break;
+			default:
+				pr_err("%s: unknown cache_op cmd 0x%x\n", __func__, cmd);
+				goto out;
+		}
+		ret = buffer->heap->ops->phys(buffer->heap, buffer, &phy_addr, &phy_len);
+		if (ret != 0) {
+			pr_err("%s: failed to get phy_addr of buffer\n", __func__);
+			goto out;
+		}
+		if (offset < phy_len) {
+			unsigned long pstart, pend;
+			pstart = phy_addr + offset;
+			pend = pstart + length;
+			if(pend > phy_addr + phy_len) {
+				pr_warn("%s: range err, phy_len=%u offset=%lu length=%lu\n",
+						__func__, phy_len, offset, length);
+				pend = phy_addr + phy_len;
+			}
+			pr_debug("%s %d: outer_cache_op pstart %lx end %lx\n",
+						__func__, __LINE__, pstart, pstart + length);
+														
+			outer_cache_op(pstart, pstart + length);
+		} else {
+			pr_err("%s: range err, phy_len=%u offset=%lu length=%lu\n",
+						__func__, phy_len, offset, length);
+		}
+	} else {
+		/* fallback to DMA-API */
+		enum dma_data_direction dma_dir;
+		switch (cmd) {
+			case ION_IOC_CLEAN_CACHES:
+				dma_dir = DMA_TO_DEVICE;
+				break;
+			case ION_IOC_INV_CACHES:
+				dma_dir = DMA_FROM_DEVICE;
+				break;
+			case ION_IOC_CLEAN_INV_CACHES:
+				dma_dir = DMA_BIDIRECTIONAL;
+				break;
+			default:
+				pr_err("%s: unknown cache_op cmd 0x%x\n", __func__, cmd);
+				goto out;
+		}
+		/* must be paired to form a clean-and-invalidate operation. */
+		dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
+	    buffer->sg_table->nents, dma_dir);
+		dma_sync_sg_for_cpu(NULL, buffer->sg_table->sgl,
+	   buffer->sg_table->nents, dma_dir);
+	}
+
+out:
+	mutex_unlock(&buffer->lock);
+	mutex_unlock(&client->lock);
+	return ret;
+}
+
+//* Modify by LeMaker -- end
 
 /* fix up the cases where the ioctl direction bits are incorrect */
 static unsigned int ion_ioctl_dir(unsigned int cmd)
@@ -1317,6 +1537,50 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			return -ENOTTY;
 		ret = dev->custom_ioctl(client, data.custom.cmd,
 						data.custom.arg);
+		break;
+	}
+	case ION_IOC_CLEAN_CACHES:
+	case ION_IOC_INV_CACHES:
+	case ION_IOC_CLEAN_INV_CACHES:
+	{
+		struct ion_flush_data data;
+		unsigned long start, end;
+		struct ion_handle *handle = NULL;
+		int ret;
+
+		pr_debug("%s CLEAN_CACHES/INV_CACHES/CLEAN_INV_CACHES\n", __func__);
+		if (copy_from_user(&data, (void __user *)arg,
+				sizeof(struct ion_flush_data))) {
+			pr_err("%s: copy_from_user err\n", __func__);
+			return -EFAULT;
+		}
+
+		start = (unsigned long) data.vaddr;
+		end = (unsigned long) data.vaddr + data.length;
+		
+		if (check_vaddr_bounds(start, end)) {
+			pr_err("%s: virtual address %p is out of bounds\n",
+						__func__, data.vaddr);
+			return -EINVAL;
+		}
+		
+		handle = ion_import_dma_buf(client, data.fd);
+		if (IS_ERR(handle)) {
+			pr_err("%s: Could not import handle: %d\n",
+						__func__, (int)handle);
+			return -EINVAL;
+		}
+		ret = _ion_do_cache_op(client,
+					handle,
+					data.vaddr, data.offset, data.length,
+					cmd);
+
+		ion_free(client, handle);
+		
+		if (ret < 0) {
+			pr_err("%s: heap cache_op err, ret=%d\n", __func__, ret);
+			return ret;
+		}
 		break;
 	}
 	default:
@@ -1642,3 +1906,16 @@ void __init ion_reserve(struct ion_platform_data *data)
 			data->heaps[i].size);
 	}
 }
+
+//* Modify by LeMaker -- begin
+/**
+ * ion_get_handle_id() - get ion_handle's id.
+ * 
+ * This is an afterthought API provided by Actions(Zhuhai) Technology
+ * Co., Limited, which is used by OWL Display Engine MMU driver
+ * (drivers/video/owl/dss/mmu.c) to identify an unique ION buffer. */
+int ion_get_handle_id(struct ion_handle *handle)
+{
+	return handle->id;
+}
+//* Modify by LeMaker -- end
