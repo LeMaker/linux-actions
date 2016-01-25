@@ -156,6 +156,15 @@ config BATTERY_BQ27x00
 	help
 	  Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
 
+# Modify by LeMaker -- begin
+config BATTERY_BQ27441
+	tristate "BQ27441 battery driver for Actions"
+	depends on I2C || I2C=n
+	depends on CHARGER_DRV_ATC206X
+	help
+	  Say Y here to enable support for batteries with BQ27441 (I2C) chips.
+# Modify by LeMaker -- end
+
 config BATTERY_BQ27X00_I2C
 	bool "BQ27200/BQ27500 support"
 	depends on BATTERY_BQ27x00
@@ -362,6 +371,21 @@ config BATTERY_GOLDFISH
 	  Say Y to enable support for the battery and AC power in the
 	  Goldfish emulator.
 
+# Modify by LeMaker -- begin
+config CHARGER_DRV_ATC206X
+	tristate "actions ATC260x PMIC CHARGER"
+	depends on MFD_ATC260X
+	help
+	  If you say yes here you will get support for the CHARGER module
+	  of the actions atc260x series PMICs.
+
+config ATC260X_CAP_GAUGE
+	tristate "actions ATC260x GAUGE"
+	depends on MFD_ATC260X
+	help
+	  If you say yes here you will get support for the CHARGER module
+	  of the actions atc260x series PMICs.
+# Modify by LeMaker -- end
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

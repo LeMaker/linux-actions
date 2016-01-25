@@ -28,6 +28,9 @@ obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
 obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
 obj-$(CONFIG_BATTERY_SBS)	+= sbs-battery.o
 obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
+# Moidfy by LeMaker -- begin
+obj-$(CONFIG_BATTERY_BQ27441)	+= bq27441_battery.o
+# Modify by LeMaker -- end
 obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
 obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
 obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
@@ -54,3 +57,7 @@ obj-$(CONFIG_POWER_AVS)		+= avs/
 obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
 obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
 obj-$(CONFIG_POWER_RESET)	+= reset/
+# Modify by LeMaker -- begin
+obj-$(CONFIG_CHARGER_DRV_ATC206X)	+= atc260x_power/
+obj-$(CONFIG_ATC260X_CAP_GAUGE) += atc260x_cap_gauge.o
+# Modify by LeMaker -- end
