@@ -486,6 +486,15 @@ config REGULATOR_WM831X
 	  Support the voltage and current regulators of the WM831x series
 	  of PMIC devices.
 
+# Modify by LeMaker -- begin
+config REGULATOR_ATC260X
+	tristate "Actions Atc260x PMIC regulators"
+	depends on MFD_ATC260X
+	help
+	  Support the voltage and current regulators of the act260x series
+	  of PMIC devices.
+# Modify by LeMaker -- end
+
 config REGULATOR_WM8350
 	tristate "Wolfson Microelectronics WM8350 AudioPlus PMIC"
 	depends on MFD_WM8350
