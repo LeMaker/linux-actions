@@ -58,6 +58,15 @@ config AMBA_PL08X
 	  Platform has a PL08x DMAC device
 	  which can provide DMA engine support
 
+# Modify by LeMaker -- begin	  
+config OWL_DMAC
+	tristate "OWL AHB DMA support"
+	depends on ARCH_OWL
+	select DMA_ENGINE
+	help
+	  Support the actions AHB DMA controller.
+# Modify by LeMaker -- end
+
 config INTEL_IOATDMA
 	tristate "Intel I/OAT DMA support"
 	depends on PCI && X86

@@ -38,3 +38,7 @@ obj-$(CONFIG_DMA_SA11X0) += sa11x0-dma.o
 obj-$(CONFIG_MMP_TDMA) += mmp_tdma.o
 obj-$(CONFIG_DMA_OMAP) += omap-dma.o
 obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
+
+# Modify by LeMaker -- begin
+obj-$(CONFIG_OWL_DMAC) += owl_hdmac.o
+# Modify by LeMaker -- end

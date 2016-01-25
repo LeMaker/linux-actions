@@ -64,7 +64,9 @@ int of_dma_controller_register(struct device_node *np,
 				void *data)
 {
 	struct of_dma	*ofdma;
-	int		nbcells;
+	//* Modify by LeMaker -- begin
+	int		nbcells = 0;
+	//* Modify by LeMaker -- end
 	const __be32	*prop;
 
 	if (!np || !of_dma_xlate) {
