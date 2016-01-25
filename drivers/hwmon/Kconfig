@@ -1480,6 +1480,18 @@ config SENSORS_WM831X
 	  This driver can also be built as a module.  If so, the module
 	  will be called wm831x-hwmon.
 
+# Modify by LeMaker -- begin
+config SENSORS_ATC260X
+	tristate "atc260x PMICs"
+	depends on MFD_ATC260X
+	help
+	  If you say yes here you get support for the hardware
+	  monitoring functionality of the actions atc260x series of PMICs.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called atc260x_hwmon.
+# Modify by LeMaker -- end
+
 config SENSORS_WM8350
 	tristate "Wolfson Microelectronics WM835x"
 	depends on MFD_WM8350
