@@ -66,7 +66,7 @@
 #include <asm/prom.h>
 #include <mach/gpio.h>
 
-//* Modify by LeMaker -- beign
+//* Modify by LeMaker -- begin
 //#include "../../../usb/dwc3/irqs.h" //xie add
 //* Modify by LeMaker -- end
 
