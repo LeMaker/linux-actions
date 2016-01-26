@@ -396,7 +396,7 @@ config MMC_SPI
 
 # Modify by LeMaker -- begin
 config MMC_OWL
-	tristate " Actions MMC "
+	tristate "Actions MMC"
 	help
 	  Say Y here if you have MMC_OWL 
 	  connected to your system.

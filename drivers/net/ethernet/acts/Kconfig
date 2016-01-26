@@ -1,0 +1,15 @@
+config NET_VENDOR_ACTS
+	tristate "Actions Ethernet driver"
+	default m
+	---help---
+		enable Actions Semi 520X ethernet driver
+config POLL_PHY_STATE
+	tristate "Phy state check"
+	default n
+	---help---
+		poll the phy's sate
+config PHY_RTL8201_SR8201G
+	tristate "phy type"
+	default n
+	---help---
+		compatible with realtek rtl8201 and corechip sr8201g
