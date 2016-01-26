@@ -87,9 +87,7 @@ extern void register_swap_rw_handler(read_block_fn *read,
 
 extern unsigned long saved_cr, saved_ttb, idmap;
 extern pgd_t *idmap_pgd;
-//* Modify by LeMaker -- begin for_linaro_3.10.94
-//extern const unsigned long __nosave_begin[], __nosave_end[];
-//* Modify by LeMaker -- end
+extern const unsigned long __nosave_begin[], __nosave_end[];
 extern void cpu_v7_reset(unsigned long addr);
 
 extern void owl_finish_suspend(unsigned long cpu_state);

@@ -93,7 +93,7 @@ static int __init owl_l2x0_init(void)
 	void __iomem *l2x0_base;
 	u32 val;
 
-	printk(KERN_INFO "%s()\n", __func__);
+	printk(KERN_DEBUG "%s()\n", __func__);
 
 	l2x0_base = (void *)IO_ADDRESS(OWL_PA_L2CC);
 

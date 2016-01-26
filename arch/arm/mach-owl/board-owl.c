@@ -119,15 +119,15 @@ static void __init owl_board_init(void)
 	ret = platform_add_devices(owl_platform_devices,
 		ARRAY_SIZE(owl_platform_devices));
 	if (ret)
-		pr_warn("platform_add_devices() fail\n");
+		printk(KERN_WARNING "platform_add_devices() fail\n");
 
 #ifdef CONFIG_OF
 	ret = of_platform_populate(NULL, owl_dt_match_table, NULL, NULL);
 	if (ret)
-		pr_warn("of_platform_populate() fail\n");
+		printk(KERN_WARNING "of_platform_populate() fail\n");
 #endif
 
-	pr_info("%s()\n", __func__);
+	printk(KERN_DEBUG "%s()\n", __func__);
 }
 
 #ifdef CONFIG_OF

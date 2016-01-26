@@ -29,8 +29,8 @@
 		normal {
 			fb_heap_size = <8>;
 			kinfo_heap_size = <1>;
-			carveout_heap_size = <1>;
-			dma_heap_size = <192>;
+			carveout_heap_size = <244>;
+			dma_heap_size = <98>;
 		};
 	};
 	dual_logo {
@@ -961,7 +961,7 @@
 		compatible = "actions,owl-ethernet";
 		
 		phy0: ethernet-phy@0 {
-			compatible = "SR8201G,sr8201g";
+			compatible = "realtek-corechip,xxx8201";
 			reg = <0>;
 		};
 	};
@@ -1100,10 +1100,10 @@
     };
 
 lcd0: lcd0@b02a0000 {
-		//status = "disabled";
+
 		pinctrl-names = "default";
 		pinctrl-0 = <&lvds_state_default>;
-		lcd_power_gpios = <&gpio 49 0>;    /*GPIOB4*/
+		lcd_power_gpios = <&gpio 36 0>;    /*GPIOB4*/
 		port_type = "lvds";
 		data_width = <0>;		/* 0:24bit ,1:18bit */
 		videomode-0 = <&lcd_mode0>;
@@ -1118,81 +1118,56 @@ lcd0: lcd0@b02a0000 {
 		saturation = <7>;
 		contrast = <5>;
 
-		lcd_mode0:mode@1280x800p60 {   /* 1024x600p60 --> 1280x800p60 */
-             refresh = <60>;
-             xres = <1280>;        /* 1024 --> 1280 */
-             yres = <800>;         /* 600 --> 800 */
-             /*in pico second, 0.000 000 000 001s*/
-             pixclock = <14925>;     /* 20000 --> 14925 */
-             left_margin = <80>;     /* 56 --> 80 */
-             right_margin = <60>;
-             upper_margin = <8>;    /* 13 --> 8 */
-             lower_margin = <7>;    /* 18 --> 7 */
-             hsync_len = <20>;       /* 4 --> 20 */
-             vsync_len = <8>;       /* 4 --> 8 */
-             /*0: FB_VMODE_NONINTERLACED, 1:FB_VMODE_INTERLACED*/
-            vmode = <0>;
-		};    
-		
-		//lcd_mode0:mode@1024x600p60 {
-		//	refresh = <60>;
-		//	xres = <1024>;
-	    //	yres = <600>;
+	        //lcd_mode0:mode@1280x800p60 {   /* 1024x600p60 --> 1280x800p60 */
+                //        refresh = <60>;
+                //        xres = <1280>;        /* 1024 --> 1280 */
+                //        yres = <800>;         /* 600 --> 800 */
+                //        /*in pico second, 0.000 000 000 001s*/
+                //        pixclock = <14925>;     /* 20000 --> 14925 */
+                //        left_margin = <80>;     /* 56 --> 80 */
+                //        right_margin = <60>;
+                //        upper_margin = <8>;    /* 13 --> 8 */
+                //        lower_margin = <7>;    /* 18 --> 7 */
+                //        hsync_len = <20>;       /* 4 --> 20 */
+                //        vsync_len = <8>;       /* 4 --> 8 */
+                //        /*0: FB_VMODE_NONINTERLACED, 1:FB_VMODE_INTERLACED*/
+                //        vmode = <0>;
+                //};
+	
+		lcd_mode0:mode@1024x600p60 {
+			refresh = <60>;
+			xres = <1024>;
+	       		yres = <600>;
 			/*in pico second, 0.000 000 000 001s*/
-		//	pixclock = <20000>;
-		//	left_margin = <56>;
-		//	right_margin = <60>;
-		//	upper_margin = <13>;
-		//	lower_margin = <18>;
-		//	hsync_len = <4>;
-		//	vsync_len = <4>;
+			pixclock = <20000>;
+			left_margin = <56>;
+			right_margin = <60>;
+			upper_margin = <13>;
+			lower_margin = <18>;
+			hsync_len = <4>;
+			vsync_len = <4>;
 			/*0: FB_VMODE_NONINTERLACED, 1:FB_VMODE_INTERLACED*/
-		//	vmode = <0>;
-		//};
+			vmode = <0>;
+		};
 	};
 	dsi: dsi@b0220000 {
 		status = "disabled";
 	};
 
-	hdmi:hdmi@b02c0000{
-		status="okay";
+	hdmi: hdmi@b02c0000{
+		status = "okay";
 		hdcp_onoff = <0>;
 		channel_invert = <0>;
 		bit_invert = <0>;
 		hotplugable = <0>;
-		bootable = <1>;
 		bootrotate = <0>;
 		default_resolution = "auto";
 	};
- 
-	cvbs:cvbs@b02b0000{
-		default_mode = "PAL";
-		bootable = <0>;
-		bootrotate = <1>;
-		hotplugable = <1>;
-		status="disabled";
-	};
-
-	//hdmi: hdmi@b02c0000{
-	//	status = "disabled";
-	//	hdcp_onoff = <0>;
-	//	channel_invert = <0>;
-	//	bit_invert = <0>;
-	//	hotplugable = <0>;
-	//	bootrotate = <0>;   
-	//	default_resolution = "auto";
-	//};
-	
-	//cvbs: cvbs@b02b0000{  
-	//	default_mode = "PAL";
-	//	bootrotate = <0>; 
-	//	hotplugable = <1>;
-	//	status="okay";
-	//};
-	
+		
 	framebuffer {
 		compatible = "actions,framebuffer";  
-		def_display  = "lcd";
+		def_display  = "hdmi";
+
 	};
 
 	pwm: pwm@b01b0050 {
@@ -1221,7 +1196,7 @@ lcd0: lcd0@b02a0000 {
 	backlight {
 		/*1.pwm num; 2. period in ns; */
 		/*3.plarity, 0: high active, 1: low active*/
-		backlight_en_gpios = <&gpio 36 0>; /*GPIOB17*/ 
+		backlight_en_gpios = <&gpio 49 0>; /*GPIOB17*/ 
 		pwms = <&pwm 0 50000 1>;
 		total_steps = <1024>;
 		min_brightness = <250>;

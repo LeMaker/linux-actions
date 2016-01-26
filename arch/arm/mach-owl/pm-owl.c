@@ -1003,7 +1003,7 @@ void cpu_reset_to_brom(void)
 
 int __init owl_pm_init(void)
 {
-	printk("[PM] %s() %d\n", __func__, __LINE__);
+	printk(KERN_DEBUG "[PM] %s() %d\n", __func__, __LINE__);
 	
 	c_calc_ddr_checksum();
 	suspend_set_ops(&owl_pm_ops);
