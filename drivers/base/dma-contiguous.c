@@ -60,6 +60,7 @@ struct cma *dma_contiguous_default_area;
 //* Modify by LeMaker -- begin : remove const
 static phys_addr_t size_bytes = CMA_SIZE_MBYTES * SZ_1M;
 //* Modify by LeMaker -- end
+
 static phys_addr_t size_cmdline = -1;
 
 static int __init early_cma(char *p)
@@ -173,7 +174,7 @@ static int __init cma_activate_area(struct cma *cma)
 	} while (--i);
 
 //* Modify by LeMaker -- begin
-	adjust_managed_cma_page_count(zone, count);
+	adjust_managed_cma_page_count(zone, cma->count);
 //* Modify by LeMaker -- end
 	return 0;
 }
