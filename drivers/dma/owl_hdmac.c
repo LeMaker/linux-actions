@@ -1698,7 +1698,6 @@ static int __init owl_dma_probe(struct platform_device *pdev)
 	int			err;
 	int			i;
 
-    printk(KERN_DEBUG "owl_dma_probe\n");
 	max_timeout = 1;
 
 	/* get DMA Controller parameters from platform */
@@ -2068,7 +2067,6 @@ static int __init owl_dma_init(void)
 {
 	int err;
     
-    printk(KERN_DEBUG "owl_dma_init\n");
     err = platform_driver_register(&owl_dma_driver);
     if (err != 0) {
         printk(KERN_WARNING "register owl dma platform driver error!\n");

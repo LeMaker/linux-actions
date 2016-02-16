@@ -126,8 +126,6 @@ static void __init owl_board_init(void)
 	if (ret)
 		printk(KERN_WARNING "of_platform_populate() fail\n");
 #endif
-
-	printk(KERN_DEBUG "%s()\n", __func__);
 }
 
 #ifdef CONFIG_OF

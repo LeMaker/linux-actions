@@ -561,10 +561,10 @@ static int atm7059_dai_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-        printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S16_LE\n", __func__);
+        //printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S16_LE\n", __func__);
         break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-        printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S32_LE\n", __func__);
+        //printk(KERN_DEBUG "%s,SNDRV_PCM_FORMAT_S32_LE\n", __func__);
 		break;
 	default:
 		return -EINVAL;

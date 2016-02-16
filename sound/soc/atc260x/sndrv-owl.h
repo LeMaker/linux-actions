@@ -27,7 +27,10 @@
 static int error_switch = 1;
 static int debug_switch = 1;
 
-#define SND_DEBUG
+//* Modify by LeMaker -- beign
+//#define SND_DEBUG
+#undef SND_DEBUG
+
 #ifdef SND_DEBUG
 #define snd_err(fmt, args...) \
 	if (error_switch) \
@@ -36,7 +39,13 @@ static int debug_switch = 1;
 #define snd_dbg(fmt, args...) \
 	if (debug_switch) \
 		printk(KERN_DEBUG"[SNDRV]:[%s] "fmt, __func__, ##args)
+#else
+#define snd_err(fmt, args...) \
+	do{}while(0)
+#define snd_dbg(fmt, args...) \
+	do{}while(0)
 #endif
+//* Modify by LeMaker -- end
 
 enum {
 	O_MODE_I2S,
@@ -53,8 +62,8 @@ enum {
 
 
 typedef struct {
-	short sample_rate;	/* 真实采样率除以1000 */
-	char index[2];		/* 对应硬件寄存器的索引值 */
+	short sample_rate;
+	char index[2];
 } fs_t;
 
 typedef struct {

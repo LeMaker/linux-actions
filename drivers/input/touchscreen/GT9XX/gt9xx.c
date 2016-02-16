@@ -491,7 +491,6 @@ Output:
 *********************************************************/
 static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
 {
-	printk( "fshh520 : gtp_touch_down\n" );
 #if GTP_CHANGE_X2Y
     GTP_SWAP(x, y);
 	
@@ -537,7 +536,6 @@ Output:
 *********************************************************/
 static void gtp_touch_up(struct goodix_ts_data* ts, s32 id)
 {
-	printk( "fshh520 : gtp_touch_up\n" );
 #if 0
 #if GTP_ICS_SLOT_REPORT
     input_mt_slot(ts->input_dev, id);
@@ -606,7 +604,6 @@ static void gtp_pen_down(s32 x, s32 y, s32 w, s32 id)
 {
     struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
 
-	printk( "fshh520 : gtp_pen_down\n" );
 #if GTP_CHANGE_X2Y
     GTP_SWAP(x, y);
 #endif
@@ -636,7 +633,6 @@ static void gtp_pen_up(s32 id)
 {
     struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
     
-printk( "fshh520 : gtp_pen_up\n" );
     input_report_key(ts->pen_dev, BTN_TOOL_PEN, 0);
     
 #if GTP_ICS_SLOT_REPORT

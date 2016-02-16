@@ -312,9 +312,6 @@ ssize_t test_mode_store(struct device *dev, struct device_attribute *attr,
 #endif
 	}
 
-	printk(KERN_DEBUG"PHY_REG_FTC1 = 0x%x\n", (u32)read_phy_reg(ecp, PHY_REG_FTC1));
-	printk(KERN_DEBUG"PHY_REG_TXPN = 0x%x\n", (u32)read_phy_reg(ecp, 0x12));
-
 	/* shut auto-negoiation */
 	temp = read_phy_reg(ecp, MII_BMCR);
 	temp &= ~BMCR_ANENABLE;
@@ -322,8 +319,6 @@ ssize_t test_mode_store(struct device *dev, struct device_attribute *attr,
 
 	set_mac_according_aneg(ecp);
 
-	printk(KERN_DEBUG"new_duplex = 0x%x\n", ecp->duplex);
-	printk(KERN_DEBUG"new_speed = 0x%x\n", ecp->speed);
 	print_phy_register(ecp);
 	print_mac_register(ecp);
 
@@ -424,7 +419,6 @@ static void check_icmp_sequence(const void *data, const char *msg)
 {
 #define ptr_to_u32(data, off) (ntohl(*(u32*)((char *)data + off)))
 
-	printk(KERN_DEBUG"-- %s -- %p, icmp: 0x%x\n", msg, (char *)data + 0x14, (ptr_to_u32(data, 0x14) & 0xff));
 	if ((ptr_to_u32(data, 0x14) & 0xff) == 0x01) {// protocol icmp 0x01
 		printk(KERN_INFO"ICMP ");
 		if (((ptr_to_u32(data, 0x20) >> 8) & 0xff) == 0x8) //icmp type
@@ -442,11 +436,16 @@ static void check_icmp_sequence(const void *data, const char *msg)
 static void print_mac_address(const char *mac)
 {
     int i;
+
+	printk(KERN_DEBUG"MAC Address: ");
+
     for (i = 0; i < ETH_MAC_LEN - 1; i++) {
-        printk(KERN_DEBUG"%s %02x-", __func__,(unsigned int)mac[i] & 0xFF);
-    }
-    printk(KERN_DEBUG"%s %02x\n", __func__, (unsigned int)mac[i] & 0xFF);
-    return;
+        printk(KERN_DEBUG"%02x-",(unsigned int)mac[i] & 0xFF);
+	}
+
+    printk(KERN_DEBUG"%02x\n", (unsigned int)mac[i] & 0xFF);
+    
+	return;
 }
 
 static int ctox(int c)
@@ -474,7 +473,6 @@ static int parse_mac_address(const char *mac, int len)
 	char s[16] = "";
 	int c;
 
-	printk(KERN_DEBUG"ethernet mac address string: %s, len: %d\n", mac, strlen(mac));
 	if (17 == len) {
 		if (strlen(mac) > 17) {
 			printk(KERN_ERR"ethernet mac address string too long\n");
@@ -486,7 +484,6 @@ static int parse_mac_address(const char *mac, int len)
 			s[j++] = c;
 		}
 		s[j] = '\0';
-		printk(KERN_DEBUG"mac address string stripped colon: %s\n", s);
 	} else if (12 == len) {
 		if (strlen(mac) > 12) {
 			printk(KERN_ERR"ethernet mac address string too long\n");
@@ -621,7 +618,6 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
     }*/
     ret = read_mi_item("ETHMAC",def_mac,20);
     if(ret > 0){
-        printk(KERN_DEBUG"Using the mac address in miscinfo.\n");
         parse_mac_address(def_mac, ret);
         return g_default_mac_addr;
     }
@@ -630,7 +626,6 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
     if (ret) {
         printk(KERN_ERR"no random-mac-address in dts\n");
     } else {
-        printk(KERN_DEBUG"random-mac-address: %s\n", str);
         if (!strcmp("okay", str))
             goto random_mac;
     }
@@ -639,7 +634,6 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
     if (str == NULL) {
         printk(KERN_ERR"no local-mac-address in dts\n");
     } else {
-        printk(KERN_DEBUG"local-mac-address: ");
         print_mac_address(str);
         memcpy(g_default_mac_addr, str, ETH_MAC_LEN);
         return g_default_mac_addr;
@@ -658,7 +652,6 @@ static const char *get_def_mac_addr(struct platform_device *pdev)
     //printk(KERN_DEBUG"output_value:0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",output_value[0],output_value[1],output_value[2],output_value[3],output_value[4],output_value[5],output_value[6],output_value[7]);
     get_mac_address_by_chip(output_value,g_default_mac_addr);
 
-    printk(KERN_DEBUG"use the mac address by chip\n");
     print_mac_address(g_default_mac_addr);
     return g_default_mac_addr;
 
@@ -831,7 +824,6 @@ void print_mac_register(ec_priv_t *ecp)
 static int ec_mdio_read(struct net_device *dev, int phy_addr, int reg_addr)
 {
     ec_priv_t *ecp = netdev_priv(dev);
-    printk(KERN_DEBUG"read phy reg-%x\n", reg_addr);
     return (read_phy_reg(ecp, reg_addr));
 }
 
@@ -843,7 +835,6 @@ static void ec_mdio_write(struct net_device *dev, int phy_addr, int reg_addr, in
 {
     ec_priv_t *ecp = netdev_priv(dev);
     write_phy_reg(ecp, reg_addr, val);
-    printk(KERN_DEBUG"write phy reg-%x, value-%x\n", reg_addr, val);
 }
 
 
@@ -1381,7 +1372,6 @@ static void mac_init(ec_priv_t *ecp)
 #ifdef ETHENRET_MAC_LOOP_BACK
 	/* mac internal loopback */
 	hw_regs->er_opmode |= EC_OPMODE_LP;
-	printk(KERN_DEBUG"MAC operation mode: 0x%x\n", (unsigned)hw_regs->er_opmode);
 #endif
 	//hw_regs->er_ienable = EC_IEN_ALL;   //all interrupt enable
 }
@@ -1445,7 +1435,6 @@ static void detect_power_save_timer_func(unsigned long data);
 
 static void init_power_save_timer(ec_priv_t *ecp)
 {
-    printk(KERN_DEBUG"%s \n",__func__);
     init_timer(&ecp->detect_timer);
     ecp->detect_timer.data = (unsigned long)ecp;
     ecp->detect_timer.function = detect_power_save_timer_func;
@@ -1453,13 +1442,11 @@ static void init_power_save_timer(ec_priv_t *ecp)
 
 static void start_power_save_timer(ec_priv_t *ecp, const unsigned ms)
 {
-    printk(KERN_DEBUG"%s \n",__func__);
     mod_timer(&ecp->detect_timer, jiffies + msecs_to_jiffies(ms));
 }
 
 static void stop_power_save_timer(ec_priv_t *ecp)
 {
-    printk(KERN_DEBUG"%s \n", __func__);
     if (timer_pending(&ecp->detect_timer))
         del_timer_sync(&ecp->detect_timer);
 
@@ -1473,9 +1460,7 @@ static void enable_hardware(ec_priv_t *ecp)
     int temp;
 
     temp = read_phy_reg(ecp, MII_BMCR);
-    printk(KERN_DEBUG"MII_BMCR: 0x%x\n", (u32)temp);
     write_phy_reg(ecp, MII_BMCR, temp & ~BMCR_PDOWN);
-    printk(KERN_DEBUG"exit POWER DOWN, MII_BMCR: 0x%x\n", (u32)read_phy_reg(ecp, MII_BMCR));
 
     spin_lock_irqsave(&ecp->lock, flags);
     ecp->enable = true;
@@ -1490,29 +1475,24 @@ static void disable_hardware(ec_priv_t *ecp)
 
     phy_int_status = atc260x_reg_read(ecp->atc260x, atc2603_PHY_INT_STAT);
     if (phy_int_status & 0x1) {
-        printk(KERN_DEBUG"already linked, not to power down\n");
         return;
     }
 
     spin_lock_irqsave(&ecp->lock, flags);
     if (ecp->linked) {
         spin_unlock_irqrestore(&ecp->lock, flags);
-        printk(KERN_DEBUG"already linked, not to power down\n");
         return;
     }
     ecp->enable = false;
     spin_unlock_irqrestore(&ecp->lock, flags);
 
     temp = read_phy_reg(ecp, MII_BMCR);
-    printk(KERN_DEBUG"MII_BMCR: 0x%x\n", (u32)temp);
     write_phy_reg(ecp, MII_BMCR, temp | BMCR_PDOWN);
-    printk(KERN_DEBUG"enter POWER DOWN, MII_BMCR: 0x%x\n", (u32)read_phy_reg(ecp, MII_BMCR));
 }
 
 static void ethernet_power_save(struct work_struct *work)
 {
     ec_priv_t *ecp = (ec_priv_t *)container_of(work, ec_priv_t, power_save_work);
-    printk(KERN_DEBUG"ecp->enable: %u\n", ecp->enable);
 
     if (ecp->enable) {
         disable_hardware(ecp);
@@ -1526,7 +1506,6 @@ static void detect_power_save_timer_func(unsigned long data)
     ec_priv_t *ecp = (ec_priv_t *)data;
     unsigned long flags;
 
-    printk(KERN_DEBUG"ecp->enable: %u\n", ecp->enable);
     if (!ecp->opened) {
         printk(KERN_ERR"not opened yet\n");
         return;
@@ -1556,7 +1535,6 @@ static void set_phy_according_aneg(ec_priv_t *ecp)
 	//unsigned long phy_ctrl_status;
 
 	old_bmcr = read_phy_reg(ecp, MII_BMCR);
-	printk(KERN_DEBUG"old MII_BMCR: 0x%04x\n", (unsigned)old_bmcr);
 	#if 0
 	if (ecp->phy_model == ETH_PHY_MODEL_ATC2605) {
 		phy_ctrl_status = atc260x_reg_read(ecp->atc260x, atc2603_PHY_CTRL);
@@ -1579,7 +1557,6 @@ static void set_phy_according_aneg(ec_priv_t *ecp)
 		old_bmcr &= ~BMCR_FULLDPLX;
 
 	write_phy_reg(ecp, MII_BMCR, old_bmcr);
-	printk(KERN_DEBUG"new MII_BMCR: 0x%04x\n", (unsigned)read_phy_reg(ecp, MII_BMCR));
 }
 
 
@@ -1590,9 +1567,7 @@ static void set_mac_according_aneg(ec_priv_t *ecp)
 	volatile ethregs_t *hw_regs = ecp->hwrp;
 	unsigned long old_mode;
 
-	printk(KERN_DEBUG "%s\n",__func__);
 	old_mode = hw_regs->er_opmode;
-	printk(KERN_DEBUG"opmode regs old value - 0x%x\n", (int)old_mode);
 
 	hw_regs->er_opmode &= ~(EC_OPMODE_ST | EC_OPMODE_SR);
 
@@ -1612,7 +1587,6 @@ static void set_mac_according_aneg(ec_priv_t *ecp)
 	set_phy_according_aneg(ecp);
 
 	hw_regs->er_opmode = old_mode;
-	printk(KERN_DEBUG"hw_regs->er_opmode:0x%lx\n", hw_regs->er_opmode);
 }
 
 
@@ -1988,7 +1962,6 @@ static void netphy_irq_handle_do_work(struct work_struct *work)
 	unsigned short mmi_status = 0;
 	unsigned long flags;
 
-	printk(KERN_DEBUG"%s >> %d \n",__func__,__LINE__);
 
 	if(ecp->phy_model==ETH_PHY_MODEL_RTL8201_SR8201G){
 		if(((ecp->phy_id)  &  PHY_ID_MASK) == ETH_PHY_ID_RTL8201){
@@ -2035,14 +2008,9 @@ static void netphy_irq_handle_do_work(struct work_struct *work)
 			goto out;
 		}
 #endif
-		printk(KERN_DEBUG"old_duplex = 0x%x\n", ecp->duplex);
-		printk(KERN_DEBUG"old_speed = 0x%x\n", ecp->speed);
 
 		ecp->phy_ops->phy_read_status(ecp);
 		set_mac_according_aneg(ecp);
-
-		printk(KERN_DEBUG"new_duplex = 0x%x\n", ecp->duplex);
-		printk(KERN_DEBUG"new_speed = 0x%x\n", ecp->speed);
 
 		for (i = 0; i < MII_TIME_OUT; i++) {
 			if (read_phy_reg(ecp, MII_BMSR) & BMSR_LSTATUS) {
@@ -2190,7 +2158,6 @@ static void phy_cable_plug_irq_enable(int level)
 {
     /* sirq0: clear pending */
     putl((getl(INTC_EXTCTL) | (0x1 << 16)) & ~0x0101, INTC_EXTCTL);
-    printk(KERN_DEBUG"INTC_EXTCTL: 0x%08x\n", getl(INTC_EXTCTL));
 
     if (!level) { /* low level active, pull up */
         putl((getl(PAD_PULLCTL0) & 0xffff7fff) | 0x00004000, PAD_PULLCTL0);
@@ -2199,16 +2166,12 @@ static void phy_cable_plug_irq_enable(int level)
         putl((getl(PAD_PULLCTL0) & 0xffffbfff) | 0x00008000, PAD_PULLCTL0);
         putl(getl(INTC_EXTCTL) | (0x1 << 21), INTC_EXTCTL);
     }
-    printk(KERN_DEBUG"PAD_PULLCTL0: 0x%08x\n", getl(PAD_PULLCTL0));
-    printk(KERN_DEBUG"INTC_EXTCTL: 0x%08x\n", getl(INTC_EXTCTL));
 }
 
 static void phy_cable_plug_irq_disable(void)
 {
     putl(getl(INTC_EXTCTL) & ~(0x1 << 21) & ~0x0101, INTC_EXTCTL);
     putl(getl(PAD_PULLCTL0) & ~(0x3 << 14), PAD_PULLCTL0);
-    printk(KERN_DEBUG"PAD_PULLCTL0: 0x%08x\n", getl(PAD_PULLCTL0));
-    printk(KERN_DEBUG"INTC_EXTCTL: 0x%08x\n", getl(INTC_EXTCTL));
 }
 
 /**
@@ -2306,7 +2269,6 @@ static int ec_netdev_open(struct net_device *dev)
         printk(KERN_ERR"Unable to request IRQ: %d, ec_netmac_isr\n", ret);
         goto err_irq;
     }
-    printk(KERN_DEBUG "IRQ %d requested\n", OWL_IRQ_ETHERNET);
     //print_mac_register(ecp);
 
 #ifdef DETECT_POWER_SAVE
@@ -2338,7 +2300,6 @@ static int ec_netdev_close(struct net_device *dev)
     unsigned long flags = 0;
     //unsigned short atc260x_temp;
 
-    printk(KERN_DEBUG"%s %d\n",__func__,__LINE__);
     if (!ecp->opened) {
         printk(KERN_ERR"already closed\n");
         return (0);
@@ -2543,7 +2504,6 @@ static int ec_netdev_set_mac_addr(struct net_device *dev, void *addr)
     char    old_mac_addr[ETH_MAC_LEN];
     bool old_overrided;
 
-    printk(KERN_DEBUG"%s %d\n",__func__,__LINE__);
 
     if (!is_valid_ether_addr(address->sa_data)) {
         printk(KERN_ERR"not valid mac address\n");
@@ -2663,7 +2623,6 @@ static inline void copy_multicast_list(ec_priv_t *ecp, struct netdev_hw_addr_lis
 
 static inline void parse_interface_flags(ec_priv_t *ecp, unsigned int flags)
 {
-    //printk(KERN_DEBUG"%s %d\n",__func__,__LINE__);
     set_mode_promisc(ecp, (bool)(flags & IFF_PROMISC));
     set_mode_all_multicast(ecp, (bool)(flags & IFF_ALLMULTI));
     ecp->multicast = (bool)(flags & IFF_MULTICAST);
@@ -2680,11 +2639,6 @@ static void ec_netdev_set_multicast_list(struct net_device *dev)
     volatile ethregs_t *hw_regs = ecp->hwrp;
     unsigned long flags = 0;
     unsigned long old_srst_bits;
-
-#if EC_TRACED
-    printk(KERN_DEBUG"--- enter %s()\n", __func__);
-    printk(KERN_DEBUG"dev->flags - 0x%x\n", dev->flags);
-#endif
 
     spin_lock_irqsave(&ecp->lock, flags);
 
@@ -2705,7 +2659,6 @@ static void ec_netdev_set_multicast_list(struct net_device *dev)
             set_mode_all_multicast(ecp, true);
         }
     }
-    printk(KERN_DEBUG"%s %d \n",__func__,__LINE__);
 
     hw_regs->er_opmode |= old_srst_bits;
  
@@ -2754,11 +2707,6 @@ static int ec_netdev_ioctrl(struct net_device *dev, struct ifreq *ifr, int cmd)
     struct mii_ioctl_data *data = if_mii(ifr);
     struct mii_if_info *info = &ecp->mii_info;
     int     err = 0;
-
-#if EC_TRACED
-    printk(KERN_DEBUG"--- enter %s()\n", __func__);
-    printk(KERN_DEBUG"phy reg num - 0x%x, data - 0x%x, cmd:0x%x\n", data->reg_num, data->val_in, cmd);
-#endif
 
     data->phy_id &= info->phy_id_mask;
     data->reg_num &= info->reg_num_mask;
@@ -3101,8 +3049,6 @@ static int ethernet_parse_gpio(struct device_node * of_node, const char * propna
 
     gpio->active= (gflags&OF_GPIO_ACTIVE_LOW) ;
 
-	printk(KERN_DEBUG"gpio %s num %d active %d\n", propname, gpio->gpio, gpio->active);
-
     return 0;
 }
 
@@ -3115,7 +3061,6 @@ static void ethernet_resume_handler(struct work_struct *work)
     volatile ethregs_t *hw_regs = ecp->hwrp;
     unsigned long flags = 0;
 
-    printk(KERN_DEBUG"%s %d\n",__func__,__LINE__);
     suspend_flag = 0;
  #if 0
     if (ecp->phy_model == ETH_PHY_MODEL_ATC2605) {
@@ -3180,7 +3125,6 @@ static void ethernet_resume_handler(struct work_struct *work)
 #endif
 #ifdef CONFIG_POLL_PHY_STATE
 	queue_delayed_work(ecp->phy_detect_queue, &ecp->phy_detect_work,msecs_to_jiffies(PHY_DETECT_RESUME));		//必须等待resume后才能做detect
-	printk(KERN_DEBUG "phy detect by work queue\n");
 #endif
     //netif_wake_queue(dev);
     return;
@@ -3207,8 +3151,6 @@ static int ec_netdev_init(struct net_device *dev)
     ec_priv_t *ecp = netdev_priv(dev);
     volatile ethregs_t *hw_regs = NULL;
 
-    printk(KERN_DEBUG"ETHERNET_BASE: 0x%x\n", ETHERNET_BASE);
-    printk(KERN_DEBUG"ecp->hwrp: 0x%p\n", ecp->hwrp);
     /* ETHERNET_BASE address is taken from dts when driver probe,
      * instead of hard-coding here */
     /* ecp->hwrp = (volatile ethregs_t *)IO_ADDRESS(ETHERNET_BASE); */
@@ -3237,9 +3179,6 @@ static int ec_netdev_init(struct net_device *dev)
     ecp->tx_bd_base = (ec_bd_t *)dma_alloc_coherent(NULL, sizeof(ec_bd_t) * TX_RING_SIZE, &ecp->tx_bd_paddr, GFP_KERNEL);
     ecp->rx_bd_base = (ec_bd_t *)dma_alloc_coherent(NULL, sizeof(ec_bd_t) * RX_RING_SIZE, &ecp->rx_bd_paddr, GFP_KERNEL);
 
-    printk(KERN_DEBUG"ecp->tx_bd_base:%p, ecp->tx_bd_paddr:%p\n", ecp->tx_bd_base, (void *)ecp->tx_bd_paddr);
-    printk(KERN_DEBUG"ecp->rx_bd_base:%p, ecp->rx_bd_paddr:%p\n", ecp->rx_bd_base, (void *)ecp->rx_bd_paddr);
-    printk(KERN_DEBUG"virt_to_phys(ecp->tx_bd_base):%p\n", (void *)virt_to_phys(ecp->tx_bd_base));
 
     if (ecp->tx_bd_base == NULL || ecp->rx_bd_base == NULL) {
         printk(KERN_ERR"dma_alloc mem failed, tx_bd_base:%p, rx_bd_base:%p\n",
@@ -3291,7 +3230,6 @@ static void ec_netdev_uninit(struct net_device *dev)
 {
     ec_priv_t *ecp = netdev_priv(dev);
 
-    printk(KERN_DEBUG"%s %d\n",__func__,__LINE__);
 #if 0
     if (ecp->tx_wq) {
         destroy_workqueue(ecp->tx_wq);
@@ -3375,9 +3313,7 @@ static int ethernet_phy_probe(struct platform_device *pdev)
 	struct net_device *dev = g_eth_dev[0];
 	ec_priv_t *ecp = netdev_priv(dev);
 	const char *str;
-	//printk(KERN_DEBUG" %s  %d\n", __FUNCTION__,__LINE__);
 	str = of_get_property(phy_node, "compatible", NULL);
-	printk(KERN_DEBUG"ethernet phy's compatible: %s\n", str);
 
 	/* The standard phy that register accessed via MDIO only support ksz8841tl now */
 	if (of_device_is_compatible(phy_node, "realtek-corechip,xxx8201")) {
@@ -3386,13 +3322,10 @@ static int ethernet_phy_probe(struct platform_device *pdev)
 		printk(KERN_INFO"compatible of %s: %s\n", phy_node->full_name, str);
 	}
 
-	//printk(KERN_DEBUG"phy_node->full_name: %s\n", phy_node->full_name);
 
 #ifndef CONFIG_POLL_PHY_STATE
 	ecp->phy_irq = irq_of_parse_and_map(phy_node, 0);
-	printk(KERN_DEBUG"%s ecp->phy_irq=%d\n", __func__, ecp->phy_irq);
     if (ecp->phy_irq < 0) {
-		printk(KERN_ERR"No IRQ resource for tp\n");
     	return -ENODEV;
     }
 #endif
@@ -3462,7 +3395,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 		/* if get phy mode failed, use default rmii */
 		printk(KERN_ERR"get phy mode failed, use rmii\n");
 	} else {
-		printk(KERN_DEBUG"phy_mode_str: %s\n", phy_mode_str);
 		if (!strcmp(phy_mode_str, "rmii"))
 			phy_mode = ETH_PHY_MODE_RMII;
 		else if (!strcmp(phy_mode_str, "smii"))
@@ -3482,7 +3414,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	printk(KERN_DEBUG"pdev->name: %s\n", pdev->name ? pdev->name : "<null>");
 	dev = alloc_etherdev(sizeof(struct dev_priv));
 	if (NULL == dev)
 		return -ENOMEM;
@@ -3495,7 +3426,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 #ifdef CONFIG_POLL_PHY_STATE
 	ecp->last_link_status = false;
 #endif
-	printk(KERN_DEBUG"phy_mode: %u\n", ecp->phy_mode);
 
 	phy_node = of_parse_phandle(pdev->dev.of_node, "phy-handle", 0);
 	if (!phy_node) {
@@ -3532,7 +3462,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 	str = of_get_property(phy_node, "compatible", NULL);
 	if (of_device_is_compatible(phy_node, "actions,atc260x-ethernet")) {
 		ecp->phy_model = ETH_PHY_MODEL_ATC2605;
-		printk(KERN_DEBUG"phy model is ATC2605\n");
 		/* platform device atc260x-ethernet's been created by atc260x_dev.c */
 	} else {
 		/* all other standard phy that register accessed via MDIO are
@@ -3540,7 +3469,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 		struct platform_device *phy_pdev;
 		const char *name = strstr(str, ",");
 		phy_pdev = of_platform_device_create(phy_node, ++name, pdev->dev.parent);
-		printk(KERN_DEBUG"ethernet phy name: %s\n", name);
 		if (!phy_pdev) {
 			printk(KERN_ERR"of_platform_device_create(%s) failed\n", name);
 			goto err_free;
@@ -3553,7 +3481,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 		printk(KERN_ERR"register ethernet phy driver failed\n");
 		goto err_free_phy;
 	}
-	printk(KERN_DEBUG"phy_model: %u\n", ecp->phy_model);
 
 	ret = -EINVAL;
 
@@ -3563,8 +3490,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 		goto err_free_phy;
 	}
 	ecp->hwrp = (volatile ethregs_t *)IO_ADDRESS(res->start);
-	printk(KERN_DEBUG"res->start: %p, ecp->hwrp: %p\n",
-			(void *)res->start, (void *)ecp->hwrp);
 
 	ecp->mac_irq = dev->irq = OWL_IRQ_ETHERNET;
 
@@ -3632,7 +3557,6 @@ static int __init asoc_ethernet_probe(struct platform_device *pdev)
 #else
 	INIT_WORK(&ecp->netphy_irq_handle_work,netphy_irq_handle_do_work);
 #endif
-	printk(KERN_DEBUG"ethernet %s probe finish\n",dev->name);
 	return 0;
 err_remove_work_queue:
 	destroy_workqueue(ecp->ethernet_work_queue);
@@ -3727,7 +3651,6 @@ static struct platform_driver asoc_ethernet_driver = {
 
 static int __init asoc_ethernet_init(void)
 {
-	printk(KERN_DEBUG "%s %d\n",__FUNCTION__,__LINE__);
     return platform_driver_register(&asoc_ethernet_driver);
 }
 module_init(asoc_ethernet_init);

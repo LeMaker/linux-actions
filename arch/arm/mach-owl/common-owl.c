@@ -159,14 +159,14 @@ void __init earlyl_init_dt_get_ion_info(unsigned long node)
         prop = of_get_flat_dt_prop(node, "fb_heap_size", NULL);
     	if (prop) {
             owl_fb_size = be32_to_cpup(prop) * SZ_1M;
-            printk(KERN_DEBUG "find owl_fb_size=0x%x\n", owl_fb_size);
+            //printk(KERN_DEBUG "find owl_fb_size=0x%x\n", owl_fb_size);
         }
     }
     if(owl_kinfo_size == 0) {
         prop = of_get_flat_dt_prop(node, "kinfo_heap_size", NULL);
     	if (prop) {
             owl_kinfo_size = be32_to_cpup(prop) * SZ_1M;
-            printk(KERN_DEBUG "find owl_kinfo_size=0x%x\n", owl_kinfo_size);
+            //printk(KERN_DEBUG "find owl_kinfo_size=0x%x\n", owl_kinfo_size);
         }
     }
 #ifdef CONFIG_ION
@@ -174,14 +174,14 @@ void __init earlyl_init_dt_get_ion_info(unsigned long node)
         prop = of_get_flat_dt_prop(node, "carveout_heap_size", NULL);
     	if (prop) {
             owl_ion0_size = be32_to_cpup(prop) * SZ_1M;
-            printk(KERN_DEBUG "find owl_ion0_size=0x%x\n", owl_ion0_size);
+            //printk(KERN_DEBUG "find owl_ion0_size=0x%x\n", owl_ion0_size);
         }
     }
     if(owl_ion1_size == 0) {
         prop = of_get_flat_dt_prop(node, "dma_heap_size", NULL);
     	if (prop) {
             owl_ion1_size = be32_to_cpup(prop) * SZ_1M;
-            printk(KERN_DEBUG "find owl_ion1_size=0x%x\n", owl_ion1_size);
+            //printk(KERN_DEBUG "find owl_ion1_size=0x%x\n", owl_ion1_size);
         }
     }
 #endif
@@ -346,8 +346,6 @@ unsigned long get_ion_reserved_mem_size(void)
 
 int __init owl_common_init(void)
 {
-	printk(KERN_DEBUG "%s()\n", __func__);
-
 	platform_add_devices(owl_common_devices,
 		ARRAY_SIZE(owl_common_devices));
 

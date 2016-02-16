@@ -360,8 +360,6 @@ static int owl_gpio_probe(struct platform_device *pdev)
 	int i, irq;
 	int ret;
 
-	printk(KERN_DEBUG "owl_gpio_probe()\n");
-
 	of_id = of_match_device(owl_gpio_of_match, &pdev->dev);
 	if (!of_id)
 		return -EINVAL;
@@ -370,8 +368,8 @@ static int owl_gpio_probe(struct platform_device *pdev)
 		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
 		if (res) {
 			owl_gpio_banks[i].irq = res->start;
-			printk(KERN_DEBUG "owl gpio bank%d - irq%d\n",
-					i, res->start);
+			//printk(KERN_DEBUG "owl gpio bank%d - irq%d\n",
+			//		i, res->start);
 		} else {
 			printk(KERN_INFO "owl gpio bank%d Missing IRQ resource\n"
 					, i);
@@ -419,8 +417,6 @@ static struct platform_driver owl_gpio_driver = {
 
 static int __init owl_gpio_init(void)
 {
-	printk(KERN_DEBUG "owl_gpio_init()\n");
-
 	return platform_driver_register(&owl_gpio_driver);
 }
 postcore_initcall(owl_gpio_init);
