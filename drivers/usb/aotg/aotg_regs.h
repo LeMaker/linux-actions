@@ -295,10 +295,8 @@
 #define     SETUPDATA_W0            0x00000180
 #define     SETUPDATA_W1            0x00000184
 
-
-#if 0
 /////////////////////////////////////////////////////
-/*******  for device.  *****************************/
+/*******  for device.  *****************************/ 
 /////////////////////////////////////////////////////
 #define OUT0BC                  0x00000000
 #define IN0BC                   0x00000001
@@ -343,7 +341,15 @@
 #define IN5BCH                  0x0000002D
 #define IN5CON                  0x0000002E
 #define IN5CS                   0x0000002F
-
+#define OUT6BCL                 0x00000030
+#define OUT6BCH                 0x00000031
+#define OUT6CON                 0x00000032
+#define OUT6CS                  0x00000033
+#define IN6BCL                  0x00000034
+#define IN6BCH                  0x00000035
+#define IN6CON                  0x00000036
+#define IN6CS                   0x00000037
+    
 //#define FIFO1DATA               0x00000084
 //#define FIFO2DATA               0x00000088
 //#define FIFO3DATA               0x0000008C
@@ -351,30 +357,28 @@
 //#define FIFO5DATA               0x00000094
 //#define EP0INDAT                0x00000100
 //#define HCEP0OUTDAT             0x00000100
-#endif
-
-
-#if 0
-/***************  for 0-7 ep to 0-15 ep. *****************/
-//#define IN07IRQ                 0x00000188
+    
+#if 1
+/***************  for 0-7 ep to 0-15 ep. *****************/ 
+#define INxIRQ                 0x00000188
 //#define HCOUT07IRQ              0x00000188
-//#define OUT07IRQ                0x0000018A
+#define OUTxIRQ                0x0000018A
 //#define HCIN07IRQ               0x0000018A
 //#define USBIRQ                  0x0000018C
 //#define OUT07PNGIRQ             0x0000018E
-//#define INTXKIRQ                0x00000190
+#define INTXKIRQ                0x00000190
 //#define OUTXTOKIRQ              0x00000190
-//#define OUT07EMPTIRQ            0x00000191
+#define OUTxEMPTIRQ            0x00000191
 //#define HCIN07EMPTIRQ           0x00000191
-//#define IN07IEN                 0x00000194
+#define INxIEN                 0x00000194
 //#define HCOUT07IEN              0x00000194
-//#define OUT07IEN                0x00000196
+#define OUTxIEN                0x00000196
 //#define HCIN07IEN               0x00000196
 //#define USBIEN                  0x00000198
-//#define OUT07PNGIEN             0x0000019A
+#define OUTxPNGIEN             0x0000019A
 //#define INTXKIEN                0x0000019C
 //#define OUTXTOKIEN              0x0000019D
-#endif
+#endif	/*  */
 
 #define     HCOUTxIRQ0          0x00000188
 #define     HCOUTxIRQ1          0x00000189
@@ -614,31 +618,32 @@
 #define     HCOUT13SPILITCS     0x000002EB
 #define     HCOUT14SPILITCS     0x000002F3
 #define     HCOUT15SPILITCS     0x000002FB
-
-#if 0
-/*************  replaced by new register define. ************/
+    
+/*************  replaced by new register define. ************/ 
 #define OUT1STARTADDRESS        0x00000304
 #define OUT1STARTADDRESSL       0x00000304
 #define OUT1STARTADDRESSH       0x00000305
 #define OUT2STARTADDRESS        0x00000308
 #define OUT2STARTADDRESSL       0x00000308
-
+    
 #define OUT3STADDR              0x0000030C
 #define OUT4STADDR              0x00000310
 #define OUT5STADDR              0x00000314
-
-#define OUT2STARTADDRESSH       0x00000309
+//#define OUT2STARTADDRESSH       0x00000309
+    
 #define IN1STARTADDRESS         0x00000344
 #define IN1STARTADDRESSL        0x00000344
 #define IN1STARTADDRESSH        0x00000345
 #define IN2STARTADDRESS         0x00000348
 #define IN2STARTADDRESSL        0x00000348
 #define IN2STARTADDRESSH        0x00000349
-
+    
 #define IN3STADDR               0x0000034C
 #define IN4STADDR               0x00000350
 #define IN5STADDR               0x00000354
-
+#define IN6STADDR               0x00000358
+    
+#if 0
 #define HCOUT0MAXPCK            0x000003E0
 #define HCOUT1MAXPCKL           0x000003E2
 #define HCOUT1MAXPCKH           0x000003E3
@@ -1037,6 +1042,8 @@
 /******************************************************************************/
 #define USBEIRQ_USBIRQ          (0x1 << 7)
 #define USBEIRQ_USBIEN          (0x1 << 7)
+#define RESUME_IRQIEN           (0x1 << 1)
+#define SUSPEND_IRQIEN          (0x1 << 4)
 
 /* USBERESET USBERES*/
 #define USBERES_USBRESET        (1 << 0)

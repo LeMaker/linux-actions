@@ -63,10 +63,12 @@
 #include "aotg_hcd.h"
 #include "aotg_regs.h"
 #include "aotg_plat_data.h"
-#include "aotg_debug.h"
+#include "aotg_hcd_debug.h"
 
-int aotg_device_init(int dev_id);
-void aotg_device_exit(int dev_id);
+//int aotg_device_init(int dev_id);
+int aotg_hub_register(int dev_id);
+void aotg_hub_unregister(int dev_id);
+//void aotg_device_exit(int dev_id);
 void aotg_power_onoff(int id,int on_off);
 
 
@@ -83,37 +85,14 @@ void aotg_power_onoff(int id,int on_off);
 #define USB2_ECS_SOFTID_P0     27
 #define USB2_ECS_SOFTVBUSEN_P0 24
 #define USB2_ECS_SOFTVBUS_P0   25
-#define USB2_ECS_PLL_LDO_EN   (1<<7)
-#define USB2_PLL_EN0           (1<<12)
-#define USB2_PLL_EN1           (1<<13)
-#define USB2_PHYCLK_EN0           (1<<10)
-#define USB2_PHYCLK_EN1           (1<<11)
 
-struct aotg_uhost_mon_t {
-	int id;
-	void __iomem *usbecs;
-	void __iomem *usbpll;
-
-	struct timer_list hotplug_timer;
-
-	struct workqueue_struct *aotg_dev_onoff;
-	struct delayed_work aotg_dev_init;
-	struct delayed_work aotg_dev_exit; 
-	struct wake_lock aotg_wake_lock;
-
-	unsigned int aotg_uhost_det;
-
-	/* dp, dm state. */
-	unsigned int old_state;
-	unsigned int state;
-};
 
 int port_host_plug_detect[2] = {0};
 extern int is_ls_device[2];
 extern int vbus_otg_en_gpio[2][2];
-extern struct of_device_id aotg_hcd_of_match[];
-static struct aotg_uhost_mon_t * aotg_uhost_mon0 = NULL;
-static struct aotg_uhost_mon_t * aotg_uhost_mon1 = NULL;
+extern struct of_device_id aotg_of_match[];
+struct aotg_uhost_mon_t * aotg_uhost_mon0 = NULL;
+struct aotg_uhost_mon_t * aotg_uhost_mon1 = NULL;
 
 int usb2_set_dp_500k_15k(struct aotg_uhost_mon_t * umon, int enable_500k_up, int enable_15k_down)
 {
@@ -193,7 +172,7 @@ static void aotg_dev_register(struct work_struct *w)
 		owl_powergate_power_off(OWL_POWERGATE_USB2_0);
 	}
 	wake_lock_timeout(&umon->aotg_wake_lock, 15*HZ);
-	aotg_device_init(umon->id);
+	aotg_hub_register(umon->id);
 	return;
 }
 
@@ -205,24 +184,24 @@ static void aotg_dev_unregister(struct work_struct *w)
 	wake_lock_timeout(&umon->aotg_wake_lock, 15*HZ);
 	unlock_system_sleep();
 
-	aotg_device_exit(umon->id);
+	aotg_hub_unregister(umon->id);
 	umon->aotg_uhost_det = 1;
 	if (umon->id) {
 		owl_powergate_power_on(OWL_POWERGATE_USB2_1);
 		usb_setbitsl(USB2_PLL_EN1,aotg_uhost_mon1->usbpll);
 		usb_setbitsl(USB2_PHYCLK_EN1,aotg_uhost_mon1->usbpll);
 		usb_setbitsl(USB2_ECS_PLL_LDO_EN,aotg_uhost_mon1->usbecs);
-		usb2_set_dp_500k_15k(aotg_uhost_mon1, 0, 1);        
+		usb2_set_dp_500k_15k(aotg_uhost_mon1, 0, 1);
 		is_ls_device[1]=0;
 	} else {
 		owl_powergate_power_on(OWL_POWERGATE_USB2_0);
 		usb_setbitsl(USB2_PLL_EN0,aotg_uhost_mon0->usbpll);
 		usb_setbitsl(USB2_PHYCLK_EN0,aotg_uhost_mon0->usbpll);
 		usb_setbitsl(USB2_ECS_PLL_LDO_EN,aotg_uhost_mon0->usbecs);
-		usb2_set_dp_500k_15k(aotg_uhost_mon0, 0, 1);        
+		usb2_set_dp_500k_15k(aotg_uhost_mon0, 0, 1);
 		is_ls_device[0]=0;
 	}
-	
+
 	mod_timer(&umon->hotplug_timer, jiffies + msecs_to_jiffies(1000));
 	return;
 }
@@ -231,7 +210,7 @@ void aotg_dev_plugout_msg(int id)
 {
 	struct aotg_uhost_mon_t *umon = NULL;
 
-	printk("usb%d had been plugged out!\n",id);
+	printk(KERN_DEBUG "usb%d had been plugged out!\n",id);
 	if ((id == 0) && aotg_uhost_mon0) {
 		umon = aotg_uhost_mon0;
 	} else if ((id == 1) && aotg_uhost_mon1) {
@@ -266,65 +245,8 @@ static struct aotg_uhost_mon_t * aotg_uhost_mon_alloc(void)
 	return umon;
 }
 
-void aotg_uhost_mon_init(void)
+void aotg_uhost_mon_init(struct work_struct *w)
 {
-	struct device_node *of_node;
-	enum of_gpio_flags flags;
-	
-	of_node = of_find_compatible_node(NULL, NULL, "actions,owl-usb-2.0-0");
-	if (of_node) {
-		if (!of_find_property(of_node, "port0_host_plug_detect", NULL)) {
-			pr_info("can't find port0_host_plug_detect config\n");
-			port_host_plug_detect[0] = 0;
-		}	else {
-			port_host_plug_detect[0] = be32_to_cpup((const __be32 *)of_get_property(of_node,  "port0_host_plug_detect",NULL));
-		}
-		pr_info("port_host_plug_detect[0]:%d\n", port_host_plug_detect[0]);
-		
-		if (!of_find_property(of_node, "vbus_otg_en_gpio", NULL)) {
-			pr_debug("can't find vbus_otg0_en_gpio config\n");
-			vbus_otg_en_gpio[0][0] = -1;
-		}	else {
-			vbus_otg_en_gpio[0][0] = of_get_named_gpio_flags(of_node,  "vbus_otg_en_gpio",0, &flags);
-			vbus_otg_en_gpio[0][1] = flags & 0x01;
-			if (gpio_request(vbus_otg_en_gpio[0][0], aotg_hcd_of_match[0].compatible))
-				pr_debug("fail to request vbus gpio [%d]\n", vbus_otg_en_gpio[0][0]);
-			if (port_host_plug_detect[0] != 2)
-				gpio_direction_output(vbus_otg_en_gpio[0][0], !!port_host_plug_detect[0]);
-		}
-		pr_info("port0_vubs_en:%d\n",vbus_otg_en_gpio[0][0]);
-	}
-	else {
-		pr_debug("can't find usbh0 dts node\n");
-	}
-	
-	of_node = of_find_compatible_node(NULL, NULL, "actions,owl-usb-2.0-1");
-	if (of_node) {
-		if (!of_find_property(of_node, "port1_host_plug_detect", NULL)) {
-			pr_info("can't find port1_host_plug_detect config\n");
-			port_host_plug_detect[1] = 0;
-		}	else {
-			port_host_plug_detect[1] = be32_to_cpup((const __be32 *)of_get_property(of_node,  "port1_host_plug_detect",NULL));
-		}
-		pr_info("port_host_plug_detect[1]:%d\n", port_host_plug_detect[1]);
-		
-		if (!of_find_property(of_node, "vbus_otg_en_gpio", NULL)) {
-			printk("can't find vbus_otg1_en_gpio config\n");
-			vbus_otg_en_gpio[1][0] = -1;
-		}	else {
-			vbus_otg_en_gpio[1][0] = of_get_named_gpio_flags(of_node,  "vbus_otg_en_gpio",0, &flags);
-			vbus_otg_en_gpio[1][1] = flags & 0x01;
-			if (gpio_request(vbus_otg_en_gpio[1][0], aotg_hcd_of_match[1].compatible))
-				pr_debug("fail to request vbus gpio [%d]\n", vbus_otg_en_gpio[1][0]);
-			if (port_host_plug_detect[1] != 2)
-				gpio_direction_output(vbus_otg_en_gpio[1][0], !!port_host_plug_detect[1]);
-		}
-		pr_info("port1_vubs_en:%d\n",vbus_otg_en_gpio[1][0]);
-	}
-	else {
-		pr_debug("can't find usbh1 dts node\n");
-	}
-	
 	if (port_host_plug_detect[0]) {
 		aotg_uhost_mon0 = aotg_uhost_mon_alloc();
 		aotg_uhost_mon0->id = 0;
@@ -332,14 +254,19 @@ void aotg_uhost_mon_init(void)
 		aotg_uhost_mon0->usbecs = (void __iomem *)IO_ADDRESS(USBH0_ECS);
 		aotg_uhost_mon0->usbpll = (void __iomem *)IO_ADDRESS(CMU_USBPLL);
 
+		if (aotg_udc_enable[0])
+			aotg_udc_exit(0);
 		owl_powergate_power_on(OWL_POWERGATE_USB2_0);
 		usb_setbitsl(USB2_PLL_EN0,aotg_uhost_mon0->usbpll);
 		usb_setbitsl(USB2_PHYCLK_EN0,aotg_uhost_mon0->usbpll);
 		usb_setbitsl(USB2_ECS_PLL_LDO_EN,aotg_uhost_mon0->usbecs);
 		usb2_set_dp_500k_15k(aotg_uhost_mon0, 0, 1);
 		wake_lock_init(&aotg_uhost_mon0->aotg_wake_lock, WAKE_LOCK_SUSPEND, "aotg_wake_lock0");
-		printk("start mon 0 ......\n");
+		printk(KERN_DEBUG "start mon 0 ......\n");
 		mod_timer(&aotg_uhost_mon0->hotplug_timer, jiffies + msecs_to_jiffies(10000));
+        	if (aotg_udc_enable[0]){
+			aotg_udc_register(0);
+		}
 	}
 	if (port_host_plug_detect[1]) {
 		aotg_uhost_mon1 = aotg_uhost_mon_alloc();
@@ -348,14 +275,19 @@ void aotg_uhost_mon_init(void)
 		aotg_uhost_mon1->usbecs = (void __iomem *)IO_ADDRESS(USBH1_ECS);
 		aotg_uhost_mon1->usbpll = (void __iomem *)IO_ADDRESS(CMU_USBPLL);
 
+		if (aotg_udc_enable[1])
+			aotg_udc_exit(1);
 		owl_powergate_power_on(OWL_POWERGATE_USB2_1);
 		usb_setbitsl(USB2_PLL_EN1,aotg_uhost_mon1->usbpll);
 		usb_setbitsl(USB2_PHYCLK_EN1,aotg_uhost_mon1->usbpll);
 		usb_setbitsl(USB2_ECS_PLL_LDO_EN,aotg_uhost_mon1->usbecs);
 		usb2_set_dp_500k_15k(aotg_uhost_mon1, 0, 1);
 		wake_lock_init(&aotg_uhost_mon1->aotg_wake_lock, WAKE_LOCK_SUSPEND, "aotg_wake_lock1");
-		printk("start mon 1 ......\n");
-		mod_timer(&aotg_uhost_mon1->hotplug_timer, jiffies + msecs_to_jiffies(10000));
+		printk(KERN_DEBUG "start mon 1 ......\n");
+		mod_timer(&aotg_uhost_mon1->hotplug_timer, jiffies + msecs_to_jiffies(1000));
+    		if (aotg_udc_enable[1]){
+			aotg_udc_register(1);
+		}
 	}
 
 	return;
@@ -397,5 +329,3 @@ void aotg_uhost_mon_exit(void)
 	aotg_uhost_mon1 = NULL;
 	return;
 }
-
-

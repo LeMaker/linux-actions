@@ -9,6 +9,7 @@
 #include <linux/earlysuspend.h>
 
 #include "aotg_regs.h"
+#include "aotg.h"
 
 //#define USBH_DEBUG
 
@@ -22,7 +23,7 @@
 #define  USB_HCD_IN_MASK	0x00 
 #define  USB_HCD_OUT_MASK 0x10 
  
-#define  AOTG_MAX_FIFO_SIZE    (512*10 + 64*2)	//5k
+#define  AOTG_MAX_FIFO_SIZE    (1024*15 + 64*2)
 #define  ALLOC_FIFO_UNIT        64
 //#define  AOTG_MIN_DMA_SIZE	  512
 //#define  AOTG_MIN_DMA_SIZE	  64
@@ -59,8 +60,8 @@
  * 3 -- usb0 and usb1 enable,but reversed. 
  */
 extern int hcd_ports_en_ctrl;
-
-extern struct aotg_hcd *act_hcd_ptr[2];
+extern struct platform_driver aotg_hcd_driver;
+extern struct hc_driver act_hc_driver;
 
 struct hcd_stats { 
 	unsigned long  insrmv; 
@@ -86,35 +87,6 @@ enum control_phase {
 	PHASE_DATA,
 	PHASE_STATUS,
 };
-
-#define TRB_ITE	(1 << 11)
-#define TRB_CHN	(1 << 10)
-#define TRB_CSP	(1 << 9)
-#define TRB_COF	(1 << 8)
-#define TRB_ICE	(1 << 7)
-#define TRB_IZE	(1 << 6)
-#define TRB_ISE (1 << 5)
-#define TRB_LT	(1 << 4)
-#define AOTG_TRB_IOC	(1 << 3)
-#define AOTG_TRB_IOZ	(1 << 2)
-#define AOTG_TRB_IOS	(1 << 1)
-#define TRB_OF	(1 << 0)
-
-struct aotg_trb {
-	u32 hw_buf_ptr;
-	u32 hw_buf_len;
-	u32 hw_buf_remain;
-	u32 hw_token;
-};
-
-#define USE_SG
-#ifdef USE_SG
-#define NUM_TRBS (256)
-#define RING_SIZE (NUM_TRBS * 16)
-#else
-#define NUM_TRBS (64)
-#define RING_SIZE (NUM_TRBS * 16)
-#endif
 
 //#define INTR_TRBS (256)
 #define INTR_TRBS (10)
@@ -382,6 +354,24 @@ static inline void aotg_clear_all_shortpkt_irq(struct aotg_hcd *acthcd)
 	return;
 }
 
+static inline void aotg_enable_irq(struct aotg_hcd *acthcd)
+{
+	writeb(USBEIRQ_USBIEN, acthcd->base + USBEIRQ);
+	usb_setbitsb(USBEIRQ_USBIEN, acthcd->base + USBEIEN);
+	usb_setbitsb(0x1<<2, acthcd->base + OTGIEN);
+
+	printk(KERN_DEBUG "USBEIEN(0x%p): 0x%02X\n", acthcd->base + USBEIEN, readb(acthcd->base + USBEIEN));
+	usb_setbitsb(OTGCTRL_BUSREQ, acthcd->base + OTGCTRL);	
+}
+
+static inline void aotg_disable_irq(struct aotg_hcd *acthcd)
+{
+	writeb(USBEIRQ_USBIEN, acthcd->base + USBEIRQ);
+	usb_clearbitsb(USBEIRQ_USBIEN, acthcd->base + USBEIEN);
+	usb_clearbitsb(0x1<<2, acthcd->base + OTGIEN);
+	usb_clearbitsb(OTGCTRL_BUSREQ, acthcd->base + OTGCTRL);	
+}
+
 static inline void aotg_clear_all_zeropkt_irq(struct aotg_hcd *acthcd)
 {
 	unsigned int irq_pend = 0;
@@ -421,6 +411,11 @@ static inline struct usb_hcd *aotg_to_hcd(struct aotg_hcd *acthcd)
 	return container_of((void *)acthcd, struct usb_hcd, hcd_priv); 
 }
 
+void aotg_hub_trans_wait_timer(unsigned long data);
+void aotg_hub_hotplug_timer(unsigned long data);
+int aotg_hcd_init(struct usb_hcd *hcd, struct platform_device *pdev);
+void aotg_check_trb_timer(unsigned long data);
+void aotg_power_onoff(int id,int on_off);
 void aotg_hcd_dump_td(struct aotg_ring *ring, struct aotg_td *td);
 struct aotg_ring *aotg_alloc_ring(struct aotg_hcd *acthcd,
 				struct aotg_hcep *ep, unsigned int num_trbs, 

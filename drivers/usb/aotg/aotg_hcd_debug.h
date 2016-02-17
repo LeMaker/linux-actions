@@ -16,7 +16,6 @@
 #define DEBUG_LINKLIST_DMA
 
 #define ACT_HCD_ERR		printk("%s:%d, err!\n", __func__, __LINE__);
-#define ACT_HCD_DBG		printk("%s:%d, dbg!\n", __func__, __LINE__);
 
 #ifdef  ERR
 #undef  ERR
@@ -31,8 +30,10 @@
 
 #ifdef DEBUG_HCD
 #define HCD_DEBUG(fmt, args...) printk(KERN_ERR fmt, ## args)
+#define ACT_HCD_DBG		   printk("%s:%d, dbg!\n", __func__, __LINE__);
 #else
 #define HCD_DEBUG(fmt, args...) do {} while (0)
+#define ACT_HCD_DBG
 #endif
 
 #ifdef IN_PROCESS_DEBUG  //ep1, ep2
@@ -65,7 +66,6 @@
 extern unsigned int aotg_trace_onff;
 #define	AOTG_TRACE_ERR_PLACE	if (aotg_trace_onff) printk("-%d\n", __LINE__);
 
-void aotg_dbg_put_info(char *info0, unsigned int info1, unsigned int info2, unsigned int info3);
 void aotg_dbg_output_info(void);
 
 void aotg_dbg_put_q(struct aotg_queue *q, unsigned int num, unsigned int type, unsigned int len);

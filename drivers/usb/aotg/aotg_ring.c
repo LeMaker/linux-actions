@@ -5,7 +5,7 @@
 #include <linux/dmapool.h>
 
 #include "aotg_hcd.h"
-#include "aotg_debug.h"
+#include "aotg_hcd_debug.h"
 #include "aotg_mon.h"
 
 void aotg_set_ring_linkaddr(struct aotg_ring *ring, u32 addr);

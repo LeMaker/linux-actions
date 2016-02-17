@@ -53,18 +53,13 @@
 #include "aotg_regs.h"
 #include "aotg_plat_data.h"
 //#include "aotg_dma.h"
-#include "aotg_debug.h"
+#include "aotg_hcd_debug.h"
 
 
 char aotg_hcd_proc_sign = 'n';
 unsigned int aotg_trace_onff = 0;
 
 void aotg_dbg_proc_output_ep(void)
-{
-	return;
-}
-
-void aotg_dbg_put_info(char *info0, unsigned int info1, unsigned int info2, unsigned int info3)
 {
 	return;
 }
