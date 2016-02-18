@@ -87,3 +87,8 @@ obj-$(CONFIG_USB_G_NCM)		+= g_ncm.o
 obj-$(CONFIG_USB_G_ACM_MS)	+= g_acm_ms.o
 obj-$(CONFIG_USB_G_ANDROID)	+= g_android.o
 obj-$(CONFIG_USB_GADGET_TARGET)	+= tcm_usb_gadget.o
+# Modify by LeMaker -- begin
+g_android-y                    += set_serial_number.o 
+adfus-y := adfuserver.o
+obj-$(CONFIG_USB_ACTIONS_ADFUSERVER)		+= adfus.o
+# Modify by LeMaker -- end

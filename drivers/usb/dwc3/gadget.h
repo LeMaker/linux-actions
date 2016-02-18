@@ -76,11 +76,29 @@ struct dwc3;
 /* DEPXFERCFG parameter 0 */
 #define DWC3_DEPXFERCFG_NUM_XFER_RES(n)	((n) & 0xffff)
 
+//* Modify by LeMaker -- beign
+#define	SUPPORT_NOT_RMMOD_USBDRV 1
+#define USB_CHARGE_DETECT 
+//* Modify by LeMaker -- end
+
 struct dwc3_gadget_ep_cmd_params {
 	u32	param2;
 	u32	param1;
 	u32	param0;
 };
+
+//* Modify by LeMaker -- begin
+enum plugstate{
+	PLUGSTATE_A_OUT=0,
+	PLUGSTATE_B_OUT,
+	PLUGSTATE_A_IN,
+	PLUGSTATE_B_IN,
+	PLUGSTATE_A_SUSPEND,
+	PLUGSTATE_A_RESUME,	
+	PLUGSTATE_B_SUSPEND,
+	PLUGSTATE_B_RESUME,	
+};
+//* Modify by LeMaker -- end
 
 /* -------------------------------------------------------------------------- */
 

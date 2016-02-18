@@ -25,6 +25,7 @@
 #include <linux/module.h>
 
 #include "xhci.h"
+#include "xhci-trace.h" //* Modify by LeMaker -- begin
 
 /* Device for a quirk */
 #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
@@ -33,6 +34,11 @@
 
 #define PCI_VENDOR_ID_ETRON		0x1b6f
 #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+
+//* Modify by LeMaker -- begin
+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x8c31
+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI	0x9c31
+//* Modify by LeMaker -- end
 
 static const char hcd_name[] = "xhci_hcd";
 
@@ -67,6 +73,16 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
 					" endpoint cmd after reset endpoint\n");
 		}
+		//* Modify by LeMaker -- begin
+		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
+				pdev->revision == 0x4) {
+			xhci->quirks |= XHCI_SLOW_SUSPEND;
+			xhci_dbg_trace(xhci, trace_xhci_dbg_quirks,
+				"QUIRK: Fresco Logic xHC revision %u"
+				"must be suspended extra slowly",
+				pdev->revision);
+		}
+		//* Modify by LeMaekr -- end
 		/* Fresco Logic confirms: all revisions of this chip do not
 		 * support MSI, even though some of them claim to in their PCI
 		 * capabilities.
@@ -111,6 +127,22 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
 		 */
 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
 	}
+	//* Modify by LeMaker -- begin
+	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
+	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
+		/* Workaround for occasional spurious wakeups from S5 (or
+		 * any other sleep) on Haswell machines with LPT and LPT-LP
+		 * with the new Intel BIOS
+		 */
+		/* Limit the quirk to only known vendors, as this triggers
+		 * yet another BIOS bug on some other machines
+		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
+		 */
+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+	}
+	//* Modify by LeMaker -- end
 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 		xhci->quirks |= XHCI_RESET_ON_RESUME;
@@ -202,8 +234,12 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	/* We know the LPM timeout algorithms for this host, let the USB core
 	 * enable and disable LPM for devices under the USB 3.0 roothub.
 	 */
+//* Modify by LeMaker -- begin
+#if 0
 	if (xhci->quirks & XHCI_LPM_SUPPORT)
 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
+#endif
+//* Modify by LeMaker -- end
 
 	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
 	pm_runtime_put_noidle(&dev->dev);
@@ -229,6 +265,11 @@ static void xhci_pci_remove(struct pci_dev *dev)
 		usb_put_hcd(xhci->shared_hcd);
 	}
 	usb_hcd_pci_remove(dev);
+	//* Modify by LeMaker -- beign
+	/* Workaround for spurious wakeups at shutdown with HSW */
+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
+		pci_set_power_state(dev, PCI_D3hot);
+	//* Modify by LeMaker -- end
 	kfree(xhci);
 }
 
@@ -270,8 +311,14 @@ static int xhci_pci_resume(struct usb_hcd *hcd, bool hibernated)
 	 * a '1' to the port switchover registers should have no effect if the
 	 * port was already switched over.
 	 */
+	 //* Modify by LeMaker -- begin
+#if 0
 	if (usb_is_intel_switchable_xhci(pdev))
 		usb_enable_xhci_ports(pdev);
+#else
+	if (pdev->vendor == PCI_VENDOR_ID_INTEL)
+		usb_enable_intel_xhci_ports(pdev);
+#endif
 
 	retval = xhci_resume(xhci, hibernated);
 	return retval;
@@ -316,6 +363,7 @@ static const struct hc_driver xhci_pci_hc_driver = {
 	.check_bandwidth =	xhci_check_bandwidth,
 	.reset_bandwidth =	xhci_reset_bandwidth,
 	.address_device =	xhci_address_device,
+	.enable_device =	xhci_enable_device, //* Modify by LeMaker
 	.update_hub_device =	xhci_update_hub_device,
 	.reset_device =		xhci_discover_or_reset_device,
 

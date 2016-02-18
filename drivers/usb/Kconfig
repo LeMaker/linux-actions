@@ -9,8 +9,13 @@ config USB_ARCH_HAS_OHCI
 config USB_ARCH_HAS_EHCI
 	bool
 
+# Modify by LeMaker -- begin
+#config USB_ARCH_HAS_XHCI
+#	bool
 config USB_ARCH_HAS_XHCI
-	bool
+	boolean
+	default y
+# Modify by LeMaker -- end
 
 menuconfig USB_SUPPORT
 	bool "USB support"
@@ -73,6 +78,9 @@ source "drivers/usb/core/Kconfig"
 
 source "drivers/usb/mon/Kconfig"
 
+# Modify by LeMaker
+source "drivers/usb/monitor/Kconfig"
+
 source "drivers/usb/wusbcore/Kconfig"
 
 source "drivers/usb/host/Kconfig"
@@ -86,6 +94,8 @@ source "drivers/usb/class/Kconfig"
 source "drivers/usb/storage/Kconfig"
 
 source "drivers/usb/image/Kconfig"
+
+source "drivers/usb/aotg/Kconfig"
 
 endif
 

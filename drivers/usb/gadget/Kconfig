@@ -488,6 +488,12 @@ config USB_DUMMY_HCD
 
 endmenu
 
+# Modify by LeMaker -- begin
+#Selected by UDC drivers that support high-speed operation.
+config USB_GADGET_DUALSPEED
+	bool
+# Modify by LeMaker -- end
+
 #
 # USB Gadget Drivers
 #
@@ -818,8 +824,9 @@ config USB_G_PRINTER
 	  For more information, see Documentation/usb/gadget_printer.txt
 	  which includes sample code for accessing the device file.
 
+# Moidfy by LeMaker : boolean -> tristate
 config USB_G_ANDROID
-	boolean "Android Composite Gadget"
+	tristate "Android Composite Gadget"
 	depends on SND
 	select SND_PCM
 	select SND_RAWMIDI
@@ -992,5 +999,16 @@ config USB_G_WEBCAM
 	  dynamically linked module called "g_webcam".
 
 endchoice
+
+# Modify by LeMaker -- begin
+config USB_ACTIONS_ADFUSERVER
+	tristate "Actions Adfuserver Gadget"
+	depends on ARCH_OWL 
+	select USB_LIBCOMPOSITE	
+	help
+	  The Actions Adfuserver Gadget is use for actions' board
+	  to upgrade firmware. It must work with actions' dwc3 
+	  driver.
+# Moidfy by LeMaker -- end
 
 endif # USB_GADGET

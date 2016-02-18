@@ -73,6 +73,12 @@
 #include "sierra_ms.h"
 #include "option_ms.h"
 
+//* Modify by LeMaker -- begin
+#if IS_ENABLED(CONFIG_USB_UAS)
+#include "uas-detect.h"
+#endif
+//* Modify by LeMaker -- end
+
 /* Some informational data */
 MODULE_AUTHOR("Matthew Dharm <mdharm-usb@one-eyed-alien.net>");
 MODULE_DESCRIPTION("USB Mass Storage driver for Linux");
@@ -86,6 +92,18 @@ static char quirks[128];
 module_param_string(quirks, quirks, sizeof(quirks), S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(quirks, "supplemental list of device IDs and their quirks");
 
+//* Moidfy by LeMaker -- begin
+#define DEBUG_TIME_OF_SCSI_CMDS 1
+#if DEBUG_TIME_OF_SCSI_CMDS
+static unsigned int total_usec_time_of_scsi_cmds = 0;
+module_param(total_usec_time_of_scsi_cmds, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(total_usec_time_of_scsi_cmds, "total_usec_time_of_scsi_cmds");
+
+static unsigned int debug_cmds_time = 0;
+module_param(debug_cmds_time, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(debug_cmds_time, "debug_cmds_time");
+#endif
+//* Modify by LeMaker -- end
 
 /*
  * The entries in this table correspond, line for line,
@@ -368,12 +386,45 @@ static int usb_stor_control_thread(void * __us)
 			us->srb->result = SAM_STAT_GOOD;
 		}
 
+//* Modify by LeMaker -- beign
+#if 0
 		/* we've got a command, let's do it! */
 		else {
 			US_DEBUG(usb_stor_show_command(us, us->srb));
 			us->proto_handler(us->srb, us);
 			usb_mark_last_busy(us->pusb_dev);
 		}
+#else
+		/* we've got a command, let's do it! */
+		else {
+#if DEBUG_TIME_OF_SCSI_CMDS
+			struct timeval tv_start;
+			struct timeval tv_end;
+#endif
+
+			US_DEBUG(usb_stor_show_command(us, us->srb));
+
+#if DEBUG_TIME_OF_SCSI_CMDS
+			if(debug_cmds_time) {
+				do_gettimeofday(&tv_start);
+			}
+#endif
+			us->proto_handler(us->srb, us);
+#if DEBUG_TIME_OF_SCSI_CMDS
+			if(debug_cmds_time) {
+				do_gettimeofday(&tv_end);
+				if(tv_end.tv_sec > tv_start.tv_sec) {
+					total_usec_time_of_scsi_cmds += ((tv_end.tv_sec - tv_start.tv_sec)*1000000 + tv_end.tv_usec - tv_start.tv_usec);
+				}
+				else {
+					total_usec_time_of_scsi_cmds += (tv_end.tv_usec - tv_start.tv_usec);
+				}
+			}
+#endif
+			usb_mark_last_busy(us->pusb_dev);
+		}
+#endif
+//* Modify by LeMaker -- end
 
 		/* lock access to the state */
 		scsi_lock(host);
@@ -460,14 +511,15 @@ static int associate_dev(struct us_data *us, struct usb_interface *intf)
 #define TOLOWER(x) ((x) | 0x20)
 
 /* Adjust device flags based on the "quirks=" module parameter */
-static void adjust_quirks(struct us_data *us)
+//* Modify by LeMaker : adjust_quirks(struct us_data *us) -> void usb_stor_adjust_quirks
+void usb_stor_adjust_quirks(struct usb_device *udev, unsigned long *fflags)
 {
 	char *p;
-	u16 vid = le16_to_cpu(us->pusb_dev->descriptor.idVendor);
-	u16 pid = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
+	u16 vid = le16_to_cpu(udev->descriptor.idVendor);
+	u16 pid = le16_to_cpu(udev->descriptor.idProduct);
 	unsigned f = 0;
 	unsigned int mask = (US_FL_SANE_SENSE | US_FL_BAD_SENSE |
-			US_FL_FIX_CAPACITY |
+			US_FL_FIX_CAPACITY | US_FL_IGNORE_UAS | //* Modify by LeMaker
 			US_FL_CAPACITY_HEURISTICS | US_FL_IGNORE_DEVICE |
 			US_FL_NOT_LOCKABLE | US_FL_MAX_SECTORS_64 |
 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
@@ -538,14 +590,26 @@ static void adjust_quirks(struct us_data *us)
 		case 's':
 			f |= US_FL_SINGLE_LUN;
 			break;
+		//* Modify by LeMaker -- begin
+		case 'u':
+			f |= US_FL_IGNORE_UAS;
+			break;
+		//* Modify by LeMaker -- end
 		case 'w':
 			f |= US_FL_NO_WP_DETECT;
 			break;
 		/* Ignore unrecognized flag characters */
 		}
 	}
+	//* Modify by LeMaker -- begin
+#if 0
 	us->fflags = (us->fflags & ~mask) | f;
+#else
+	*fflags = (*fflags & ~mask) | f;
+#endif
+	//* Modify by LeMaker -- end
 }
+EXPORT_SYMBOL_GPL(usb_stor_adjust_quirks); //* Modify by LeMaker
 
 /* Get the unusual_devs entries and the string descriptors */
 static int get_device_info(struct us_data *us, const struct usb_device_id *id,
@@ -565,7 +629,10 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 			idesc->bInterfaceProtocol :
 			unusual_dev->useTransport;
 	us->fflags = id->driver_info;
-	adjust_quirks(us);
+	//* Modify by LeMaker -- begin
+	//adjust_quirks(us);
+	usb_stor_adjust_quirks(us->pusb_dev, &us->fflags);
+	//* Modify by LeMaker -- end
 
 	if (us->fflags & US_FL_IGNORE_DEVICE) {
 		dev_info(pdev, "device ignored\n");
@@ -1035,6 +1102,14 @@ static int storage_probe(struct usb_interface *intf,
 	struct us_data *us;
 	int result;
 	int size;
+
+	//* Modify by LeMaker -- begin
+	/* If uas is enabled and this device can do uas then ignore it. */
+#if IS_ENABLED(CONFIG_USB_UAS)
+	if (uas_use_uas_driver(intf, id))
+		return -ENXIO;
+#endif
+	//* Modify by LeMaker -- end
 
 	/*
 	 * If the device isn't standard (is handled by a subdriver

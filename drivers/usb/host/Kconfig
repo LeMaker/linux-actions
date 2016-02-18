@@ -29,6 +29,17 @@ if USB_XHCI_HCD
 config USB_XHCI_PLATFORM
 	tristate
 
+# Modify by LeMaker -- begin
+config USB_XHCI_HCD_DEBUGGING
+	bool "Debugging for the xHCI host controller"
+	---help---
+	  Say 'Y' to turn on debugging for the xHCI host controller driver.
+	  This will spew debugging output, even in interrupt context.
+	  This should only be used for debugging xHCI driver bugs.
+
+	  If unsure, say N.
+# Modify by LeMaker -- end
+
 config USB_XHCI_HCD_DEBUGGING
 	bool "Debugging for the xHCI host controller"
 	---help---
@@ -181,6 +192,15 @@ config USB_EHCI_HCD_SYNOPSYS
 	---help---
 	  Enable support for onchip USB controllers based on DesignWare USB 2.0
 	  Host-AHB Controller IP from Synopsys.
+
+# Modify by LeMaker -- begin
+config USB_EHCI_HCD_SYNOPSYS
+	tristate "Support for Synopsys Host-AHB USB 2.0 controller"
+	depends on USB_EHCI_HCD
+	---help---
+	  Enable support for onchip USB controllers based on DesignWare USB 2.0
+	  Host-AHB Controller IP from Synopsys.
+# Moidfy by LeMaker -- end
 
 config USB_EHCI_HCD_AT91
         tristate  "Support for Atmel on-chip EHCI USB controller"
@@ -706,3 +726,4 @@ config USB_HCD_SSB
 	  for ehci and ohci.
 
 	  If unsure, say N.
+

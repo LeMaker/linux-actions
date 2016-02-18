@@ -223,11 +223,47 @@
 
 /*------------------------------------------------------------------------*/
 
+#define SUPPORT_UDISK_UPGRADE f //* Modify by LeMaker
+
 #define FSG_DRIVER_DESC		"Mass Storage Function"
 #define FSG_DRIVER_VERSION	"2009/09/11"
 
 static const char fsg_string_interface[] = "Mass Storage";
 
+//* Modify by LeMaker -- begin
+#define TIMEOUT_THRESHOLD		 5
+#define DEBUG_TIME_OF_VFS_OP
+#ifdef DEBUG_TIME_OF_VFS_OP
+static unsigned int total_usec_time_of_vfs_op = 0;
+module_param(total_usec_time_of_vfs_op, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(total_usec_time_of_vfs_op, "total_usec_time_of_vfs_op");
+
+static unsigned int debug_vfs_op_time = 0;
+module_param(debug_vfs_op_time, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(debug_vfs_op_time, "debug_vfs_op_time");
+
+static void calculate_time_of_vfs_op(struct timeval *tv_start, struct timeval *tv_end)
+{
+	unsigned int time;
+	int sec = 0;
+	
+	if(tv_end->tv_sec > tv_start->tv_sec) {
+		time = (tv_end->tv_sec - tv_start->tv_sec)*1000000 + tv_end->tv_usec - tv_start->tv_usec;
+		sec =  (tv_end->tv_sec - tv_start->tv_sec);
+	}
+	else {
+		time = tv_end->tv_usec - tv_start->tv_usec;
+	}
+
+	total_usec_time_of_vfs_op += time;
+
+
+	if(sec > 5)
+		printk("%s: %d sec (%d usec)\n", __FUNCTION__, sec, time);
+	
+}
+#endif
+//* Modify by LeMaker -- end
 #include "storage_common.c"
 
 
@@ -487,6 +523,13 @@ static void bulk_out_complete(struct usb_ep *ep, struct usb_request *req)
 	struct fsg_common	*common = ep->driver_data;
 	struct fsg_buffhd	*bh = req->context;
 
+	//* Modify by LeMaker -- begin
+	if(common==NULL){
+		printk("\n bulk_out_complete ep->driver_data =NULL!! \n");
+        	return;
+	}
+	//* Modify by LeMaker -- end
+
 	dump_msg(common, "bulk-out", req->buf, req->actual);
 	if (req->status || req->actual != bh->bulk_out_intended_length)
 		DBG(common, "%s --> %d, %u/%u\n", __func__,
@@ -717,9 +760,29 @@ static int do_read(struct fsg_common *common)
 
 		/* Perform the read */
 		file_offset_tmp = file_offset;
+		//* Modify by LeMaker -- begin
+		readtimeout_times = 0;	
+		is_vfs_reading = 1;
+		mod_timer(&readtimeout_timer, jiffies+(TIMEOUT_THRESHOLD*HZ));// it means x seconds
+#ifdef DEBUG_TIME_OF_VFS_OP
+		if(debug_vfs_op_time) {
+			struct timeval tv_start;
+			struct timeval tv_end;
+			do_gettimeofday(&tv_start);
+			nread = vfs_read(curlun->filp,
+					 (char __user *)bh->buf,
+					 amount, &file_offset_tmp);
+			do_gettimeofday(&tv_end);
+			calculate_time_of_vfs_op(&tv_start, &tv_end);
+		}
+		else
+#endif		
 		nread = vfs_read(curlun->filp,
 				 (char __user *)bh->buf,
 				 amount, &file_offset_tmp);
+		is_vfs_reading = 0;	
+		mod_timer(&readtimeout_timer, jiffies+(0x8000*HZ));
+		//* Modify by LeMaker -- end
 		VLDBG(curlun, "file read %u @ %llu -> %d\n", amount,
 		      (unsigned long long)file_offset, (int)nread);
 		if (signal_pending(current))
@@ -812,7 +875,7 @@ static int do_write(struct fsg_common *common)
 		}
 		if (!curlun->nofua && (common->cmnd[1] & 0x08)) { /* FUA */
 			spin_lock(&curlun->filp->f_lock);
-			curlun->filp->f_flags |= O_SYNC;
+			//curlun->filp->f_flags |= O_SYNC; //* Modify by LeMaker 
 			spin_unlock(&curlun->filp->f_lock);
 		}
 	}
@@ -910,9 +973,29 @@ static int do_write(struct fsg_common *common)
 
 			/* Perform the write */
 			file_offset_tmp = file_offset;
+			//* Modify by LeMaker -- begin
+			writetimeout_times = 0;		
+			is_vfs_writting = 1;
+			mod_timer(&writetimeout_timer, jiffies+(TIMEOUT_THRESHOLD*HZ));// it means x seconds
+#ifdef DEBUG_TIME_OF_VFS_OP
+			if(debug_vfs_op_time) {
+				struct timeval tv_start;
+				struct timeval tv_end;
+				do_gettimeofday(&tv_start);
+				nwritten = vfs_write(curlun->filp,
+						     (char __user *)bh->buf,
+						     amount, &file_offset_tmp);
+				do_gettimeofday(&tv_end);
+				calculate_time_of_vfs_op(&tv_start, &tv_end);
+			}
+			else
+#endif
 			nwritten = vfs_write(curlun->filp,
 					     (char __user *)bh->buf,
 					     amount, &file_offset_tmp);
+			is_vfs_writting = 0;			
+			mod_timer(&writetimeout_timer, jiffies+(0x8000*HZ));
+			//* Modify by LeMaker -- end
 			VLDBG(curlun, "file write %u @ %llu -> %d\n", amount,
 			      (unsigned long long)file_offset, (int)nwritten);
 			if (signal_pending(current))
@@ -976,7 +1059,8 @@ static int do_synchronize_cache(struct fsg_common *common)
 
 
 /*-------------------------------------------------------------------------*/
-
+//* Modify by LeMaker -- begin
+#if 0
 static void invalidate_sub(struct fsg_lun *curlun)
 {
 	struct file	*filp = curlun->filp;
@@ -986,9 +1070,12 @@ static void invalidate_sub(struct fsg_lun *curlun)
 	rc = invalidate_mapping_pages(inode->i_mapping, 0, -1);
 	VLDBG(curlun, "invalidate_mapping_pages -> %ld\n", rc);
 }
-
+#endif
+//* Modify by LeMaker -- end
 static int do_verify(struct fsg_common *common)
 {
+	//* Modify by LeMaker -- begin
+#if 0
 	struct fsg_lun		*curlun = common->curlun;
 	u32			lba;
 	u32			verification_length;
@@ -1056,6 +1143,19 @@ static int do_verify(struct fsg_common *common)
 
 		/* Perform the read */
 		file_offset_tmp = file_offset;
+#ifdef DEBUG_TIME_OF_VFS_OP
+		if(debug_vfs_op_time) {
+			struct timeval tv_start;
+			struct timeval tv_end;
+			do_gettimeofday(&tv_start);
+			nread = vfs_read(curlun->filp,
+					(char __user *) bh->buf,
+					amount, &file_offset_tmp);
+			do_gettimeofday(&tv_end);
+			calculate_time_of_vfs_op(&tv_start, &tv_end);
+		}
+		else
+#endif	
 		nread = vfs_read(curlun->filp,
 				(char __user *) bh->buf,
 				amount, &file_offset_tmp);
@@ -1083,10 +1183,487 @@ static int do_verify(struct fsg_common *common)
 		file_offset += nread;
 		amount_left -= nread;
 	}
+#endif
+//* Modify by LeMaker -- end
+	return 0;
+}
+
+//* Modify by LeMaker -- begin
+#ifdef SUPPORT_UDISK_UPGRADE
+
+#define CONTINUE_UDISK_WAY  1
+#define SWITCH_TO_ADFU_WAY  2
+
+#define SC_USB_ADFU_SWITCH_TO_ADFU          0xcb
+#define SC_USB_ADFU_STATUS_INQUIRY          0xcc
+
+//#define PMU_STATUS_BIT      0x02
+
+
+//#include <linux/reboot.h>
+            
+typedef struct
+{
+    char blength; // Size of this descriptor in bytes
+    char btype; // msc_system_info type
+    char device_id[5]; //'ADFUD' stands for "Actions firmware update device";
+    //'USBD ' stands for "mass storage USB disk";
+    char reserved[11];
+} msc_system_info;
+
+static  u8  restart_flag = 0;
+
+
+/*
+static int disconnect_udisk_for_adfu(struct fsg_common *common)
+{
+  usb_gadget_disconnect(common->gadget);
+  return 0;
+}
+*/
+
+static inline u32 get_le32(const u8 *p)
+{
+    return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+}
+
+
+static int check_adfu_command(struct fsg_common *common, enum data_direction data_dir, const char *name)
+{
+
+    printk(KERN_INFO "ADFU command: %s; LUN=%d, Dc=%d;  Hc=%d\n", name, common
+            ->lun, common->cmnd_size, common
+            ->data_size_from_cmnd);
+    /* We can't reply at all until we know the correct data direction
+     * and size. */
+    if (common->data_size_from_cmnd == 0)
+        data_dir = DATA_DIR_NONE;
+    common->residue = common->usb_amount_left = common->data_size_from_cmnd;
+
+    /* Conflicting data directions is a phase error */
+    if ((common->data_dir != data_dir) && (common->data_size_from_cmnd > 0)) {
+        printk(KERN_INFO "phase error\n");
+        common->phase_error = 1;
+        return -EINVAL;
+    }
+    return 0;
+}
+
+static int do_usb_adfu_switch_to_adfu(struct fsg_common *common, struct fsg_buffhd *bh)
+{
+    u8 *buf;
+    u8 b_adfu_tool_type = 0;
+    u8 b_upgrade_way = 0;
+
+    b_upgrade_way = (u8) ((common->cmnd[1] & 0xf0) >> 4);
+    b_adfu_tool_type = common->cmnd[1] & 0xf;
+    printk(KERN_INFO "lun 0x%x, b_upgrade_way 0x%x, b_adfu_tool_type 0x%x\n",
+            common->lun, b_upgrade_way, b_adfu_tool_type);
+
+    if (common->lun == 0) {
+        switch (b_upgrade_way) {
+            case SWITCH_TO_ADFU_WAY:
+	            printk("SWITCH_TO_ADFU_WAY\n");
+	            buf = (u8 *) bh->buf;
+	            buf[0] = 0xff;
+	            buf[1] = 0;
+	            /*don't restart here, restart when csw send!! set flag*/
+	            restart_flag = 1;
+	            //kernel_restart("adfu");
+            	break;
+            default:
+	            printk(KERN_INFO "OLD TOOL\n");
+	            buf = (u8 *) bh->buf;
+	            buf[0] = 0;
+	            buf[1] = 0;
+            	break;
+        }
+    }
+    else{
+        printk(KERN_INFO "card lun\n");
+        buf = (u8 *) bh->buf;
+        buf[0] = 0;
+        buf[1] = 0;
+    }
+    return common->data_size_from_cmnd;
+}
+
+static int do_usb_adfu_status_inquiry(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+    u8 *buf = (u8*) bh->buf;
+    msc_system_info s_status= { 
+		  .blength = sizeof(msc_system_info), 
+		  .btype = 1,
+		  .device_id[0] = 'U', 
+		  .device_id[1] = 'S', 
+		  .device_id[2] = 'B',
+      .device_id[3] = 'D', 
+    };
+	
+    printk(KERN_INFO "msc_system_info blength 0x%X\n", s_status.blength);
+    if (common->data_size_from_cmnd > (u32) s_status.blength){
+        common->data_size_from_cmnd = (u32) (s_status.blength);
+    }
+    memcpy(buf, &s_status, common->data_size_from_cmnd);
+    return common->data_size_from_cmnd;
+}
+
+static int do_adfu_cmd(struct fsg_common *common, struct fsg_buffhd *bh, u8 adfu_command)
+{
+    int reply = -EINVAL;
+    
+    switch (adfu_command) {
+        case SC_USB_ADFU_SWITCH_TO_ADFU:
+	        //common->data_size_from_cmnd = 2;
+	        common->data_size_from_cmnd = get_le32(&common->cmnd[7]);
+	        reply = check_adfu_command(common, DATA_DIR_TO_HOST, "ADFU_0XCB");
+	        if (reply == 0){
+	            reply = do_usb_adfu_switch_to_adfu(common, bh);
+	        }
+	        else{
+	            printk(KERN_INFO "0xcb check_command ERROR 0x%x \n", reply);
+	        }
+	        break;	
+        case SC_USB_ADFU_STATUS_INQUIRY:
+          restart_flag = 0;
+	        common->data_size_from_cmnd = get_le32(&common->cmnd[7]);
+	        reply = check_adfu_command(common, DATA_DIR_TO_HOST, "ADFU_0XCC");
+	        if (reply == 0){
+	            reply = do_usb_adfu_status_inquiry(common, bh);
+	        }
+	        else{
+	            printk(KERN_INFO "0xcc check_command ERROR 0x%x \n", reply);
+	        }
+	        break;			
+		default:
+      break;
+    }	
+	return reply;
+}
+#endif
+#define SUPPORT_SET_SERIAL_NUMBER
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+#include "set_serial_number.h"
+
+#define SC_USB_ADFU_SERIAL_NUMBER          0xcd
+#define SC_USB_ADFU_SET_SERIAL_NUMBER          0x7f
+#define SC_USB_ADFU_GET_SERIAL_NUMBER          0xff
+#define SC_USB_ACTIONS_SET_MISCINFO          0x7d
+#define SC_USB_ACTIONS_GET_MISCINFO          0xfd
+
+#define SC_USB_ADFU_RESTART          0x7e
+
+#define SC_USB_ADFU_GET_CHIPID          0xfc
+
+volatile int adfu_cmd_fail_flag = 0;
+volatile int adfu_restart_flag = 0;
+
+
+static int do_adfu_restart_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	adfu_restart_flag = 1;
 	return 0;
 }
 
 
+
+static int do_adfu_set_serial_number_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	u32 serial_len = common->data_size_from_cmnd;
+	int			rc;
+	int ret;
+
+	if(serial_len >= FSG_BUFLEN){
+		adfu_cmd_fail_flag = 1;
+		return -EIO;
+	}
+
+	while (bh->state != BUF_STATE_EMPTY) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
+
+	set_bulk_out_req_length(common, bh, serial_len);
+	if (!start_out_transfer(common, bh)){
+		/* Dunno what to do if common->fsg is NULL */
+		adfu_cmd_fail_flag = 1;
+		return -EIO;
+	}
+
+	common->usb_amount_left -= serial_len;
+
+
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
+
+	smp_rmb();
+	bh->state = BUF_STATE_EMPTY;
+	/* Did something go wrong with the transfer? */
+	if ((bh->outreq->status != 0)||(serial_len != bh->outreq->actual)) {
+		adfu_cmd_fail_flag = 1;
+		return -EIO;		/* No default reply */
+	}
+
+	common->residue -= serial_len;
+	ret = set_serial_number(bh->buf, serial_len);
+	if(ret < 0)
+		adfu_cmd_fail_flag = 1;
+
+	return -EIO;		/* No default reply */
+}
+
+
+static int do_adfu_get_serial_number_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	u8 *buf = (u8 *)bh->buf;
+	u32 serial_len = common->data_size_from_cmnd;
+	int ret;
+
+	if(serial_len >= FSG_BUFLEN){
+		adfu_cmd_fail_flag = 1;
+		return -EINVAL;
+	}
+
+	ret = get_serial_number(buf, serial_len);
+
+	if(ret < 0){
+		adfu_cmd_fail_flag = 1;
+		return -EINVAL;
+	}
+
+	return serial_len;
+}
+
+static int do_actions_get_miscinfo_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	u8 *buf = (u8 *)bh->buf;
+	int ret;
+
+	ret = get_miscinfo(buf);
+
+	if(ret < 0 || ret >= FSG_BUFLEN){
+		adfu_cmd_fail_flag = 1;
+		return -EINVAL;
+	}
+
+	return ret;
+}
+static int do_actions_set_miscinfo_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	u32 serial_len = common->data_size_from_cmnd;
+	int			rc;
+	int ret;
+
+	if(serial_len >= FSG_BUFLEN){
+		adfu_cmd_fail_flag = 1;
+		return -EIO;
+	}
+
+	while (bh->state != BUF_STATE_EMPTY) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
+
+	set_bulk_out_req_length(common, bh, serial_len);
+	if (!start_out_transfer(common, bh)){
+
+		adfu_cmd_fail_flag = 1;
+		return -EIO;
+	}
+
+	common->usb_amount_left -= serial_len;
+
+
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
+
+	smp_rmb();
+	bh->state = BUF_STATE_EMPTY;
+	/* Did something go wrong with the transfer? */
+	if ((bh->outreq->status != 0)||(serial_len != bh->outreq->actual)) {
+		adfu_cmd_fail_flag = 1;
+		return -EIO;		/* No default reply */
+	}
+
+	common->residue -= serial_len;
+	ret = set_miscinfo(bh->buf, serial_len);
+	if(ret < 0)
+		adfu_cmd_fail_flag = 1;
+
+	return -EIO;		/* No default reply */
+}
+
+static int do_adfu_get_chipID_cmd(struct fsg_common *common, struct fsg_buffhd*bh)
+{
+	u8 *buf = (u8 *)bh->buf;
+	u32 chipID_len = get_chipID_len();
+	int ret;
+
+	if(chipID_len >= FSG_BUFLEN){
+		adfu_cmd_fail_flag = 1;
+		return -EINVAL;
+	}
+
+	ret = get_chipID(buf, chipID_len);
+
+	if(ret < 0){
+		adfu_cmd_fail_flag = 1;
+		return -EINVAL;
+	}
+
+	return chipID_len + 4;
+}
+
+static int check_serial_number_command(struct fsg_common *common, int cmnd_size,
+				       enum data_direction data_dir, const char *name)
+{
+	struct fsg_lun		*curlun;
+
+
+	/*
+	 * We can't reply at all until we know the correct data direction
+	 * and size.
+	 */
+	if (common->data_size_from_cmnd == 0)
+		data_dir = DATA_DIR_NONE;
+	if (common->data_size < common->data_size_from_cmnd) {
+		/*
+		 * Host data size < Device data size is a phase error.
+		 * Carry out the command, but only transfer as much as
+		 * we are allowed.
+		 */
+		common->data_size_from_cmnd = common->data_size;
+		common->phase_error = 1;
+	}
+	common->residue = common->data_size;
+	common->usb_amount_left = common->data_size;
+
+	/* Conflicting data directions is a phase error */
+	if (common->data_dir != data_dir && common->data_size_from_cmnd > 0) {
+		common->phase_error = 1;
+		return -EINVAL;
+	}
+
+	/* Verify the length of the command itself */
+	if (cmnd_size != common->cmnd_size) {
+
+		/*
+		 * Special case workaround: There are plenty of buggy SCSI
+		 * implementations. Many have issues with cbw->Length
+		 * field passing a wrong command size. For those cases we
+		 * always try to work around the problem by using the length
+		 * sent by the host side provided it is at least as large
+		 * as the correct command length.
+		 * Examples of such cases would be MS-Windows, which issues
+		 * REQUEST SENSE with cbw->Length == 12 where it should
+		 * be 6, and xbox360 issuing INQUIRY, TEST UNIT READY and
+		 * REQUEST SENSE with cbw->Length == 10 where it should
+		 * be 6 as well.
+		 */
+		if (cmnd_size <= common->cmnd_size) {
+			DBG(common, "%s is buggy! Expected length %d "
+			    "but we got %d\n", name,
+			    cmnd_size, common->cmnd_size);
+			cmnd_size = common->cmnd_size;
+		} else {
+			common->phase_error = 1;
+			return -EINVAL;
+		}
+	}
+
+
+	/* Check the LUN */
+	curlun = common->curlun;
+	if (curlun) {
+		curlun->sense_data = SS_NO_SENSE;
+		curlun->sense_data_info = 0;
+		curlun->info_valid = 0;
+	} else {
+		common->bad_lun_okay = 1;
+	}
+
+
+	return 0;
+}
+
+
+static int do_adfu_serial_number_cmd(struct fsg_common *common, struct fsg_buffhd *bh)
+{
+	int reply = -EINVAL;
+	int ret;
+
+	switch (common->cmnd[1]) {
+	case SC_USB_ADFU_RESTART:
+		common->data_size_from_cmnd = 0;
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_NONE,
+						    "SC_USB_ADFU_RESTART");
+		if (reply == 0)
+			reply = do_adfu_restart_cmd(common, bh);
+		break;
+
+	case SC_USB_ADFU_SET_SERIAL_NUMBER:
+		common->data_size_from_cmnd = get_le32(&common->cmnd[3]);
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_FROM_HOST,
+						    "SC_USB_ADFU_SET_SERIAL_NUMBER");
+		if (reply == 0)
+			reply = do_adfu_set_serial_number_cmd(common, bh);
+		break;
+
+	case SC_USB_ADFU_GET_SERIAL_NUMBER:
+		ret = get_serial_number_len();
+		if(ret < 0){
+			adfu_cmd_fail_flag = 1;
+			reply = -EINVAL;
+			break;
+		}
+		common->data_size_from_cmnd = ret;
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_TO_HOST,
+						    "SC_USB_ADFU_GET_SERIAL_NUMBER");
+		if (reply == 0)
+			reply = do_adfu_get_serial_number_cmd(common, bh);
+		break;
+	case SC_USB_ACTIONS_SET_MISCINFO:
+		common->data_size_from_cmnd = get_le32(&common->cmnd[3]);
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_FROM_HOST,
+						    "SC_USB_ACTIONS_SET_MISCINFO");
+		if (reply == 0)
+			reply = do_actions_set_miscinfo_cmd(common, bh);
+		break;
+	case SC_USB_ACTIONS_GET_MISCINFO:
+		common->data_size_from_cmnd = common->data_size;
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_TO_HOST,
+						    "SC_USB_ACTIONS_GET_MISCINFO");
+		if (reply == 0)
+			reply = do_actions_get_miscinfo_cmd(common, bh);
+		break;
+	case SC_USB_ADFU_GET_CHIPID:
+		common->data_size_from_cmnd = common->data_size;
+		reply = check_serial_number_command(common, 7,
+						    DATA_DIR_TO_HOST,
+						    "SC_USB_ADFU_GET_CHIPID");
+		if (reply == 0)
+			reply = do_adfu_get_chipID_cmd(common, bh);
+		break;
+	default:
+		break;
+	}
+	return reply;
+}
+#endif
+//* Modify by LeMaker -- end
 /*-------------------------------------------------------------------------*/
 
 static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
@@ -1662,6 +2239,15 @@ static int send_status(struct fsg_common *common)
 				"  info x%x\n",
 				SK(sd), ASC(sd), ASCQ(sd), sdinfo);
 	}
+	//* Modify by LeMaker -- begin
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+	if(adfu_cmd_fail_flag)
+	{
+		adfu_cmd_fail_flag = 0;
+		status = US_BULK_STAT_FAIL;
+	}
+#endif
+	//* Modify by LeMaker -- end
 
 	/* Store and send the Bulk-only CSW */
 	csw = (void *)bh->buf;
@@ -1678,6 +2264,21 @@ static int send_status(struct fsg_common *common)
 		return -EIO;
 
 	common->next_buffhd_to_fill = bh->next;
+
+	//* Modify by LeMaker -- begin
+	
+#ifdef SUPPORT_UDISK_UPGRADE
+	if(restart_flag == 1) {
+		set_upgrade_flags_and_restart();
+	}
+#endif
+
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+	if(adfu_restart_flag == 1) {
+		gadget_andorid_shutdown_machine();
+	}
+#endif
+	//* Modify by LeMaker -- end
 	return 0;
 }
 
@@ -1847,6 +2448,11 @@ static int do_scsi_command(struct fsg_common *common)
 	}
 	common->phase_error = 0;
 	common->short_packet_received = 0;
+	//* Modify by LeMaker -- begin
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+	adfu_cmd_fail_flag = 0;
+#endif
+	//* Modify by LeMaker -- end
 
 	down_read(&common->filesem);	/* We're using the backing file */
 	switch (common->cmnd[0]) {
@@ -2062,6 +2668,21 @@ static int do_scsi_command(struct fsg_common *common)
 		if (reply == 0)
 			reply = do_write(common);
 		break;
+
+	//* Modify by LeMaker -- begin
+#ifdef SUPPORT_UDISK_UPGRADE
+	case SC_USB_ADFU_SWITCH_TO_ADFU:
+	case SC_USB_ADFU_STATUS_INQUIRY:
+		reply = do_adfu_cmd(common, bh, common->cmnd[0]);
+		break;
+#endif
+
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+	case SC_USB_ADFU_SERIAL_NUMBER:
+		reply = do_adfu_serial_number_cmd(common, bh);
+		break;
+#endif
+	//* Modify by LeMaker -- end
 
 	/*
 	 * Some mandatory commands that we recognize but don't implement.
@@ -2526,6 +3147,22 @@ static int fsg_main_thread(void *common_)
 			continue;
 		}
 
+		//* Modify by LeMaker -- begin
+#ifdef SUPPORT_SET_SERIAL_NUMBER
+		if(adfu_restart_flag == 1) {
+			static int i = 0;
+
+			msleep(20);
+			if(i++ > 100) {
+				printk("%s %d send restart kernel event.\n", __FUNCTION__, __LINE__);
+				gadget_andorid_shutdown_machine();
+				i = 0;
+			}
+			continue;
+		}
+#endif
+		//* Modify by LeMaker -- end
+
 		if (get_next_command(common))
 			continue;
 
@@ -2606,6 +3243,24 @@ static inline void fsg_common_put(struct fsg_common *common)
 {
 	kref_put(&common->ref, fsg_common_release);
 }
+
+//* Modify by LeMaker -- begin
+void write_timeout_handler(unsigned long data)
+{	
+	if (!is_vfs_writting)
+		return;
+	printk(KERN_EMERG"<FSG>it is write timeout total %d seconds.%s,%d\n",TIMEOUT_THRESHOLD + writetimeout_times++,__func__,__LINE__);	
+	mod_timer(&writetimeout_timer, jiffies+(1*HZ));
+}
+
+void read_timeout_handler(unsigned long data)
+{
+	if (!is_vfs_reading)
+		return;
+	printk(KERN_EMERG"<FSG>it is read timeout total %d seconds.%s,%d\n",TIMEOUT_THRESHOLD + readtimeout_times++,__func__,__LINE__);	
+	mod_timer(&readtimeout_timer, jiffies+(1*HZ));
+}
+//* Modify by LeMaker -- end
 
 static struct fsg_common *fsg_common_init(struct fsg_common *common,
 					  struct usb_composite_dev *cdev,
@@ -2816,6 +3471,11 @@ error_release:
 static void fsg_common_release(struct kref *ref)
 {
 	struct fsg_common *common = container_of(ref, struct fsg_common, ref);
+
+	//* Modify by LeMaker -- begin
+	del_timer_sync(&writetimeout_timer);	
+	del_timer_sync(&readtimeout_timer);
+	//* Modify by LeMaker -- end
 
 	/* If the thread isn't already dead, tell it to exit now */
 	if (common->state != FSG_STATE_TERMINATED) {

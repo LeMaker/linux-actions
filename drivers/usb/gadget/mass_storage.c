@@ -100,7 +100,7 @@ static struct usb_gadget_strings *dev_strings[] = {
 /****************************** Configurations ******************************/
 
 static struct fsg_module_parameters mod_data = {
-	.stall = 1
+	//.stall = 1 //* Modify by LeMaker
 };
 FSG_MODULE_PARAMETERS(/* no prefix */, mod_data);
 

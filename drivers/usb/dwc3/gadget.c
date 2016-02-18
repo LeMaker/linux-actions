@@ -50,9 +50,82 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
+//* Modify by LeMaker -- begin
+#include <linux/kallsyms.h>
+#include <mach/bootdev.h>
+
+#include "gadget.h"
+
+#if SUPPORT_NOT_RMMOD_USBDRV
+#include "hotplug_handle.c"
+#endif
+//* Modify by LeMaker -- end
+
 #include "core.h"
 #include "gadget.h"
 #include "io.h"
+
+//* Modify by LeMaker -- begin
+#ifdef USB_CHARGE_DETECT
+typedef void (*FUNC)(int);
+#define  USB_CONNECT_TO_PC				1
+#define  USB_CONNECT_TO_ADAPTOR		2
+
+u32 reset_interrupt_occured =0;
+struct delayed_work dwc3_work;
+FUNC dwc3_set_usb_plugin_type;
+FUNC dwc3_set_usb_plugin_type_monitor;
+extern int owl_get_boot_mode(void);
+
+static void dwc3_charging_monitor(struct work_struct *work)
+{
+	/*0: not occured, connected adaptor. 1: occured , connected pc*/
+	if(!reset_interrupt_occured) {
+		if(owl_get_boot_mode() != OWL_BOOT_MODE_UPGRADE) {
+			printk("%s %d set adaptor mode!\n", __func__, __LINE__);
+			if(dwc3_set_usb_plugin_type)	
+				dwc3_set_usb_plugin_type(USB_CONNECT_TO_ADAPTOR);
+			dwc3_set_usb_plugin_type_monitor =
+				(FUNC )kallsyms_lookup_name("monitor_set_usb_plugin_type");
+			if(dwc3_set_usb_plugin_type_monitor)	
+				dwc3_set_usb_plugin_type_monitor(USB_CONNECT_TO_ADAPTOR);	
+		}		
+	}
+}
+
+static void usb_charge_detect_init(void)
+{
+	reset_interrupt_occured = 0;
+	INIT_DELAYED_WORK(&dwc3_work, dwc3_charging_monitor);
+	dwc3_set_usb_plugin_type = (FUNC )kallsyms_lookup_name("atc260x_set_usb_plugin_type");
+}
+
+static void start_usb_status_delaywork(void)
+{
+	/*cancel the delay work & reset the interrupt counter*/
+	cancel_delayed_work_sync(&dwc3_work);
+	//reset_interrupt_occured = 0;
+	/*10s*/ 
+	if(owl_get_boot_mode() != OWL_BOOT_MODE_UPGRADE)
+		schedule_delayed_work(&dwc3_work, msecs_to_jiffies(15000));
+}
+
+static void set_connect_type_to_pc_mode(void)
+{
+	reset_interrupt_occured ++;
+	if(reset_interrupt_occured == 1) {
+		if(owl_get_boot_mode() != OWL_BOOT_MODE_UPGRADE) {
+			if(dwc3_set_usb_plugin_type)	
+				dwc3_set_usb_plugin_type(USB_CONNECT_TO_PC);
+			dwc3_set_usb_plugin_type_monitor =
+				(FUNC )kallsyms_lookup_name("monitor_set_usb_plugin_type");
+			if(dwc3_set_usb_plugin_type_monitor)	
+				dwc3_set_usb_plugin_type_monitor(USB_CONNECT_TO_PC);
+		}
+	}
+}
+#endif
+//* Modfiy by LeMaker -- end
 
 /**
  * dwc3_gadget_set_test_mode - Enables USB2 Test Modes
@@ -1150,16 +1223,20 @@ static int dwc3_gadget_ep_queue(struct usb_ep *ep, struct usb_request *request,
 
 	int				ret;
 
+//* Modify by LeMaker -- begin
+	spin_lock_irqsave(&dwc->lock, flags);
 	if (!dep->endpoint.desc) {
 		dev_dbg(dwc->dev, "trying to queue request %p to disabled %s\n",
 				request, ep->name);
+		spin_unlock_irqrestore(&dwc->lock, flags);        
 		return -ESHUTDOWN;
 	}
 
 	dev_vdbg(dwc->dev, "queing request %p to %s length %d\n",
 			request, ep->name, request->length);
 
-	spin_lock_irqsave(&dwc->lock, flags);
+	//spin_lock_irqsave(&dwc->lock, flags);
+//* Modify by LeMaker -- end
 	ret = __dwc3_gadget_ep_queue(dep, req);
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
@@ -1479,8 +1556,22 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 	is_on = !!is_on;
 
 	spin_lock_irqsave(&dwc->lock, flags);
+	//* Modify by LeMaker -- begin
+#if SUPPORT_NOT_RMMOD_USBDRV
+	if(!dwc3_gadget_is_plugin()) {
+		spin_unlock_irqrestore(&dwc->lock, flags);
+		return 0;
+	}
+#endif
+	//* Modify by LeMaker -- end
 	ret = dwc3_gadget_run_stop(dwc, is_on);
 	spin_unlock_irqrestore(&dwc->lock, flags);
+
+	//* Modify by LeMaker -- begin
+#ifdef USB_CHARGE_DETECT    
+	start_usb_status_delaywork();
+#endif
+	//* Modify by LeMaker -- end
 
 	return ret;
 }
@@ -1753,8 +1844,9 @@ static int __dwc3_cleanup_done_trbs(struct dwc3 *dwc, struct dwc3_ep *dep,
 	unsigned int		count;
 	unsigned int		s_pkt = 0;
 	unsigned int		trb_status;
+	u32					loop; // Modify by LeMaker
 
-	if ((trb->ctrl & DWC3_TRB_CTRL_HWO) && status != -ESHUTDOWN)
+	if ((trb->ctrl & DWC3_TRB_CTRL_HWO) && status != -ESHUTDOWN){
 		/*
 		 * We continue despite the error. There is not much we
 		 * can do. If we don't clean it up we loop forever. If
@@ -1765,6 +1857,21 @@ static int __dwc3_cleanup_done_trbs(struct dwc3 *dwc, struct dwc3_ep *dep,
 		 */
 		dev_err(dwc->dev, "%s's TRB (%p) still owned by HW\n",
 				dep->name, trb);
+	//* Modify by LeMaker -- begin
+		loop = 500000;  /* 500ms */
+		while(trb->ctrl & DWC3_TRB_CTRL_HWO) {
+			loop --;
+			if(loop == 0) {
+				dev_err(dwc->dev, "%s's TRB (%p) after 500000 us, still owned by HW\n",
+				dep->name, req->trb);
+				break;
+			}
+			udelay(1);
+		}
+			
+		printk("\n-----------wait trb use %d us-----------\n",500000 - loop);
+	}
+	//* Modify by LeMaker -- end
 	count = trb->size & DWC3_TRB_SIZE_MASK;
 
 	if (dep->direction) {
@@ -2215,6 +2322,12 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 	reg = dwc3_readl(dwc->regs, DWC3_DCFG);
 	reg &= ~(DWC3_DCFG_DEVADDR_MASK);
 	dwc3_writel(dwc->regs, DWC3_DCFG, reg);
+
+	//* Modify by LeMaker -- begin
+#ifdef USB_CHARGE_DETECT    
+	set_connect_type_to_pc_mode();
+#endif
+	//* Modify by LeMaker -- end
 }
 
 static void dwc3_update_ram_clk_sel(struct dwc3 *dwc, u32 speed)
@@ -2526,6 +2639,7 @@ static irqreturn_t dwc3_thread_interrupt(int irq, void *_dwc)
 	for (i = 0; i < dwc->num_event_buffers; i++) {
 		struct dwc3_event_buffer *evt;
 		int			left;
+		u32			loop;  // Modify by LeMaker
 
 		evt = dwc->ev_buffs[i];
 		left = evt->count;
@@ -2538,6 +2652,23 @@ static irqreturn_t dwc3_thread_interrupt(int irq, void *_dwc)
 
 			event.raw = *(u32 *) (evt->buf + evt->lpos);
 
+			//* Modify by LeMaker -- begin
+			if(event.raw==0 ){
+				loop = 500000;  /* 500ms */
+				while(event.raw == 0){
+					dev_dbg(dwc->dev, "wait event sync\n");
+					loop --;
+					if(loop == 0){
+						dev_err(dwc->dev, "after wait 500ms, process event buf error\n");
+						break;
+					}
+					udelay(1);
+					event.raw = *(u32 *) (evt->buf + evt->lpos);
+				}
+				printk("\n--wait eventbuffer use %d us--new=0x%x--pos=%d--\n",500000 - loop,*(u32 *) (evt->buf + evt->lpos),evt->lpos);
+			}
+			//* Modify by LeMaker -- end
+
 			dwc3_process_event_entry(dwc, &event);
 
 			/*
@@ -2549,6 +2680,7 @@ static irqreturn_t dwc3_thread_interrupt(int irq, void *_dwc)
 			 * boundary so I worry about that once we try to handle
 			 * that.
 			 */
+			*(u32 *) (evt->buf + evt->lpos) = 0; //* Modify by LeMaker : just to avoid bus reset bug
 			evt->lpos = (evt->lpos + 4) % DWC3_EVENT_BUFFERS_SIZE;
 			left -= 4;
 
@@ -2648,7 +2780,17 @@ int dwc3_gadget_init(struct dwc3 *dwc)
 	}
 
 	dwc->gadget.ops			= &dwc3_gadget_ops;
+//* Modify by LeMaker -- begin
+#if 0
 	dwc->gadget.max_speed		= USB_SPEED_SUPER;
+#else
+#ifdef CONFIG_USB_GADGET_SUPERSPEED
+	dwc->gadget.max_speed	= USB_SPEED_SUPER,
+#else
+	dwc->gadget.max_speed	= USB_SPEED_HIGH,
+#endif
+#endif
+//* Modify by LeMaker -- end
 	dwc->gadget.speed		= USB_SPEED_UNKNOWN;
 	dwc->gadget.sg_supported	= true;
 	dwc->gadget.name		= "dwc3-gadget";
@@ -2677,6 +2819,12 @@ int dwc3_gadget_init(struct dwc3 *dwc)
 		dev_err(dwc->dev, "failed to register udc\n");
 		goto err5;
 	}
+	
+	//* Modify by LeMaker -- beign
+#ifdef USB_CHARGE_DETECT	
+	usb_charge_detect_init();
+#endif
+	//* Modify by LeMaker -- end
 
 	return 0;
 
@@ -2720,6 +2868,12 @@ void dwc3_gadget_exit(struct dwc3 *dwc)
 
 	dma_free_coherent(dwc->dev, sizeof(*dwc->ctrl_req),
 			dwc->ctrl_req, dwc->ctrl_req_addr);
+
+	//* Modify by LeMaker -- beign
+#ifdef USB_CHARGE_DETECT	    
+	cancel_delayed_work_sync(&dwc3_work);
+#endif
+	//* Modify by LeMaker -- end
 }
 
 int dwc3_gadget_prepare(struct dwc3 *dwc)

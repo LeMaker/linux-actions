@@ -10,6 +10,10 @@ obj-$(CONFIG_USB_DWC3)		+= dwc3/
 
 obj-$(CONFIG_USB_MON)		+= mon/
 
+# Modify by LeMaker
+obj-$(CONFIG_USB_AOTG)		+= aotg/
+obj-$(CONFIG_USB_ACTIONS_MON)		+= monitor/
+
 obj-$(CONFIG_PCI)		+= host/
 obj-$(CONFIG_USB_EHCI_HCD)	+= host/
 obj-$(CONFIG_USB_ISP116X_HCD)	+= host/

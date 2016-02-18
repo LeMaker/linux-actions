@@ -54,15 +54,115 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
+//* Modify by LeMaker -- begin
+#include <mach/hardware.h>
+#include <mach/powergate.h>
+#include "usb3_regs.h"
+//* Modify by LeMaker -- end
+
 #include "core.h"
 #include "gadget.h"
 #include "io.h"
 
 #include "debug.h"
 
-static char *maximum_speed = "super";
+static char *maximum_speed = "high"; //* Modify by LeMaker : super -> high
 module_param(maximum_speed, charp, 0);
 MODULE_PARM_DESC(maximum_speed, "Maximum supported speed.");
+
+//* Modify by LeMaker -- begin
+static int dwc3_slew_rate =-1;
+module_param(dwc3_slew_rate, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(dwc3_slew_rate, "dwc3_slew_rate");
+static int dwc3_tx_bias=-1;
+module_param(dwc3_tx_bias, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(dwc3_tx_bias, "dwc3_tx_bias");
+/* -------------------------------------------------------------------------- */
+#define DWC3_DEVS_POSSIBLE	32
+struct dwc3_port_info {
+	void __iomem *usbecs;
+	void __iomem *devrst;
+	void __iomem *usbpll;
+};
+struct dwc3_actions {
+	struct platform_device	*dwc3;
+	struct device		*dev;
+
+	struct dwc3_port_info port_info;	
+	void __iomem        *base;
+       int 				ic_type;
+};
+enum{
+   IC_ATM7039C = 0,
+   IC_ATM7059A
+};
+static int g_ic_type = IC_ATM7039C;
+
+static DECLARE_BITMAP(dwc3_devs, DWC3_DEVS_POSSIBLE);
+
+#if SUPPORT_NOT_RMMOD_USBDRV
+static struct platform_device *pdev_dwc;
+extern  int __dwc3_set_plugstate(struct dwc3	*dwc,int s);
+int dwc3_set_plugstate(int s)
+{
+	struct dwc3	*dwc;
+    
+	if(pdev_dwc ==NULL){
+		printk("------can't get dwc3 platform device (structure)!!---\n");
+		return -ENODEV;
+	}            
+            
+	dwc = platform_get_drvdata(pdev_dwc);
+	__dwc3_set_plugstate(dwc,s);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(dwc3_set_plugstate);
+
+void (*dwc3_clk_open)(void );
+void (*dwc3_clk_close)(void );
+void dwc3_set_usb_clk_ops(void (*clk_open)(void ),void (*clk_close)(void ))
+{
+	dwc3_clk_open = clk_open;
+	dwc3_clk_close = clk_close;
+}
+EXPORT_SYMBOL_GPL(dwc3_set_usb_clk_ops);
+#endif
+
+int dwc3_get_device_id(void)
+{
+	int		id;
+
+again:
+	id = find_first_zero_bit(dwc3_devs, DWC3_DEVS_POSSIBLE);
+	if (id < DWC3_DEVS_POSSIBLE) {
+		int old;
+
+		old = test_and_set_bit(id, dwc3_devs);
+		if (old)
+			goto again;
+	} else {
+		pr_err("dwc3: no space for new device\n");
+		id = -ENOMEM;
+	}
+
+	return id;
+}
+EXPORT_SYMBOL_GPL(dwc3_get_device_id);
+
+void dwc3_put_device_id(int id)
+{
+	int ret;
+
+	if (id < 0)
+		return;
+
+	ret = test_bit(id, dwc3_devs);
+	WARN(!ret, "dwc3: ID %d not in use\n", id);
+	smp_mb__before_clear_bit();
+	clear_bit(id, dwc3_devs);
+}
+EXPORT_SYMBOL_GPL(dwc3_put_device_id);
+//* Modify by LeMaker -- end
 
 /* -------------------------------------------------------------------------- */
 
@@ -80,7 +180,8 @@ void dwc3_set_mode(struct dwc3 *dwc, u32 mode)
  * dwc3_core_soft_reset - Issues core soft reset and PHY reset
  * @dwc: pointer to our context structure
  */
-static void dwc3_core_soft_reset(struct dwc3 *dwc)
+ //* Modify by LeMaker : add int phy_reset_en
+static void dwc3_core_soft_reset(struct dwc3 *dwc, int phy_reset_en)
 {
 	u32		reg;
 
@@ -89,31 +190,50 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
 	reg |= DWC3_GCTL_CORESOFTRESET;
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 
-	/* Assert USB3 PHY reset */
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
-	reg |= DWC3_GUSB3PIPECTL_PHYSOFTRST;
-	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+	//* Modify by LeMaker -- beign
+	if(phy_reset_en){
+		/* Assert USB3 PHY reset */
+		reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
+		reg |= DWC3_GUSB3PIPECTL_PHYSOFTRST;
+		dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 
-	/* Assert USB2 PHY reset */
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
-	reg |= DWC3_GUSB2PHYCFG_PHYSOFTRST;
-	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
+		/* Assert USB2 PHY reset */
+		reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
+		reg |= DWC3_GUSB2PHYCFG_PHYSOFTRST;
+		dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
 
-	usb_phy_init(dwc->usb2_phy);
-	usb_phy_init(dwc->usb3_phy);
-	mdelay(100);
+		if(g_ic_type == IC_ATM7059A){
+			/* port 1 */
+			reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(1));
+			reg |= DWC3_GUSB2PHYCFG_PHYSOFTRST;
+			dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(1), reg);
+		}
+#if 0
+		usb_phy_init(dwc->usb2_phy);
+		usb_phy_init(dwc->usb3_phy);
+#endif
+		mdelay(100);
 
-	/* Clear USB3 PHY reset */
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
-	reg &= ~DWC3_GUSB3PIPECTL_PHYSOFTRST;
-	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+		/* Clear USB3 PHY reset */
+		reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
+		reg &= ~DWC3_GUSB3PIPECTL_PHYSOFTRST;
+		dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 
-	/* Clear USB2 PHY reset */
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
-	reg &= ~DWC3_GUSB2PHYCFG_PHYSOFTRST;
-	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
+		/* Clear USB2 PHY reset */
+		reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
+		reg &= ~DWC3_GUSB2PHYCFG_PHYSOFTRST;
+		dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
 
-	mdelay(100);
+		if(g_ic_type == IC_ATM7059A){
+			/* port 1 */
+			reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(1));
+			reg &= ~DWC3_GUSB2PHYCFG_PHYSOFTRST;
+			dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(1), reg);
+		}
+
+		mdelay(100);
+	}
+	//* Modify by LeMaker -- end
 
 	/* After PHYs are stable we can take Core out of reset state */
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
@@ -218,7 +338,8 @@ static int dwc3_alloc_event_buffers(struct dwc3 *dwc, unsigned length)
  *
  * Returns 0 on success otherwise negative errno.
  */
-static int dwc3_event_buffers_setup(struct dwc3 *dwc)
+ //* Modify by LeMaker : remove static
+int dwc3_event_buffers_setup(struct dwc3 *dwc)
 {
 	struct dwc3_event_buffer	*evt;
 	int				n;
@@ -286,13 +407,214 @@ static void dwc3_cache_hwparams(struct dwc3 *dwc)
 	parms->hwparams8 = dwc3_readl(dwc->regs, DWC3_GHWPARAMS8);
 }
 
+//* Modify by LeMaker -- begin
+static void setphy(unsigned char reg_add, unsigned char value, unsigned char port_num)
+{
+	void __iomem *usb3_usb_vcon = NULL;
+	volatile unsigned char addr_low;
+	volatile unsigned char addr_high;
+	volatile unsigned int vstate;
+
+	if(g_ic_type == IC_ATM7059A){
+		if (port_num == 0)
+		usb3_usb_vcon = (void __iomem *)IO_ADDRESS((0xB0400000 + 0xCe00));
+		else if (port_num == 1)
+		usb3_usb_vcon = (void __iomem *)IO_ADDRESS((0xB0400000 + 0xCe10));
+		else {
+			printk("port_num must is 0 or 1!!\n");
+			return;
+		}
+	}		
+	else if(g_ic_type == IC_ATM7039C){
+		usb3_usb_vcon = (void __iomem *)IO_ADDRESS(USB3_USB2_P0_VDCTRL);
+	}
+	addr_low =  reg_add & 0x0f;
+	addr_high =  (reg_add >> 4) & 0x0f;
+
+	vstate = value;
+	vstate = vstate << 8;
+
+	addr_low |= 0x10;
+	writel(vstate | addr_low, usb3_usb_vcon);
+	mb();
+
+	addr_low &= 0x0f; 
+	writel(vstate | addr_low, usb3_usb_vcon);
+	mb();
+
+	addr_low |= 0x10;
+	writel(vstate | addr_low, usb3_usb_vcon);
+	mb();
+
+	addr_high |= 0x10;
+	writel(vstate | addr_high, usb3_usb_vcon);
+	mb();
+
+	addr_high &= 0x0f; 
+	writel(vstate | addr_high, usb3_usb_vcon);
+	mb();
+
+	addr_high |= 0x10;
+	writel(vstate | addr_high, usb3_usb_vcon);  
+	mb();
+	return;
+}
+#define USB3_UMON_FDT_COMPATIBLE_ATM7039C    "actions,atm7039c-usb"
+#define USB3_UMON_FDT_COMPATIBLE_ATM7059TC  "actions,atm7059tc-usb"
+#define USB3_UMON_FDT_COMPATIBLE_ATM7059A    "actions,atm7059a-usb"
+static int dwc3_get_slewrate_config(void)
+{
+	struct device_node *fdt_node;
+	const __be32 *property;
+	int value;
+       
+	fdt_node = of_find_compatible_node(NULL, NULL, USB3_UMON_FDT_COMPATIBLE_ATM7039C);
+	if (NULL == fdt_node) {
+		fdt_node = of_find_compatible_node(NULL, NULL, USB3_UMON_FDT_COMPATIBLE_ATM7059TC);
+		if (NULL == fdt_node) 
+			fdt_node = of_find_compatible_node(NULL, NULL, USB3_UMON_FDT_COMPATIBLE_ATM7059A);
+			if (NULL == fdt_node)
+			{
+				printk("<dwc3>err: no usb3-fdt-compatible\n");
+				return -EINVAL;
+			}
+	}		
+	property = of_get_property(fdt_node, "usb_hs_output_strength", NULL);
+	value = be32_to_cpup(property);
+	return value;
+}
+void dwc3_phy_init(u8 mode, unsigned char port_num)
+{
+	unsigned char val_u8,slew_rate;
+    
+	slew_rate= dwc3_get_slewrate_config();
+	if((port_num!= 0)&&(port_num!= 1)){
+		port_num = 0;
+	}        
+	if(g_ic_type == IC_ATM7039C){
+		setphy(0xe7,0x0b, port_num);
+		udelay(100);
+		setphy(0xe7,0x0f, port_num);
+		udelay(100);
+		setphy(0xe2,0x74, port_num); 
+		udelay(100);
+	}
+	else if(g_ic_type == IC_ATM7059A){
+
+		if(mode == DWC3_MODE_DEVICE) {
+			printk(" GS705A phy init for dwc3 gadget %s\n", __TIME__ );
+			val_u8 =(1<<7) |(1<<5)|(1<<4)|(2<<2)|(3<<0);//select page1
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(1<<5) |(1<<4)|(0<<3)|(1<<2)|(1<<0);//negative sample
+			setphy(0xe0, val_u8, port_num);
+            
+			val_u8 =(1<<7) |(1<<5)|(1<<4)|(2<<2)|(3<<0);//select page1
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(slew_rate<<5) |(0<<4)|(1<<3)|(1<<2)|(3<<0);//slewRate
+			setphy(0xe1, val_u8, port_num);
+            
+			val_u8 =(1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0);//bit[6:5]=select page0
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(1<<7) |(4<<4)|(1<<3)|(0<<2)|(3<<0); //bit[3]= Enablepowerdown mode
+			setphy(0xe6, val_u8, port_num);
+            
+			val_u8 = (1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0);
+			setphy(0xf4, val_u8, port_num);
+			val_u8 = (7<<4)|(0<<1)|(1<<0);                 //sensitivity lower
+			setphy(0xe7, val_u8, port_num);
+            
+			val_u8 = (1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0);
+			setphy(0xf4, val_u8, port_num);
+			val_u8 = (9<<4)|(7<<0);                               //hstx current lower
+			setphy(0xe4, val_u8, port_num);
+		}else {
+			printk(" GS705A phy init for xhci %s\n", __TIME__ );
+			val_u8 =(1<<7) |(1<<5)|(1<<4)|(2<<2)|(3<<0);//select page1
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(1<<5) |(1<<4)|(0<<3)|(1<<2)|(1<<0);//negative sample
+			setphy(0xe0, val_u8, port_num);
+            
+			val_u8 =(1<<7) |(1<<5)|(1<<4)|(2<<2)|(3<<0);//select page1
+			setphy(0xf4, val_u8, port_num);
+			if((dwc3_slew_rate >=0) &&(dwc3_slew_rate <= 7))
+				val_u8 =(dwc3_slew_rate<<5) |(0<<4)|(1<<3)|(1<<2)|(3<<0);//slewRate
+			else
+				val_u8 =(3<<5) |(0<<4)|(1<<3)|(1<<2)|(3<<0);//slewRate
+			setphy(0xe1, val_u8, port_num);
+                    
+			val_u8 =(1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0);//bit[6:5]=select page0
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(1<<7) |(4<<4)|(1<<3)|(0<<2)|(3<<0); //bit[3]= Enablepowerdown mode
+			setphy(0xe6, val_u8, port_num);
+            
+			val_u8 = (1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0);
+			setphy(0xf4, val_u8, port_num);
+			val_u8 = (9<<4)|(0<<1)|(1<<0);                 //sensitivity lower
+			setphy(0xe7, val_u8, port_num);
+            
+			val_u8 =(1<<7) |(1<<5)|(1<<4)|(2<<2)|(3<<0);//select page1
+			setphy(0xf4, val_u8, port_num);
+			val_u8 =(1<<5) |(1<<4)|(0<<3)|(0<<2)|(1<<0);// REG_CAL=0
+			setphy(0xe0, val_u8, port_num);
+            
+			val_u8 = (1<<7) |(0<<5)|(1<<4)|(2<<2)|(3<<0); // elect page0
+			setphy(0xf4, val_u8, port_num);
+			if((dwc3_tx_bias >=0) &&(dwc3_tx_bias <= 15))
+				val_u8 = (0xf<<4)|(dwc3_tx_bias<<0);                                  //adjust hshd threshold and hstx current
+			else
+				val_u8 = (0xf<<4)|(4<<0);                                  //adjust hshd threshold and hstx current
+			setphy(0xe4, val_u8, port_num);
+
+			val_u8 = (1<<7) |(1<<6) |(1<<5)|(1<<4)|(1<<3)|(1<<2)|(0<<1)|(0<<0);
+			setphy(0xf0, val_u8, port_num);   //disconnect enable
+		}
+	}
+
+	return;
+}
+EXPORT_SYMBOL_GPL(dwc3_phy_init);
+/*
+ *fix bug:when usb3 bias enable ,reset machine will leak current by gpio 
+ *if call this func will also disable super speed.
+ */
+void disable_bias(void)
+{	
+	struct dwc3 *dwc;
+	u32 reg;
+    
+	dwc = platform_get_drvdata(pdev_dwc);
+	reg = dwc3_readl(dwc->regs, 0xce04);
+	reg |=(1<<27);
+	dwc3_writel(dwc->regs, 0xce04, reg);
+	reg = dwc3_readl(dwc->regs, ANA0F);
+	reg &=~(1<<14);
+	dwc3_writel(dwc->regs, ANA0F, reg);
+
+}
+EXPORT_SYMBOL_GPL(disable_bias);
+void enable_bias(void)
+{	
+	struct dwc3 *dwc;
+	u32 reg;
+    
+	dwc = platform_get_drvdata(pdev_dwc);
+	
+	reg = dwc3_readl(dwc->regs, ANA0F);
+	reg |=(1<<14);
+	dwc3_writel(dwc->regs, ANA0F, reg);
+
+}
+EXPORT_SYMBOL_GPL(enable_bias);
+//* Modify by LeMaker -- end
+
 /**
  * dwc3_core_init - Low-level initialization of DWC3 Core
  * @dwc: Pointer to our controller context structure
  *
  * Returns 0 on success otherwise negative errno.
  */
-static int dwc3_core_init(struct dwc3 *dwc)
+//* Modify by LeMaker : remove static and add int phy_reset_en
+int dwc3_core_init(struct dwc3 *dwc, int phy_reset_en)
 {
 	unsigned long		timeout;
 	u32			reg;
@@ -324,7 +646,46 @@ static int dwc3_core_init(struct dwc3 *dwc)
 		cpu_relax();
 	} while (true);
 
+//* Modify by LeMaker -- begin
+#if 0
 	dwc3_core_soft_reset(dwc);
+#else
+	if(g_ic_type == IC_ATM7059A){
+		dwc3_writel(dwc->regs, ANA02, 0x6046);
+		dwc3_writel(dwc->regs, ANA0E, 0x2010);
+		dwc3_writel(dwc->regs, ANA0F, 0x8000);
+		dwc3_writel(dwc->regs, REV1, 0x0);
+		dwc3_writel(dwc->regs, PAGE1_REG02, 0x0013);
+		dwc3_writel(dwc->regs, PAGE1_REG06, 0x0004);
+		dwc3_writel(dwc->regs, PAGE1_REG07, 0x22ed);
+		dwc3_writel(dwc->regs, PAGE1_REG08, 0xf802);
+		dwc3_writel(dwc->regs, PAGE1_REG09, 0x3080);
+		dwc3_writel(dwc->regs, PAGE1_REG0B, 0x2030);
+		dwc3_writel(dwc->regs, ANA0F, (1<<14));
+
+		dwc3_core_soft_reset(dwc,phy_reset_en);
+
+		dwc3_cache_hwparams(dwc);
+            //====force to high speed====
+		reg = dwc3_readl(dwc->regs, DWC3_DCFG);
+		reg &= ~(DWC3_DCFG_SPEED_MASK);
+		reg |= DWC3_DCFG_HIGHSPEED;
+		dwc3_writel(dwc->regs, DWC3_DCFG, reg);
+	}else if(g_ic_type == IC_ATM7039C){
+		/*
+		 * donot need set this DWC3_BACKDOOR reg,
+		 * this may cause some masstorge device transfer error!!, 
+		 * add by hwliu 2013.07.22 .
+		 */
+		dwc3_core_soft_reset(dwc,phy_reset_en);
+
+		reg = dwc3_readl(dwc->regs, DWC3_BACKDOOR);
+		reg &= ~DWC3_FLADJ_30MHZ_MASK;	
+		reg |= DWC3_FLADJ_30MHZ(0x20);
+		dwc3_writel(dwc->regs, DWC3_BACKDOOR, reg);
+	}
+#endif
+	//* Modify by LeMaker -- end
 
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
@@ -359,8 +720,12 @@ err0:
 
 static void dwc3_core_exit(struct dwc3 *dwc)
 {
+	//* Modify by LeMaker -- begin
+#if 0
 	usb_phy_shutdown(dwc->usb2_phy);
 	usb_phy_shutdown(dwc->usb3_phy);
+#endif
+	//* Modify by LeMaker -- end
 }
 
 #define DWC3_ALIGN_MASK		(16 - 1)
@@ -379,6 +744,12 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	u8			mode;
 
+	//* Modify by LeMaker -- begin
+#if SUPPORT_NOT_RMMOD_USBDRV
+	pdev_dwc = pdev;
+#endif
+	//* Modify by LeMaker -- end
+
 	mem = devm_kzalloc(dev, sizeof(*dwc) + DWC3_ALIGN_MASK, GFP_KERNEL);
 	if (!mem) {
 		dev_err(dev, "not enough memory\n");
@@ -386,6 +757,16 @@ static int dwc3_probe(struct platform_device *pdev)
 	}
 	dwc = PTR_ALIGN(mem, DWC3_ALIGN_MASK + 1);
 	dwc->mem = mem;
+
+	//* Modify by LeMaker -- begin
+	//to get ic type from dwc3-actions.ko,use resource method
+	 res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+	if (!res) {
+		dev_err(dev, "missing IRQ\n");
+		return -ENODEV;
+	}
+	g_ic_type = res->flags&0xff;
+	//* Modify by LeMaker -- end
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
@@ -426,6 +807,8 @@ static int dwc3_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+//* Modify by LeMaker -- begin
+#if 0
 	if (node) {
 		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
 		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
@@ -466,6 +849,10 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	usb_phy_set_suspend(dwc->usb2_phy, 0);
 	usb_phy_set_suspend(dwc->usb3_phy, 0);
+#endif
+
+	owl_powergate_power_on(OWL_POWERGATE_USB3);
+	//* Modify by LeMaker -- end
 
 	spin_lock_init(&dwc->lock);
 	platform_set_drvdata(pdev, dwc);
@@ -504,7 +891,7 @@ static int dwc3_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-	ret = dwc3_core_init(dwc);
+	ret = dwc3_core_init(dwc, 0); //* Modify by LeMaker
 	if (ret) {
 		dev_err(dev, "failed to initialize core\n");
 		goto err0;
@@ -522,6 +909,17 @@ static int dwc3_probe(struct platform_device *pdev)
 		mode = DWC3_MODE_DEVICE;
 	else
 		mode = DWC3_MODE_DRD;
+
+	//* Modify by LeMaker -- begin
+	mode = DWC3_MODE_DEVICE;	
+	if(g_ic_type == IC_ATM7039C){
+		dwc3_phy_init(mode, 0);
+	}
+	else if(g_ic_type == IC_ATM7059A){
+		dwc3_phy_init(mode, 0);
+		dwc3_phy_init(mode, 1);
+	}
+	//* Modify by LeMaker -- end
 
 	switch (mode) {
 	case DWC3_MODE_DEVICE:
@@ -624,8 +1022,12 @@ static int dwc3_remove(struct platform_device *pdev)
 	dwc3_event_buffers_cleanup(dwc);
 	dwc3_free_event_buffers(dwc);
 
+//* Modfiy by LeMaker -- begin
+#if 0
 	usb_phy_set_suspend(dwc->usb2_phy, 1);
 	usb_phy_set_suspend(dwc->usb3_phy, 1);
+#endif
+//* Modify by LeMaker -- end
 
 	dwc3_core_exit(dwc);
 
@@ -636,6 +1038,8 @@ static int dwc3_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
+//* Modify by LeMaker -- begin
+#if 0
 static int dwc3_prepare(struct device *dev)
 {
 	struct dwc3	*dwc = dev_get_drvdata(dev);
@@ -739,13 +1143,16 @@ static int dwc3_resume(struct device *dev)
 
 	return 0;
 }
+#endif
 
 static const struct dev_pm_ops dwc3_dev_pm_ops = {
-	.prepare	= dwc3_prepare,
-	.complete	= dwc3_complete,
+	//.prepare	= dwc3_prepare,
+	//.complete	= dwc3_complete,
 
-	SET_SYSTEM_SLEEP_PM_OPS(dwc3_suspend, dwc3_resume)
+	//SET_SYSTEM_SLEEP_PM_OPS(dwc3_suspend, dwc3_resume)
 };
+
+//* Moidfy by LeMaker -- end
 
 #define DWC3_PM_OPS	&(dwc3_dev_pm_ops)
 #else

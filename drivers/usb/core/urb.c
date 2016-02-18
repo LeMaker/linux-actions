@@ -7,6 +7,9 @@
 #include <linux/usb.h>
 #include <linux/wait.h>
 #include <linux/usb/hcd.h>
+//* Moidfy by LeMaker -- begin
+#include <linux/scatterlist.h>
+//* Moidfy by LeMaker -- end
 
 #define to_urb(d) container_of(d, struct urb, kref)
 
@@ -414,6 +417,17 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 			urb->iso_frame_desc[n].actual_length = 0;
 		}
 	}
+	//* Modify by LeMaker -- begin
+	else if (urb->num_sgs && !urb->dev->bus->no_sg_constraint &&
+			dev->speed != USB_SPEED_WIRELESS) {
+		struct scatterlist *sg;
+		int i;
+
+		for_each_sg(urb->sg, sg, urb->num_sgs - 1, i)
+			if (sg->length % max)
+				return -EINVAL;
+	}
+	//* Modify by LeMaker -- end
 
 	/* the I/O buffer must be mapped/unmapped, except when length=0 */
 	if (urb->transfer_buffer_length > INT_MAX)
