@@ -151,7 +151,7 @@ static int owlfb_dc_mark_buffer_done(struct owlfb_dc * dispc, int index)
  * 	It is used to avoid that layers switch between two path frequently,
  *	which will lead to blurred screen on LCD or HDMI.
  */
-static bool external_manager_is_enable = false;
+
 static int boot_hdmi_enable = 0;
 static int boot_hdmi_status = 0;
 static int boot_hdmi_rotate = 0;
@@ -209,20 +209,18 @@ static int owlfb_dc_arrange_overlay(setup_dispc_data_t *psDispcData,
 	if (primary_used_overlay != 0) {
 		 dss_mgr_enable(owl_dc.primary_manager);
 	}
-
+	
 	if (external_used_overlay != 0) {
-		external_manager_is_enable = true;
 		dss_mgr_enable(owl_dc.external_manager);
 		boot_hdmi_status = HDMI_STATUS_ANDROID_INIT;
 		boot_cvbs_status=CVBS_STATUS_ANDROID_INIT;
 	
 	}else{
 		if(boot_hdmi_status == HDMI_STATUS_ANDROID_INIT||boot_cvbs_status==CVBS_STATUS_ANDROID_INIT){
-			if(external_manager_is_enable && atomic_read(&want_close_external_devices)){	
+			if(atomic_read(&want_close_external_devices)){	
 				owl_dc.external_manager->apply(owl_dc.external_manager);
 				owl_dc.external_manager->wait_for_go(owl_dc.external_manager);	
 				owl_dc.external_manager->device->driver->disable(owl_dc.external_manager->device);
-				external_manager_is_enable = false;
 				atomic_set(&want_close_external_devices,false);
 			}
 		}else{
@@ -364,9 +362,8 @@ static int owlfb_dc_update_overlay(struct owl_disp_info * disp_info)
 			info.width =  layer->src_win.width;
 			info.height =  layer->src_win.height;
 				
-			info.pos_x = layer->scn_win.x;
-			info.pos_y = layer->scn_win.y;
-			
+			info.pos_x = 0;
+			info.pos_y = 0;
 			ovl->manager->device->driver->get_resolution(
 			 ovl->manager->device, 
 			 &info.out_width, 
@@ -390,9 +387,8 @@ static int owlfb_dc_update_overlay(struct owl_disp_info * disp_info)
 			info.global_alpha =  layer->alpha_val; 
 			info.pre_mult_alpha_en =  layer->fb.pre_multiply;  
 			  
-			ovl->set_overlay_info(ovl,&info);
-			
-			if(hdmi_discard_frame < 2){
+			ovl->set_overlay_info(ovl,&info);		
+			if(hdmi_discard_frame < 15){
 				ovl->disable(ovl);
 				ovl->manager->apply(ovl->manager);
 				ovl->manager->wait_for_go(ovl->manager);

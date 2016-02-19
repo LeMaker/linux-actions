@@ -1152,6 +1152,13 @@ lcd0: lcd0@b02a0000 {
 		status = "disabled";
 	};
 
+	cvbs:cvbs@b02b0000{
+		default_mode = "PAL";
+		bootrotate = <0>;
+		hotplugable = <1>;
+		status="disabled";
+        };
+
 	hdmi: hdmi@b02c0000{
 		status = "okay";
 		hdcp_onoff = <0>;
@@ -1161,11 +1168,10 @@ lcd0: lcd0@b02a0000 {
 		bootrotate = <0>;
 		default_resolution = "auto";
 	};
-		
+
 	framebuffer {
 		compatible = "actions,framebuffer";  
 		def_display  = "hdmi";
-
 	};
 
 	pwm: pwm@b01b0050 {

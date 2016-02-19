@@ -36,6 +36,7 @@
 #include <linux/slab.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/fb.h>
 
 #include <mach/hardware.h>
 
@@ -600,7 +601,7 @@ void owl_lcdc_select_video_timings(struct owl_dss_device *dssdev, u32 num,
 
     timings->x_res          = mode->xres;
     timings->y_res          = mode->yres;
-    timings->pixel_clock    = mode->pixclock;
+    timings->pixel_clock    = PICOS2KHZ(mode->pixclock);
     timings->hfp            = mode->left_margin;
     timings->hbp            = mode->right_margin;
     timings->vfp            = mode->upper_margin;

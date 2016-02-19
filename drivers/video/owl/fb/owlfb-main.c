@@ -546,11 +546,10 @@ static int owlfb_open(struct fb_info *fbi, int user)
 {
 	struct owlfb_info *ofbi = FB2OFB(fbi);
 	struct owlfb_device *fbdev = ofbi->fbdev;
-
 	if(fbdev->mirror_fb_id != 0 && ofbi->id != 0)
 	{
 		return -1;
-	}
+	}	
 	return 0;
 }
 
@@ -1578,9 +1577,10 @@ err:
 
 static void owlfb_hotplug_notify(struct owl_dss_device *dssdev, int state)
 {
-	struct owl_overlay_manager *primary_mgr = owl_dss_get_overlay_manager(OWL_DSS_OVL_MGR_PRIMARY);
+	
+	struct owl_overlay_manager *external_mgr = owl_dss_get_overlay_manager(OWL_DSS_OVL_MGR_EXTERNAL);
 	int vid ;		 
-	DBG("owlfb_hotplug_notify %d ~~~~~~ \n",state);	
+	printk("owlfb_hotplug_notify %d ~~~~~~ \n",state);	
 	if(state == 1){
 		dssdev->driver->disable(dssdev);
 		dssdev->driver->get_vid(dssdev,&vid);
@@ -1591,18 +1591,25 @@ static void owlfb_hotplug_notify(struct owl_dss_device *dssdev, int state)
 		dssdev->driver->disable(dssdev);
 	}	
 #ifdef CONFIG_FB_MAP_TO_DE
-	if(primary_mgr != NULL && primary_mgr->link_fbi != NULL){	
+	printk("owlfb_hotplug_notify owlfb_apply_changes \n");
+	if(external_mgr != NULL && external_mgr->link_fbi != NULL){	
 		if(state)
 			{
-				struct owlfb_info *ofbi = FB2OFB(primary_mgr->link_fbi);
+				struct owlfb_info *ofbi = FB2OFB(external_mgr->link_fbi);
 				struct owlfb_device *fbdev = ofbi->fbdev;
 				struct fb_info *fbi = fbdev->fbs[0];
+				
+				if(external_mgr->device->type == dssdev->type)
+				{
+					fbi=fbdev->fbs[1];
+					printk("external_mgr is fb1\n");
+				}
 				owlfb_build_modelist(fbi,dssdev);	
 			}	
 		
-			owlfb_get_mem_region(FB2OFB(primary_mgr->link_fbi)->region);
-			owlfb_apply_changes(primary_mgr->link_fbi, 0);
-			owlfb_put_mem_region(FB2OFB(primary_mgr->link_fbi)->region);	
+			owlfb_get_mem_region(FB2OFB(external_mgr->link_fbi)->region);
+			owlfb_apply_changes(external_mgr->link_fbi, 0);
+			owlfb_put_mem_region(FB2OFB(external_mgr->link_fbi)->region);	
 	}
 #endif
 
@@ -1705,15 +1712,11 @@ static int owlfb_create_framebuffers(struct owlfb_device *fbdev)
 		
 		if(ofbi->manager->device){
 			ofbi->manager->unset_device(ofbi->manager);
-			
 		}		
-	ofbi->manager->link_fbi = fbdev->fbs[i];
 		/* connected display to managers */
 		if(fbdev->def_display != NULL && i == 0){
-			printk("connected display to managers is fb0\n");
 			ofbi->manager->set_device(ofbi->manager,fbdev->def_display);
 			owlfb_register_hotplug_notify(fbdev->def_display);
-			
 		}else{
 			for( j = 0 ; j < fbdev->num_displays ; j++){
 				if(!fbdev->displays[j].connected){
