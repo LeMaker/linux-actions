@@ -221,16 +221,18 @@ config DMA_CMA
 	  For more information see <include/linux/dma-contiguous.h>.
 	  If unsure, say "n".
 
-if  DMA_CMA
+if  DMA_CMA 
 comment "Default contiguous memory area size:"
 
+# Modify by LeMaker -- begin : 16 --> 48
 config CMA_SIZE_MBYTES
 	int "Size in Mega Bytes"
 	depends on !CMA_SIZE_SEL_PERCENTAGE
-	default 16
+	default 48
 	help
 	  Defines the size (in MiB) of the default memory area for Contiguous
 	  Memory Allocator.
+# Modify by LeMaker -- end
 
 config CMA_SIZE_PERCENTAGE
 	int "Percentage of total memory"
@@ -258,10 +260,11 @@ config CMA_SIZE_SEL_MAX
 
 endchoice
 
+# Modify by LeMaker -- begin : 8 --> 2
 config CMA_ALIGNMENT
 	int "Maximum PAGE_SIZE order of alignment for contiguous buffers"
 	range 1 9
-	default 8
+	default 2
 	help
 	  DMA mapping framework by default aligns all buffers to the smallest
 	  PAGE_SIZE order which is greater than or equal to the requested buffer
@@ -274,11 +277,13 @@ config CMA_ALIGNMENT
 	  For example, if your system defaults to 4KiB pages, the order value
 	  of 8 means that the buffers will be aligned up to 1MiB only.
 
-	  If unsure, leave the default value "8".
+	  If unsure, leave the default value "2".
+# Modify by LeMaker -- end
 
+# Modify by LeMaker -- begin : 7 --> 1
 config CMA_AREAS
 	int "Maximum count of the CMA device-private areas"
-	default 7
+	default 1
 	help
 	  CMA allows to create CMA areas for particular devices. This parameter
 	  sets the maximum number of such device private CMA areas in the
@@ -287,5 +292,6 @@ config CMA_AREAS
 	  If unsure, leave the default value "7".
 
 endif
+# Modify by LeMaker -- end
 
 endmenu

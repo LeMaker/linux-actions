@@ -365,7 +365,7 @@ int fts_ctpm_auto_clb(struct i2c_client *client)
     unsigned char uc_temp;
     unsigned char i ;
 
-    printk("[FTS] start auto CLB.\n");
+    //printk("[FTS] start auto CLB.\n");
     msleep(200);
     ft5x0x_write_reg(client,0, 0x40);  
     delay_qt_ms(100);   //make sure already enter factory mode
@@ -1646,16 +1646,16 @@ static int tp_of_data_get(void)
 	}
 
 	
-	printk("gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
-		gpio_reset,
-		0,
-		cfg_dts.i2cAddr,
-		cfg_dts.sirq,
-		cfg_dts.xMax,
-		cfg_dts.yMax,
-		5,
-		cfg_dts.rotate,
-		cfg_dts.i2cNum);
+	//printk("gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
+	//	gpio_reset,
+	//	0,
+	//	cfg_dts.i2cAddr,
+	//	cfg_dts.sirq,
+	//	cfg_dts.xMax,
+	//	cfg_dts.yMax,
+	//	5,
+	//	cfg_dts.rotate,
+	//	cfg_dts.i2cNum);
     
         return 0;
 
@@ -1978,7 +1978,7 @@ static int ft5x06_remove(struct i2c_client *client)
     struct ft5x06_device *ftdev = i2c_get_clientdata(client);
     
     if ( ftdev ) {
-        printk("%s,%d~~~~~~~~\n", __func__, __LINE__);
+        //printk("%s,%d~~~~~~~~\n", __func__, __LINE__);
 #if CFG_FT_USE_CONFIG
 	    sysfs_remove_group(&ftdev->input_dev->dev.kobj, &tp_attr_group);
 #endif
@@ -2014,7 +2014,7 @@ static int ft5x06_suspend(struct i2c_client *client,
     if ( tp_regulator )
     {
         current_val = regulator_get_voltage(tp_regulator);
-        printk("current_val is %d \n",current_val);    
+        //printk("current_val is %d \n",current_val);    
         //disable_power(tp_regulator);
         regulator_deinit(tp_regulator);
     }

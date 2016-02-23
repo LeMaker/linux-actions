@@ -33,7 +33,7 @@
 #include <linux/switch.h>
 
 
-static int direct_drive_disable;//0:Ö±Çý£¬ 1:·ÇÖ±Çý
+static int direct_drive_disable;
 
 static int adc_detect_mode; //0:earphone irq or gpio detect, 1: earphone adc detect
 
@@ -1498,7 +1498,8 @@ static int atc2603c_probe(struct snd_soc_codec *codec)
 	ret = request_irq(my_irq, earphone_detect_irq_handler,
 			  IRQF_TRIGGER_HIGH, "atc260x-audio", NULL);
 
-	ret = devm_request_irq(&pdev->dev, my_irq, earphone_detect_irq_handler,
+	ret = devm_request_irq(&pdev->dev, my_nd_dbg("%s:  SND_SOC_BIAS_ON\n", __func__);
+	rq, earphone_detect_irq_handler,
 		 		IRQF_TRIGGER_HIGH, "atc260x-audio", NULL);
 */
 

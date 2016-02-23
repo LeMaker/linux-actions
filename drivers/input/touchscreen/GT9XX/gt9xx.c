@@ -522,8 +522,8 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
 	input_report_key(ts->input_dev, BTN_TOUCH, 1);
 	input_sync(ts->input_dev);
 
-    printk("ID:%d, X:%d, Y:%d, W:%d\n", id, x, y, w);
-    GTP_DEBUG("ID:%d, X:%d, Y:%d, W:%d", id, x, y, w);
+    //printk("ID:%d, X:%d, Y:%d, W:%d\n", id, x, y, w);
+    //GTP_DEBUG("ID:%d, X:%d, Y:%d, W:%d", id, x, y, w);
 }
 
 /*******************************************************
@@ -3142,16 +3142,16 @@ static int tp_of_data_get(void)
 	}
 
 	
-	printk("xie+++++   gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
-		gpio_reset,
-		0,
-		cfg_dts.i2cAddr,
-		cfg_dts.sirq,
-		cfg_dts.xMax,
-		cfg_dts.yMax,
-		5,
-		cfg_dts.rotate,
-		cfg_dts.i2cNum);
+	//printk("xie+++++   gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
+	//	gpio_reset,
+	//	0,
+	//	cfg_dts.i2cAddr,
+	//	cfg_dts.sirq,
+	//	cfg_dts.xMax,
+	//	cfg_dts.yMax,
+	//	5,
+	//	cfg_dts.rotate,
+	//	cfg_dts.i2cNum);
     
         return 0;
 
@@ -3168,13 +3168,13 @@ static int goodix_ts_detect(struct i2c_client *client, struct i2c_board_info *in
 	uint8_t test_data[1] = { 0 };
         for(retry=0;retry<3;retry++){
             ret = i2c_master_send(client, test_data, 1);
-            printk("xie +++++goodix_ts_detect\n");
+            //printk("xie +++++goodix_ts_detect\n");
             if(ret==1)
 			break;
 	    msleep(5);
 	}
         if(ret==1){
-            printk("Find ctp GOODIX_TS\n");
+            //printk("Find ctp GOODIX_TS\n");
             strlcpy(info->type, GTP_I2C_NAME, I2C_NAME_SIZE);
             return 0;
         }
@@ -3290,7 +3290,7 @@ static int __init goodix_ts_init(void)
     gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
 #endif
     ret = i2c_add_driver(&goodix_ts_driver);
-    printk("xie ++++++i2c_add_driver  ret=%d  \n",ret);
+    //printk("xie ++++++i2c_add_driver  ret=%d  \n",ret);
     return ret; 
 }
 

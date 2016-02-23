@@ -23,7 +23,10 @@
 #define _OWL_HDMI_H
 #include <video/owldss.h>
 
+//* Modify by LeMaker -- begin
 #define PRINGK_ON
+//#undef PRINGK_ON
+
 #ifdef PRINGK_ON
 #define DEBUG_ON(format, ...) \
 	do { \
@@ -34,6 +37,8 @@
 #endif
 
 #define ERR_DEBUG
+//#undef ERR_DEBUG
+
 #ifdef ERR_DEBUG
 #define DEBUG_ERR(format, ...) \
 	do { \
@@ -44,6 +49,8 @@
 #endif
 
 #define DEBUG
+//#undef DEBUG
+
 #ifdef DEBUG
 #define HDMI_DEBUG(format, ...) \
 	do { \
@@ -54,6 +61,8 @@
 #endif
 
 #define DEBUG_HDCPa
+//#undef DEBUG_HDCPa
+
 #ifdef DEBUG_HDCP
 #define HDCP_DEBUG(format, ...) \
 	do { \
@@ -64,6 +73,8 @@
 #endif
 
 #define DEBUG_EDIDa
+//#undef DEBUG_EDIDa
+
 #ifdef DEBUG_EDID
 #define EDID_DEBUG(format, ...) \
 	do { \
