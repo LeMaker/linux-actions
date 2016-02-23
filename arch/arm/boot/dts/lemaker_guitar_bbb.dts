@@ -29,8 +29,8 @@
 		normal {
 			fb_heap_size = <8>;
 			kinfo_heap_size = <1>;
-			carveout_heap_size = <244>;
-			dma_heap_size = <98>;
+			carveout_heap_size = <1>;
+			dma_heap_size = <198>;
 		};
 	};
 	dual_logo {
