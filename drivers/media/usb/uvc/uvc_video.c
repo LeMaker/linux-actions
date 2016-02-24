@@ -623,6 +623,17 @@ void uvc_video_clock_update(struct uvc_streaming *stream,
 	first = &clock->samples[clock->head];
 	last = &clock->samples[(clock->head - 1) % clock->size];
 
+//* Modify by LeMaker -- begin
+	y1 = (last->dev_sof + 2048 - first->dev_sof) & 2047;
+	y2 = (last->host_sof + 2048 - first->host_sof) & 2047;
+	if (y2 > (y1 + 15)) {
+		uvc_trace(UVC_TRACE_CLOCK, "%s: invalid sof! diff %u, ts %lu.%06lu\n",
+		stream->dev->name, (y2-y1),
+		v4l2_buf->timestamp.tv_sec, v4l2_buf->timestamp.tv_usec);
+		goto done;
+	}
+//* Modify by LeMaker -- end
+	
 	/* First step, PTS to SOF conversion. */
 	delta_stc = buf->pts - (1UL << 31);
 	x1 = first->dev_stc - delta_stc;
@@ -995,7 +1006,14 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 	if (data[1] & UVC_STREAM_ERR) {
 		uvc_trace(UVC_TRACE_FRAME, "Marking buffer as bad (error bit "
 			  "set).\n");
+		//* Modify by LeMaker -- begin
+#if 0
 		buf->error = 1;
+#else
+		buf->error = UVC_BUF_ERR_ISOFRAM_ERR;
+		uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame err .\n");
+#endif
+		//* Modify by LeMaker -- end
 	}
 
 	/* Synchronize to the input stream by waiting for the FID bit to be
@@ -1048,6 +1066,14 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 		uvc_trace(UVC_TRACE_FRAME, "Frame complete (FID bit "
 				"toggled).\n");
 		buf->state = UVC_BUF_STATE_READY;
+		//* Modify by LeMaker -- begin
+		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+		if((buf->bytesused != buf->length) &&
+			  !(stream->cur_format->flags & UVC_FMT_FLAG_COMPRESSED)){
+			buf->error = UVC_BUF_ERR_NOTFULL;
+			uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+		}
+		//* Modify by LeMaker -- end
 		return -EAGAIN;
 	}
 
@@ -1069,13 +1095,29 @@ static void uvc_video_decode_data(struct uvc_streaming *stream,
 	maxlen = buf->length - buf->bytesused;
 	mem = buf->mem + buf->bytesused;
 	nbytes = min((unsigned int)len, maxlen);
+	//* Modify by LeMaker -- beign
+#ifdef UVC_DEBUG
+	printk("buf->length:%d, buf->bytesused:%d, maxlen:%d,len:%d, nbytes:%d\n", 
+				buf->length, buf->bytesused, maxlen,len, nbytes);
+	printk("mem:0x%x, buf->mem:0x%x, data:0x%x\n",mem, buf->mem, data);
+#endif
+	//* Modify by Lemaker -- end
 	memcpy(mem, data, nbytes);
 	buf->bytesused += nbytes;
 
 	/* Complete the current frame if the buffer size was exceeded. */
 	if (len > maxlen) {
+	//* Modify by LeMaker -- begin
+#if 0
 		uvc_trace(UVC_TRACE_FRAME, "Frame complete (overflow).\n");
 		buf->state = UVC_BUF_STATE_READY;
+#else
+		uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (overflow).\n");
+		buf->state = UVC_BUF_STATE_READY;
+		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+		buf->error = UVC_BUF_ERR_OVERFLOW;
+#endif
+	//* Modify by LeMaker -- end
 	}
 }
 
@@ -1151,7 +1193,16 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 				"lost (%d).\n", urb->iso_frame_desc[i].status);
 			/* Mark the buffer as faulty. */
 			if (buf != NULL)
+//* Modify by LeMaker -- begin
+#if 0
 				buf->error = 1;
+#else
+			 /*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
+			{
+				buf->error = UVC_BUF_ERR_ISOFRAM_LOST;
+				uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame lost .\n");
+			}
+#endif
 			continue;
 		}
 
@@ -1180,8 +1231,16 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 			if (buf->length != buf->bytesused &&
 			    !(stream->cur_format->flags &
 			      UVC_FMT_FLAG_COMPRESSED))
+		//* Modify by Lemaker -- begin
+#if 0
 				buf->error = 1;
-
+#else
+			{
+				/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/  
+				buf->error = UVC_BUF_ERR_NOTFULL;
+				uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+			}
+#endif
 			buf = uvc_queue_next_buffer(&stream->queue, buf);
 		}
 	}
@@ -1306,6 +1365,12 @@ static void uvc_video_complete(struct urb *urb)
 	unsigned long flags;
 	int ret;
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+	static int is_nodev = 0;
+#endif
+//* Modify by LeMaker -- end
+
 	switch (urb->status) {
 	case 0:
 		break;
@@ -1333,15 +1398,31 @@ static void uvc_video_complete(struct urb *urb)
 	stream->decode(urb, stream, buf);
 
 	if ((ret = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+//* Modify by Lemaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+		if (ret == -ENODEV) {
+			if (is_nodev == 0) {
+				is_nodev = 1;
+				uvc_queue_cancel(queue,1);
+			}
+		}
+#endif
 		uvc_printk(KERN_ERR, "Failed to resubmit video URB (%d).\n",
 			ret);
+#ifdef CONFIG_ASOC_CAMERA
+	} else
+		is_nodev = 0;
+#else
 	}
+#endif
+//* Modify by LeMaker -- end
 }
 
 /*
  * Free transfer buffers.
  */
-static void uvc_free_urb_buffers(struct uvc_streaming *stream)
+//* Modify by LeMaker : remove static
+void uvc_free_urb_buffers(struct uvc_streaming *stream)
 {
 	unsigned int i;
 
@@ -1351,7 +1432,15 @@ static void uvc_free_urb_buffers(struct uvc_streaming *stream)
 			usb_free_coherent(stream->dev->udev, stream->urb_size,
 				stream->urb_buffer[i], stream->urb_dma[i]);
 #else
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+			char *urb_buffer = stream->urb_buffer[i];
+			stream->urb_buffer[i] = NULL;
+			kfree(urb_buffer);
+#else
 			kfree(stream->urb_buffer[i]);
+#endif
+//* Modify by LeMaker -- end
 #endif
 			stream->urb_buffer[i] = NULL;
 		}
@@ -1852,8 +1941,15 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
 	if (!enable) {
 		uvc_uninit_video(stream, 1);
 		if (stream->intf->num_altsetting > 1) {
+		//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+			if (!(stream->dev->state & UVC_DEV_DISCONNECTED))
+				usb_set_interface(stream->dev->udev, stream->intfnum, 0);
+#else
 			usb_set_interface(stream->dev->udev,
 					  stream->intfnum, 0);
+#endif
+		//* Modify by LeMaker -- end
 		} else {
 			/* UVC doesn't specify how to inform a bulk-based device
 			 * when the video stream is stopped. Windows sends a
@@ -1870,6 +1966,7 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
 			usb_clear_halt(stream->dev->udev, pipe);
 		}
 
+		(&stream->queue)->framestodrop = 0; //* Modify by LeMaker : add
 		uvc_queue_enable(&stream->queue, 0);
 		uvc_video_clock_cleanup(stream);
 		return 0;
@@ -1879,6 +1976,7 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
 	if (ret < 0)
 		return ret;
 
+	(&stream->queue)->framestodrop = stream->uvc_drop_nframes; //* Modify by LeMaker : add
 	ret = uvc_queue_enable(&stream->queue, 1);
 	if (ret < 0)
 		goto error_queue;

@@ -46,9 +46,28 @@
 	 (icd)->vb_vidq.streaming :			\
 	 vb2_is_streaming(&(icd)->vb2_vidq))
 
+//* Modify by LeMaker -- begin
+struct add_device_work_st
+{
+	struct work_struct add_device_work;
+	struct soc_camera_device *icd;
+};
+struct add_device_work_st add_device_work_s;
+//* Modify by LeMaker -- end
+
 static LIST_HEAD(hosts);
 static LIST_HEAD(devices);
 static DEFINE_MUTEX(list_lock);		/* Protects the list of hosts */
+
+//* Modify by Hayden.hu -- begin
+static void scan_add_device( struct soc_camera_device *icd );
+static void add_device_work_func( struct work_struct *work )
+{
+	struct add_device_work_st *add_d = container_of( work,struct add_device_work_st, add_device_work );
+	struct soc_camera_device *icd = add_d->icd;
+	scan_add_device( icd );
+}
+//* Modify by Hayden.hu -- end
 
 int soc_camera_power_on(struct device *dev, struct soc_camera_subdev_desc *ssdd)
 {
@@ -1065,6 +1084,21 @@ static int soc_camera_s_register(struct file *file, void *fh,
 }
 #endif
 
+//* Modify by LeMaker -- begin
+static long soc_camera_vidioc_default(struct file *file, void *fh, bool valid_prio,
+		               unsigned int cmd, void *arg)
+{
+    struct soc_camera_device *icd = file->private_data;
+    struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
+
+    if(sd->ops->core && sd->ops->core->ioctl) {
+        return sd->ops->core->ioctl(sd, cmd, arg);
+    } else {
+        return -ENOTTY;
+    }
+}
+//* Modify by LeMaker -- end
+
 static int soc_camera_probe(struct soc_camera_device *icd);
 
 /* So far this function cannot fail */
@@ -1083,6 +1117,25 @@ static void scan_add_host(struct soc_camera_host *ici)
 
 	mutex_unlock(&list_lock);
 }
+
+//* Modify by LeMaker -- beign
+static void scan_add_device( struct soc_camera_device *icd )
+{
+	struct soc_camera_host *ici;
+	printk( "fshh520 scan_add_device call\n" );
+	mutex_lock(&list_lock);
+	list_for_each_entry(ici, &hosts, list) {
+		if (icd->iface == ici->nr) {
+			printk( "fshh520 find camera\n" );
+			icd->parent = ici->v4l2_dev.dev;
+			soc_camera_probe(icd);
+			printk( "fshh520 soc_camera_probe done\n" );
+		}
+	}
+	mutex_unlock(&list_lock);
+	printk( "fshh520 scan_add_device  done\n" );
+}
+//* Modify by LeMaker -- end
 
 #ifdef CONFIG_I2C_BOARDINFO
 static int soc_camera_init_i2c(struct soc_camera_device *icd,
@@ -1500,6 +1553,9 @@ static const struct v4l2_ioctl_ops soc_camera_ioctl_ops = {
 	.vidioc_g_register	 = soc_camera_g_register,
 	.vidioc_s_register	 = soc_camera_s_register,
 #endif
+	//* Modify by LeMaker -- begin
+	.vidioc_default      = soc_camera_vidioc_default,
+	//* Modify by LeMaker -- end
 };
 
 static int video_dev_create(struct soc_camera_device *icd)
@@ -1534,10 +1590,22 @@ static int soc_camera_video_start(struct soc_camera_device *icd)
 	const struct device_type *type = icd->vdev->dev.type;
 	int ret;
 
+	//* Modify by LeMaker -- begin
+	struct soc_camera_desc *sdesc = to_soc_camera_desc(icd);
+	struct soc_camera_subdev_desc *ssdd = &sdesc->subdev_desc;
+	struct module_info *info = ssdd->drv_priv;
+	//* Modify by LeMaker -- end
+
 	if (!icd->parent)
 		return -ENODEV;
 
+	//* Modify by LeMaker -- begin
+#if 0
 	ret = video_register_device(icd->vdev, VFL_TYPE_GRABBER, -1);
+#else
+	ret = video_register_device(icd->vdev, VFL_TYPE_GRABBER,info->video_devnum);
+#endif
+	//* Modify by LeMaker -- end
 	if (ret < 0) {
 		dev_err(icd->pdev, "video_register_device failed: %d\n", ret);
 		return ret;
@@ -1576,7 +1644,17 @@ static int soc_camera_pdrv_probe(struct platform_device *pdev)
 	icd->user_width		= DEFAULT_WIDTH;
 	icd->user_height	= DEFAULT_HEIGHT;
 
+	//* Modify by LeMaker -- begin
+#if 0
 	return soc_camera_device_register(icd);
+#else
+	printk( "soc_camera_device_register\n" );
+	ret = soc_camera_device_register(icd);
+	add_device_work_s.icd = icd;
+	schedule_work( &(add_device_work_s.add_device_work) );
+	return ret;
+#endif
+	//* Modify by LeMaker -- end
 }
 
 /*
@@ -1605,7 +1683,23 @@ static struct platform_driver __refdata soc_camera_pdrv = {
 	},
 };
 
+//* Modify by LeMaker -- begin
+#if 0
 module_platform_driver(soc_camera_pdrv);
+#else
+static int __init soc_camera_init( void )
+{
+	INIT_WORK( &(add_device_work_s.add_device_work), add_device_work_func );
+	return platform_driver_register( &soc_camera_pdrv );
+}
+static void __exit soc_camera_exit( void )
+{
+	cancel_work_sync( &(add_device_work_s.add_device_work) );
+	platform_driver_unregister( &soc_camera_pdrv );
+}
+module_init(soc_camera_init);
+module_exit(soc_camera_exit);
+#endif
 
 MODULE_DESCRIPTION("Image capture bus driver");
 MODULE_AUTHOR("Guennadi Liakhovetski <kernel@pengutronix.de>");

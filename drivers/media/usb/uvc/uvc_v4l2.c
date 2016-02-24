@@ -143,6 +143,12 @@ static __u32 uvc_try_frame_interval(struct uvc_frame *frame, __u32 interval)
 	return interval;
 }
 
+//* Moidfy by LeMaker -- begin
+#ifdef ASOC_CAMERA
+extern int uvc_get_buffer_size(struct uvc_streaming *stream, struct uvc_format *format, struct uvc_frame *frame);
+#endif
+//* Modify by LeMaker -- end
+
 static int uvc_v4l2_try_format(struct uvc_streaming *stream,
 	struct v4l2_format *fmt, struct uvc_streaming_control *probe,
 	struct uvc_format **uvc_format, struct uvc_frame **uvc_frame)
@@ -247,7 +253,13 @@ static int uvc_v4l2_try_format(struct uvc_streaming *stream,
 	fmt->fmt.pix.height = frame->wHeight;
 	fmt->fmt.pix.field = V4L2_FIELD_NONE;
 	fmt->fmt.pix.bytesperline = format->bpp * frame->wWidth / 8;
+//* Moidfy by LeMaker -- begin
+#ifdef ASOC_CAMERA
+	fmt->fmt.pix.sizeimage = uvc_get_buffer_size(stream, format, frame);
+#else
 	fmt->fmt.pix.sizeimage = probe->dwMaxVideoFrameSize;
+#endif
+//* Moidfy by LeMaker -- end
 	fmt->fmt.pix.colorspace = format->colorspace;
 	fmt->fmt.pix.priv = 0;
 
@@ -284,7 +296,13 @@ static int uvc_v4l2_get_format(struct uvc_streaming *stream,
 	fmt->fmt.pix.height = frame->wHeight;
 	fmt->fmt.pix.field = V4L2_FIELD_NONE;
 	fmt->fmt.pix.bytesperline = format->bpp * frame->wWidth / 8;
+//* Moidfy by LeMaker -- begin
+#ifdef ASOC_CAMERA
+	fmt->fmt.pix.sizeimage = uvc_get_buffer_size(stream, format, frame);
+#else
 	fmt->fmt.pix.sizeimage = stream->ctrl.dwMaxVideoFrameSize;
+#endif
+//* Moidfy by LeMaker -- end
 	fmt->fmt.pix.colorspace = format->colorspace;
 	fmt->fmt.pix.priv = 0;
 
@@ -591,13 +609,54 @@ static long uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 
 	/* Get, Set & Query control */
 	case VIDIOC_QUERYCTRL:
-		return uvc_query_v4l2_ctrl(chain, arg);
+//* Modify by LeMaker -- begin
+	{
+#ifdef CONFIG_ASOC_CAMERA
+		struct v4l2_queryctrl *v4l2_ctrl = arg;
 
+		switch(v4l2_ctrl->id)
+		{
+			case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
+			case V4L2_CID_EXPOSURE_ABSOLUTE:
+	        case V4L2_CID_BRIGHTNESS:
+	        case V4L2_CID_POWER_LINE_FREQUENCY:
+	        case V4L2_CID_COLORFX:
+	        case V4L2_CID_EXPOSURE_AUTO:
+	            v4l2_ctrl->minimum = 0;
+	            v4l2_ctrl->maximum = 0;
+	            v4l2_ctrl->step = 1;
+	            v4l2_ctrl->default_value = 0;
+	            v4l2_ctrl->flags = 0;
+
+				return -1;
+		}
+#endif
+		return uvc_query_v4l2_ctrl(chain, arg);
+	}
+//* Moidfy by LeMaker -- end
 	case VIDIOC_G_CTRL:
 	{
 		struct v4l2_control *ctrl = arg;
 		struct v4l2_ext_control xctrl;
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+		struct v4l2_control *v4l2_ctrl = arg;
+
+        switch(v4l2_ctrl->id)
+        {
+	        case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
+		    case V4L2_CID_EXPOSURE_ABSOLUTE:
+			case V4L2_CID_BRIGHTNESS:
+	        case V4L2_CID_POWER_LINE_FREQUENCY:
+	        case V4L2_CID_COLORFX:
+	        case V4L2_CID_EXPOSURE_AUTO:
+										            
+	            v4l2_ctrl->value = 0;
+	            return 0;
+		}
+#endif
+//* Modify by LeMaker -- end
 		memset(&xctrl, 0, sizeof xctrl);
 		xctrl.id = ctrl->id;
 
@@ -621,6 +680,25 @@ static long uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 		if (ret < 0)
 			return ret;
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+		struct v4l2_control *v4l2_ctrl = arg;
+
+        switch(v4l2_ctrl->id)
+        {
+
+	        case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
+	        case V4L2_CID_EXPOSURE_ABSOLUTE:
+			case V4L2_CID_BRIGHTNESS:
+			case V4L2_CID_POWER_LINE_FREQUENCY:
+	        case V4L2_CID_COLORFX:
+	        case V4L2_CID_EXPOSURE_AUTO:
+	        //case V4L2_CID_PRIVATE_PREV_CAPT:
+				v4l2_ctrl->value = 0;
+				return 0;
+		}
+#endif
+//* Modify by LeMaker -- end
 		memset(&xctrl, 0, sizeof xctrl);
 		xctrl.id = ctrl->id;
 		xctrl.value = ctrl->value;
@@ -961,7 +1039,13 @@ static long uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 
 	case VIDIOC_G_CROP:
 	case VIDIOC_S_CROP:
+//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+		return 0;
+#else
 		return -ENOTTY;
+#endif
+//* Moidfy by LeMaker -- end
 
 	/* Buffers & streaming */
 	case VIDIOC_REQBUFS:
@@ -1043,7 +1127,15 @@ static long uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
 		if (!uvc_has_privileges(handle))
 			return -EBUSY;
 
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+		ret = uvc_video_enable(stream, 0);
+		uvc_free_buffers(&stream->queue);
+		return ret;
+#else
 		return uvc_video_enable(stream, 0);
+#endif
+//* Modify by LeMaker -- end
 	}
 
 	case VIDIOC_SUBSCRIBE_EVENT:

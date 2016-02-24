@@ -113,6 +113,13 @@ static void vb2_dc_prepare(void *buf_priv)
 	struct vb2_dc_buf *buf = buf_priv;
 	struct sg_table *sgt = buf->dma_sgt;
 
+	//* Modify by LeMaker -- begin
+	if(!buf) {
+		return;
+	}
+	sgt = buf->dma_sgt;
+	//* Modify by LeMaker -- end
+
 	/* DMABUF exporter will flush the cache for us */
 	if (!sgt || buf->db_attach)
 		return;
@@ -125,6 +132,13 @@ static void vb2_dc_finish(void *buf_priv)
 	struct vb2_dc_buf *buf = buf_priv;
 	struct sg_table *sgt = buf->dma_sgt;
 
+	//* Moidfy by LeMaker -- begin
+	if(!buf) {
+		return;
+	}
+	sgt = buf->dma_sgt;
+	//* Moidfy by LeMaker -- end
+	
 	/* DMABUF exporter will flush the cache for us */
 	if (!sgt || buf->db_attach)
 		return;

@@ -24,6 +24,15 @@
 
 #include "uvcvideo.h"
 
+//* Modify by LeMaker -- begin
+#include <linux/cpu.h>
+#include <asm/cacheflush.h>
+
+#ifdef CONFIG_ASOC_CAMERA
+extern struct vb2_mem_ops asoc_vb2_ion_memops;
+#endif
+//* Modify by LeMaker -- end
+
 /* ------------------------------------------------------------------------
  * Video buffers queue management.
  *
@@ -40,6 +49,37 @@
  * videobuf2 queue operations
  */
 
+//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+int uvc_get_buffer_size(struct uvc_streaming *stream, struct uvc_format *format, struct uvc_frame *frame)
+{
+	unsigned int size = stream->ctrl.dwMaxVideoFrameSize;
+
+	if(format && frame)
+	{
+		printk("%s, %d, frame->wWidth=0x%x, frame->wHeight=0x%x, format->bpp=0x%x\n", 
+			__FUNCTION__, __LINE__, frame->wWidth, frame->wHeight, format->bpp);
+		switch(format->fcc)
+		{
+			case V4L2_PIX_FMT_YUYV:
+			case V4L2_PIX_FMT_UYVY:
+			case V4L2_PIX_FMT_NV12:
+			case V4L2_PIX_FMT_YVU420:
+			case V4L2_PIX_FMT_YUV420:
+				size = (frame->wWidth * frame->wHeight * format->bpp)>>3;
+				break;
+			case V4L2_PIX_FMT_MJPEG:
+				size = (frame->wWidth * frame->wHeight * 16)>>3;
+				break;
+			default:
+				break;
+		}
+	}
+	return size;
+}
+#endif
+//* Modify by LeMaker -- end
+
 static int uvc_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
 			   unsigned int *nbuffers, unsigned int *nplanes,
 			   unsigned int sizes[], void *alloc_ctxs[])
@@ -48,13 +88,24 @@ static int uvc_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
 	struct uvc_streaming *stream =
 			container_of(queue, struct uvc_streaming, queue);
 
+	//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+	struct uvc_format *format = stream->cur_format;
+	struct uvc_frame *frame = stream->cur_frame;
+#endif
+	//* Modify by LeMaker -- end
 	if (*nbuffers > UVC_MAX_VIDEO_BUFFERS)
 		*nbuffers = UVC_MAX_VIDEO_BUFFERS;
 
 	*nplanes = 1;
 
+	//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+	sizes[0] = uvc_get_buffer_size(stream, format, frame);
+#else
 	sizes[0] = stream->ctrl.dwMaxVideoFrameSize;
-
+#endif
+	//* Modify by LeMaker -- end
 	return 0;
 }
 
@@ -74,7 +125,23 @@ static int uvc_buffer_prepare(struct vb2_buffer *vb)
 
 	buf->state = UVC_BUF_STATE_QUEUED;
 	buf->error = 0;
+	//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+#ifdef UVC_DEBUG
+	printk("vb->num_planes : %d ,vb->state : %d,vb->planes[plane_no].mem_priv is 0x%x\n",
+			vb->num_planes,vb->state,vb->planes[0].mem_priv);
+#endif
+	buf->mem_virt = (void *)vb2_plane_vaddr(vb, 0);
+	buf->mem = buf->mem_virt;
+	buf->mem_phys= vb2_plane_cookie(vb, 0);
+	#ifdef UVC_DEBUG
+	printk("buf->mem : 0x%x ,buf->mem_virt 0x%x,buf->mem_phys : 0x%x\n", 
+		buf->mem,buf->mem_virt,buf->mem_phys);
+	#endif
+#else
 	buf->mem = vb2_plane_vaddr(vb, 0);
+#endif
+	//* modify by LeMaker -- end
 	buf->length = vb2_plane_size(vb, 0);
 	if (vb->v4l2_buf.type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		buf->bytesused = 0;
@@ -104,6 +171,21 @@ static void uvc_buffer_queue(struct vb2_buffer *vb)
 	spin_unlock_irqrestore(&queue->irqlock, flags);
 }
 
+//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA	
+static void _ion_local_l1_cache_flush_all(void *info)
+{
+    flush_cache_all();
+}
+static void ion_local_l1_cache_flush_all(void)
+{
+    get_online_cpus();
+    on_each_cpu(_ion_local_l1_cache_flush_all, NULL, 1);
+    put_online_cpus();
+}
+#endif
+//* Moidfy by LeMaker -- end
+
 static int uvc_buffer_finish(struct vb2_buffer *vb)
 {
 	struct uvc_video_queue *queue = vb2_get_drv_priv(vb->vb2_queue);
@@ -112,6 +194,23 @@ static int uvc_buffer_finish(struct vb2_buffer *vb)
 	struct uvc_buffer *buf = container_of(vb, struct uvc_buffer, buf);
 
 	uvc_video_clock_update(stream, &vb->v4l2_buf, buf);
+//* Modify by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+	/*
+	* Current uvc use phys_to_virt() for ion buf, which need extra cache flush ops.
+	* ActionsCode(author:liyuan, add_code)
+	*/	
+	{
+	   unsigned int plane;    
+	   /* L1 clean and invalidate all */
+	   ion_local_l1_cache_flush_all();
+	   for (plane = 0; plane < vb->num_planes; ++plane) {
+       /* L2 clean and invalidate */
+	       outer_flush_range(vb->v4l2_planes[plane].m.userptr, vb->v4l2_planes[plane].m.userptr + PAGE_ALIGN(vb->v4l2_planes[plane].length)); 
+	   }
+	}
+#endif
+//* Modify by LeMaker -- end
 	return 0;
 }
 
@@ -148,7 +247,13 @@ int uvc_queue_init(struct uvc_video_queue *queue, enum v4l2_buf_type type,
 	queue->queue.drv_priv = queue;
 	queue->queue.buf_struct_size = sizeof(struct uvc_buffer);
 	queue->queue.ops = &uvc_queue_qops;
+	//* Moidfy by LeMaker -- begin
+#ifdef CONFIG_ASOC_CAMERA
+	queue->queue.mem_ops = &asoc_vb2_ion_memops;
+#else
 	queue->queue.mem_ops = &vb2_vmalloc_memops;
+#endif
+	//* Moidfy by LeMaker -- end
 	queue->queue.timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
 	ret = vb2_queue_init(&queue->queue);
 	if (ret)
@@ -293,6 +398,9 @@ int uvc_queue_enable(struct uvc_video_queue *queue, int enable)
 {
 	unsigned long flags;
 	int ret;
+	//* Moidfy by LeMaker -- begin
+	struct uvc_streaming *stream = container_of(queue, struct uvc_streaming, queue);
+	//* Modify by LeMaker -- end
 
 	mutex_lock(&queue->mutex);
 	if (enable) {
@@ -301,7 +409,9 @@ int uvc_queue_enable(struct uvc_video_queue *queue, int enable)
 			goto done;
 
 		queue->buf_used = 0;
+		queue->framesdropped = 0; //* Modify by LeMaker : add
 	} else {
+		uvc_trace(UVC_TRACE_FRAME_ERR, "## framesdropped:%d, totalframes:%d.\n",queue->framesdropped,stream->sequence); //* Moidfy by LeMaker : add
 		ret = vb2_streamoff(&queue->queue, queue->queue.type);
 		if (ret < 0)
 			goto done;
@@ -358,7 +468,17 @@ struct uvc_buffer *uvc_queue_next_buffer(struct uvc_video_queue *queue,
 	struct uvc_buffer *nextbuf;
 	unsigned long flags;
 
+//* Moidfy by LeMaker -- begin
+#if 0
 	if ((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) {
+#else
+	if (((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) ||
+	      queue->framestodrop > 0) {
+		if(queue->framestodrop > 0)
+			queue->framestodrop--;
+		queue->framesdropped++;
+#endif
+//* Moidfy by LeMaker -- end
 		buf->error = 0;
 		buf->state = UVC_BUF_STATE_QUEUED;
 		buf->bytesused = 0;
