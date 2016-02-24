@@ -1157,7 +1157,7 @@ lcd0: lcd0@b02a0000 {
 		bootrotate = <0>;
 		hotplugable = <1>;
 		status="disabled";
-        };
+	};
 
 	hdmi: hdmi@b02c0000{
 		status = "okay";
@@ -1172,6 +1172,9 @@ lcd0: lcd0@b02a0000 {
 	framebuffer {
 		compatible = "actions,framebuffer";  
 		def_display  = "hdmi";
+		xres = <1280>;
+		yres = <720>;
+		bpp = <4>;
 	};
 
 	pwm: pwm@b01b0050 {

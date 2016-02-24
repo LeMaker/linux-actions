@@ -628,6 +628,14 @@ int owldss_cvbs_display_enable(struct owl_dss_device *dssdev)
 	timings = &dssdev->timings;	
 
 	DEBUG_CVBS("ENTER cvbs_display_enable\n");
+	
+	r = owl_dss_start_device(dssdev);
+	
+	if (r) {
+		DEBUG_CVBS("failed to start device\n");
+		goto err0;
+	}
+	
 	if(cvbs_read_reg(TVOUT_EN))
 		{
 			dss_mgr_enable(mgr);
@@ -641,12 +649,7 @@ int owldss_cvbs_display_enable(struct owl_dss_device *dssdev)
 
 	}
 
-	r = owl_dss_start_device(dssdev);
 	
-	if (r) {
-		DEBUG_CVBS("failed to start device\n");
-		goto err0;
-	}
 		
 	
 	if(atomic_read(&cvbs_connected_state) == 1)
