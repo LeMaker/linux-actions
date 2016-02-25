@@ -1801,7 +1801,7 @@ static int uvc_register_video(struct uvc_device *dev,
 
 //* Moidfy by LeMaker -- begin
 #ifdef CONFIG_ASOC_CAMERA
-		ret = video_register_device(vdev, VFL_TYPE_GRABBER, uvc_video_device_node_number);
+	ret = video_register_device(vdev, VFL_TYPE_GRABBER, uvc_video_device_node_number);
 #else
 	ret = video_register_device(vdev, VFL_TYPE_GRABBER, -1);
 #endif

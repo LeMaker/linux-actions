@@ -127,7 +127,6 @@ struct ion_custom_data {
 	unsigned long arg;
 };
 
-//* Modify by LeMaker -- begin
 /** struct ion_flush_data - data passed to ion for flushing caches
  *
  * @handle:	handle with data to flush
@@ -147,7 +146,6 @@ struct ion_flush_data {
 	unsigned int offset;
 	unsigned int length;
 };
-//* Modify by LeMaker -- end
 
 #define ION_IOC_MAGIC		'I'
 
@@ -215,22 +213,28 @@ struct ion_flush_data {
  */
 #define ION_IOC_CUSTOM		_IOWR(ION_IOC_MAGIC, 6, struct ion_custom_data)
 
-//* Modify by LeMaker -- begin
+
 /**
  * DOC: ION_IOC_CLEAN_CACHES - clean the caches
+ *
  * Clean the caches of the handle specified.
  */
-#define ION_IOC_CLEAN_CACHES	_IOWR(ION_IOC_MAGIC, 20, struct ion_flush_data)
+#define ION_IOC_CLEAN_CACHES	_IOWR(ION_IOC_MAGIC, 20, \
+						struct ion_flush_data)
 /**
  * DOC: ION_MSM_IOC_INV_CACHES - invalidate the caches
+ *
  * Invalidate the caches of the handle specified.
  */
-#define ION_IOC_INV_CACHES	_IOWR(ION_IOC_MAGIC, 21, struct ion_flush_data)
+#define ION_IOC_INV_CACHES	_IOWR(ION_IOC_MAGIC, 21, \
+						struct ion_flush_data)
 /**
  * DOC: ION_MSM_IOC_CLEAN_CACHES - clean and invalidate the caches
+ *
  * Clean and invalidate the caches of the handle specified.
  */
-#define ION_IOC_CLEAN_INV_CACHES	_IOWR(ION_IOC_MAGIC, 22, struct ion_flush_data)
-//* Modify by LeMaker -- end
+#define ION_IOC_CLEAN_INV_CACHES	_IOWR(ION_IOC_MAGIC, 22, \
+						struct ion_flush_data)
+
 
 #endif /* _UAPI_LINUX_ION_H */

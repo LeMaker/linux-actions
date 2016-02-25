@@ -48,7 +48,6 @@ void *ion_heap_map_kernel(struct ion_heap *heap,
 	for_each_sg(table->sgl, sg, table->nents, i) {
 		int npages_this_entry = PAGE_ALIGN(sg->length) / PAGE_SIZE;
 		struct page *page = sg_page(sg);
-
 		BUG_ON(i >= npages);
 		for (j = 0; j < npages_this_entry; j++)
 			*(tmp++) = page++;
@@ -106,7 +105,6 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 static int ion_heap_clear_pages(struct page **pages, int num, pgprot_t pgprot)
 {
 	void *addr = vm_map_ram(pages, num, -1, pgprot);
-
 	if (!addr)
 		return -ENOMEM;
 	memset(addr, 0, PAGE_SIZE * num);
@@ -258,12 +256,12 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
 	init_waitqueue_head(&heap->waitqueue);
 	heap->task = kthread_run(ion_heap_deferred_free, heap,
 				 "%s", heap->name);
-	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	if (IS_ERR(heap->task)) {
 		pr_err("%s: creating thread for deferred free failed\n",
 		       __func__);
 		return PTR_RET(heap->task);
 	}
+	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	return 0;
 }
 

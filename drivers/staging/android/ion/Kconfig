@@ -33,10 +33,9 @@ config ION_TEGRA
 	help
 	  Choose this option if you wish to use ion on an nVidia Tegra.
 
-# Modify by LeMaker -- begin
 config ION_OWL
 	tristate "Ion for Actions SOC"
 	depends on (ARCH_LEOPARD || ARCH_OWL) && ION
 	help
 	  Choose this option if you wish to use ion on an nVidia Tegra.
-# Modify by LeMaker -- end
+

@@ -41,10 +41,8 @@
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
 
-//* Modify by LeMaker -- begin
 #define CREATE_TRACE_POINTS
 #include <lowmem_killer.h>
-//* Modify by LeMaker -- end
 
 static uint32_t lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
@@ -165,9 +163,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			     minfree * (long)(PAGE_SIZE / 1024),
 			     min_score_adj,
 			     other_free * (long)(PAGE_SIZE / 1024));
-		//* Modify by LeMaker -- begin
+
 		trace_lowmem_kill(selected,  other_file, minfree, min_score_adj, other_free);
-		//* Modify by LeMaker -- end
+		
 		lowmem_deathpending_timeout = jiffies + HZ;
 		send_sig(SIGKILL, selected, 0);
 		set_tsk_thread_flag(selected, TIF_MEMDIE);

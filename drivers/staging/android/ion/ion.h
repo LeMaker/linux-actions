@@ -201,7 +201,6 @@ int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle);
  */
 struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd);
 
-//* Modify by LeMaker -- begin
 /**
  * ion_get_handle_id() - get ion_handle's id.
  * 
@@ -210,6 +209,5 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd);
  * (drivers/video/owl/dss/mmu.c) to identify an unique ION buffer.
  */
 int ion_get_handle_id(struct ion_handle *handle);
-//* Modify by LeMaker -- end
 
 #endif /* _LINUX_ION_H */

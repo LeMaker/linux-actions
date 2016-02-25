@@ -179,7 +179,6 @@ struct ion_heap {
 	spinlock_t free_lock;
 	wait_queue_head_t waitqueue;
 	struct task_struct *task;
-
 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
 };
 
@@ -403,10 +402,9 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 void ion_pages_sync_for_device(struct device *dev, struct page *page,
 		size_t size, enum dma_data_direction dir);
 
-//* Modify by LeMaker -- begin
+
 struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
 						int id);
 int ion_handle_put_outter(struct ion_handle *handle);
-//* Modify by LeMaker -- end
 
 #endif /* _ION_PRIV_H */
