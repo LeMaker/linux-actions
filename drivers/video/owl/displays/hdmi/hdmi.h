@@ -390,6 +390,8 @@ void owl_hdmi_set_effect_parameter(struct owl_dss_device *dssdev,enum owl_plane_
 int owl_hdmi_get_effect_parameter(struct owl_dss_device *dssdev, enum owl_plane_effect_parameter parameter_id);
 void hdmihw_write_reg(u32 val, const u16 idx);
 int hdmihw_read_reg(const u16 idx);
+void owldss_hdmi_display_enable_irq(struct owl_dss_device *dssdev, bool enable);
+
 /**************************
 hdmi_ip.c
 **************************/

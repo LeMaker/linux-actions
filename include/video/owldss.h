@@ -505,6 +505,7 @@ struct owl_dss_driver {
 	void (*set_vid)(struct owl_dss_device *dssdev, int vid);
 	void (*get_vid)(struct owl_dss_device *dssdev, int *vid);
 	void (*enable_hpd)(struct owl_dss_device *dssdev, bool enable);
+	void (*enable_irq)(struct owl_dss_device *dssdev, bool enable);
 	void (*enable_hdcp)(struct owl_dss_device *dssdev, bool enable);
 	int (*get_vid_cap)(struct owl_dss_device *dssdev, int *vid_cap);
 	int (*get_cable_status)(struct owl_dss_device *dssdev);

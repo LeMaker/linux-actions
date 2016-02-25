@@ -383,7 +383,7 @@ static int hdmi_power_on_full(struct owl_dss_device *dssdev)
 	
 	hdmi.ip_data.ops->hpd_clear_plug(&hdmi.ip_data);	
 	
-	hdmi.ip_data.ops->hpd_enable(&hdmi.ip_data, 1);
+	//hdmi.ip_data.ops->hpd_enable(&hdmi.ip_data, 1);
 	
 	r = dss_mgr_enable(mgr);
 	if (r)
@@ -557,7 +557,7 @@ void hdmi_cable_check(struct work_struct *work)
 int hdmi_cable_check_init(void)
 {
 	queue_delayed_work(hdmi.ip_data.hdcp.wq, &hdmi_cable_check_work,
-				msecs_to_jiffies(2000));
+				msecs_to_jiffies(8000));
 	return 0;
 }
 
@@ -715,6 +715,18 @@ void owldss_hdmi_display_enable_hdcp(struct owl_dss_device *dssdev, bool enable)
 		hdmi_data.hdcp_onoff = 1;
 	}else{
 		hdmi_data.hdcp_onoff = 0;
+	}
+	mutex_unlock(&hdmi.lock);
+}
+
+void owldss_hdmi_display_enable_irq(struct owl_dss_device *dssdev, bool enable)
+{
+	mutex_lock(&hdmi.lock);	
+	
+	if(enable){
+		hdmi.ip_data.ops->hpd_enable(&hdmi.ip_data, 1);
+	}else{
+		hdmi.ip_data.ops->hpd_enable(&hdmi.ip_data, 0);
 	}
 	mutex_unlock(&hdmi.lock);
 }

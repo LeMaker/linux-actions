@@ -985,6 +985,10 @@ DBG("Apply overlay changes ofbi->num_overlays %d \n", ofbi->num_overlays);
 	    r = owlfb_overlay_enable(ovl, 1);		
 		
 		r = owlfb_apply_changes(fbi, 0);
+		
+		if(dssdev->driver->enable_irq){
+			dssdev->driver->enable_irq(dssdev,1);	
+		}
  	}
 #endif
 
@@ -1981,6 +1985,10 @@ static int owlfb_init_display(struct owlfb_device *fbdev,
 				dssdev->name);
 		return r;
 	}
+
+	if(dssdev->driver->enable_irq){
+			dssdev->driver->enable_irq(dssdev,0);
+		}	
 
 	d = get_display_data(fbdev, dssdev);
 
