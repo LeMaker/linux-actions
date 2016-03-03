@@ -269,6 +269,9 @@ config WIFI_CONTROL_FUNC
 	help
 	  Enables Power/Reset/Carddetect function abstraction
 
+# Modify by LeMaker -- begin
+source "drivers/net/wireless/actions/Kconfig"
+# Modify by LeMaker -- end
 source "drivers/net/wireless/ath/Kconfig"
 source "drivers/net/wireless/b43/Kconfig"
 source "drivers/net/wireless/b43legacy/Kconfig"

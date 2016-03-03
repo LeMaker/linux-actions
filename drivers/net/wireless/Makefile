@@ -2,6 +2,10 @@
 # Makefile for the Linux Wireless network device drivers.
 #
 
+# Modify by LeMaker -- begin
+obj-y += actions/
+# Moidfy by LeMaker -- end
+
 obj-$(CONFIG_IPW2100) += ipw2x00/
 obj-$(CONFIG_IPW2200) += ipw2x00/
 
