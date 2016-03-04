@@ -1011,7 +1011,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 		buf->error = 1;
 #else
 		buf->error = UVC_BUF_ERR_ISOFRAM_ERR;
-		uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame err .\n");
+		//uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame err .\n");
 #endif
 		//* Modify by LeMaker -- end
 	}
@@ -1071,7 +1071,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
 		if((buf->bytesused != buf->length) &&
 			  !(stream->cur_format->flags & UVC_FMT_FLAG_COMPRESSED)){
 			buf->error = UVC_BUF_ERR_NOTFULL;
-			uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+			//uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
 		}
 		//* Modify by LeMaker -- end
 		return -EAGAIN;
@@ -1112,7 +1112,7 @@ static void uvc_video_decode_data(struct uvc_streaming *stream,
 		uvc_trace(UVC_TRACE_FRAME, "Frame complete (overflow).\n");
 		buf->state = UVC_BUF_STATE_READY;
 #else
-		uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (overflow).\n");
+		//uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (overflow).\n");
 		buf->state = UVC_BUF_STATE_READY;
 		/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
 		buf->error = UVC_BUF_ERR_OVERFLOW;
@@ -1200,7 +1200,7 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 			 /*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/
 			{
 				buf->error = UVC_BUF_ERR_ISOFRAM_LOST;
-				uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame lost .\n");
+				//uvc_trace(UVC_TRACE_FRAME_ERR, "## USB isochronous frame lost .\n");
 			}
 #endif
 			continue;
@@ -1238,7 +1238,7 @@ static void uvc_video_decode_isoc(struct urb *urb, struct uvc_streaming *stream,
 			{
 				/*added for one frame split to two parts, or one frame with err data problems, ActionsCode(author:liyuan, change_code)*/  
 				buf->error = UVC_BUF_ERR_NOTFULL;
-				uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
+				//uvc_trace(UVC_TRACE_FRAME_ERR, "## Frame complete (not full).\n");
 			}
 #endif
 			buf = uvc_queue_next_buffer(&stream->queue, buf);
