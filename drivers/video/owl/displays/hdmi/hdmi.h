@@ -23,10 +23,7 @@
 #define _OWL_HDMI_H
 #include <video/owldss.h>
 
-//* Modify by LeMaker -- begin
 #define PRINGK_ON
-//#undef PRINGK_ON
-
 #ifdef PRINGK_ON
 #define DEBUG_ON(format, ...) \
 	do { \
@@ -37,8 +34,6 @@
 #endif
 
 #define ERR_DEBUG
-//#undef ERR_DEBUG
-
 #ifdef ERR_DEBUG
 #define DEBUG_ERR(format, ...) \
 	do { \
@@ -49,8 +44,6 @@
 #endif
 
 #define DEBUG
-//#undef DEBUG
-
 #ifdef DEBUG
 #define HDMI_DEBUG(format, ...) \
 	do { \
@@ -61,8 +54,6 @@
 #endif
 
 #define DEBUG_HDCPa
-//#undef DEBUG_HDCPa
-
 #ifdef DEBUG_HDCP
 #define HDCP_DEBUG(format, ...) \
 	do { \
@@ -73,8 +64,6 @@
 #endif
 
 #define DEBUG_EDIDa
-//#undef DEBUG_EDIDa
-
 #ifdef DEBUG_EDID
 #define EDID_DEBUG(format, ...) \
 	do { \
@@ -401,6 +390,8 @@ void owl_hdmi_set_effect_parameter(struct owl_dss_device *dssdev,enum owl_plane_
 int owl_hdmi_get_effect_parameter(struct owl_dss_device *dssdev, enum owl_plane_effect_parameter parameter_id);
 void hdmihw_write_reg(u32 val, const u16 idx);
 int hdmihw_read_reg(const u16 idx);
+void owldss_hdmi_display_enable_irq(struct owl_dss_device *dssdev, bool enable);
+
 /**************************
 hdmi_ip.c
 **************************/

@@ -190,6 +190,18 @@ static void hdmi_enable_hpd(struct owl_dss_device *dssdev,
 	mutex_unlock(&hdmi_panel.lock);
 }
 
+static void hdmi_enable_irq(struct owl_dss_device *dssdev,
+			bool enable)
+{
+	HDMI_DEBUG("hdmi_enable_irq\n");
+
+	mutex_lock(&hdmi_panel.lock);
+	
+	owldss_hdmi_display_enable_irq(dssdev, enable);
+	
+	mutex_unlock(&hdmi_panel.lock);
+}
+
 static void hdmi_enable_hdcp(struct owl_dss_device *dssdev,
 			bool enable)
 {
@@ -295,6 +307,7 @@ static struct owl_dss_driver hdmi_driver = {
 	.get_vid    	  = hdmi_get_vid,
 	.enable_hpd		  = hdmi_enable_hpd,
 	.enable_hdcp	  = hdmi_enable_hdcp,
+	.enable_irq			= hdmi_enable_irq,
 	.get_vid_cap 	  = hdmi_get_vid_cap, 
 	.get_cable_status = hdmi_get_cable_status,
 	.get_effect_parameter   = generic_hdmi_panel_get_effect_parameter,
