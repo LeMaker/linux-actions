@@ -1208,7 +1208,7 @@ lcd0: lcd0@b02a0000 {
 		compatible = "gpio-leds";
 		led@1 {
 			label = "green:GPIOB12";
-			gpios = <&gpio 44 1>;  /*Active High*/
+			gpios = <&gpio 44 0>;  /*Active LOW*/
 			linux,default-trigger = "heartbeat";
 			default-state = "ON";
 		};
