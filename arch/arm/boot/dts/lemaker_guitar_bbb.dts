@@ -587,6 +587,7 @@
 				boot_cap_threshold = <3>;                         /*3%,the lowest capacity permitted to boot*/ 
 				ext_dcdc_exist = <1>;                             /*1:exist external dcdc  0:do not exist external dcdc*/
 				pwms = <&pwm 3 2666 1>;                           /* 3--pwm3   2666ns--1/(24M/64)*1000000000-1   1- -active low*/
+				pwm_switch = <0>;                                 /*0: disable pwm 1:enable pwm; used by LeMaker Guitar*/
 				pwm-names = "ext_dcdc_pwm_ctl";                   /* pwm name */
 				ext_charger_exist = <0>;                          /* 1:exist external charger  0:do not exist external charger*/
 				charger_led_exist = <0>;                          /* 1:exist charger led 0:do not exist charger led */
