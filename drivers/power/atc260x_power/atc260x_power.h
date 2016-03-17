@@ -108,6 +108,8 @@ struct atc260x_cfg_items {
 	int gpio_ext_chg_ctrl_pin;
 	int gpio_ext_chg_ctrl_active_low;
 	bool ext_charger_exist;
+
+	unsigned int pwm_switch;  //add by LeMaker
 };
 
 struct atc260x_charger {

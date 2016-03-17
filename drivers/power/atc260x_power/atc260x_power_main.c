@@ -661,7 +661,7 @@ void atc260x_charger_turn_on(void)
 		charger->charge_on = true;
 		/*set pwm level to  NO_CHARGER_PWM_LEVEL to improve power efficiency*/
 		
-		if (charger->cfg_items.ext_dcdc_exist)
+		if (charger->cfg_items.ext_dcdc_exist && (charger->cfg_items.pwm_switch)) //modify by LeMaker
 		{
 			if (IS_ERR_OR_NULL(charger->pwm))
 			{
@@ -704,7 +704,7 @@ void atc260x_charger_turn_off(void)
 	if (!charger->cfg_items.ext_charger_exist) 
 	{
 		/*charging is stopped, set pwm level = NO_CHARGER_PWM_LEVEL*/
-		if (charger->cfg_items.ext_dcdc_exist)  
+		if (charger->cfg_items.ext_dcdc_exist && (charger->cfg_items.pwm_switch))  //modify by LeMaker
 		{
 			if (IS_ERR_OR_NULL(charger->pwm))
 			{
@@ -768,7 +768,7 @@ static void atc260x_power_update_pwm(struct atc260x_charger *charger)
 
 	if (!charger->bat_is_exist)
 	{
-		if (charger->cfg_items.ext_dcdc_exist== 1) 
+		if (charger->cfg_items.ext_dcdc_exist== 1 && (charger->cfg_items.pwm_switch))  //modify by LeMaker
 		{
 			pwm_config(charger->pwm,
 						((charger->pwm->period) >> 6) * PWM_MAX_LEVEL,
@@ -779,7 +779,7 @@ static void atc260x_power_update_pwm(struct atc260x_charger *charger)
 		return ;
 	}
 	
-	if (charger->cfg_items.ext_dcdc_exist== 1) 
+	if (charger->cfg_items.ext_dcdc_exist== 1 && (charger->cfg_items.pwm_switch)) //modify by LeMaker
 	{
 		if(charger->charge_on)
 		{	
@@ -1731,7 +1731,7 @@ static void atc260x_vbus_init(struct atc260x_charger *charger)
 static void atc260x_dcdc_init(struct atc260x_charger *charger)
 {
 	int pwm_level = PWM_MAX_LEVEL;
-	if (charger->cfg_items.ext_dcdc_exist == 1) 
+	if (charger->cfg_items.ext_dcdc_exist == 1 && (charger->cfg_items.pwm_switch))  //modify by LeMaker
 	{
 		if (charger->cfg_items.ext_charger_exist) 
 		{
@@ -2142,7 +2142,7 @@ static ssize_t show_dump(struct device *dev,
 	if (charger->charger_cur_status & WALL_PLUGED)
 	{	
 		printk("chg_mode:WALL\n");
-		if (charger->cfg_items.ext_dcdc_exist== 1) 
+		if (charger->cfg_items.ext_dcdc_exist== 1 && (charger->cfg_items.pwm_switch))  //modify by LeMaker
 		{
 			printk("PWM:duty_ns = %d,priod_ns= %d\n",
 						((charger->pwm->period) >> 6) * PWM_MAX_LEVEL,charger->pwm->period);
@@ -2453,7 +2453,18 @@ static int atc260x_get_cfg_item(struct atc260x_charger *charger)
 	{
 		charger->wall_v_thresh = 4300;   /*modified by cxj @2015-01-16:4200-->4300*/
 	}
-    
+/*add by LeMaker	*/
+	property = of_get_property(charger->node, "pwm_switch", &len);
+	if (property && len == sizeof(int))
+	{
+		charger->cfg_items.pwm_switch= (be32_to_cpup(property));
+		power_dbg("pwm_switch: %d \n", charger->cfg_items.pwm_switch); 
+	}
+	else
+	{
+		charger->cfg_items.pwm_switch = 0;
+	}
+/*end*/
 	property = of_get_property(charger->node, "enable_vbus_current_limited", &len);
 	if (property && len == sizeof(int))
 	{
@@ -2678,7 +2689,7 @@ static  int atc260x_power_probe(struct platform_device *pdev)
 	if (atc260x_get_cfg_item(charger) != 0)
 		goto err_create_sysfs;
 
-	if (charger->cfg_items.ext_dcdc_exist)
+	if (charger->cfg_items.ext_dcdc_exist && (charger->cfg_items.pwm_switch)) //modify by LeMaker
 	{
 		charger->pwm = pwm_get(&pdev->dev, NULL);
 		if (IS_ERR(charger->pwm)) 
@@ -2782,7 +2793,7 @@ static int atc260x_power_suspend(struct platform_device *pdev, pm_message_t m)
 	pr_info("%s,cur_bat_cap:%d, bat_mv:%d\n", __func__, charger->cur_bat_cap, charger->bat_mv);
 	cancel_delayed_work_sync(&atc260x_power->charger.work); 
 
-	if (charger->cfg_items.ext_dcdc_exist)
+	if (charger->cfg_items.ext_dcdc_exist && (charger->cfg_items.pwm_switch))  //modify by LeMaker
 		pwm_config(charger->pwm,
 				((charger->pwm->period) >> 6) * PWM_MAX_LEVEL,
 					charger->pwm->period);
@@ -2867,7 +2878,7 @@ static void atc260x_power_shutdown(struct platform_device *pdev)
 		gpio_free(charger->cfg_items.gpio_ext_chg_ctrl_pin);	
 	}
 
-	if (charger->cfg_items.ext_dcdc_exist == 1) 
+	if (charger->cfg_items.ext_dcdc_exist == 1 && (charger->cfg_items.pwm_switch)) //modify by LeMaker
 	{
 		pwm_disable(charger->pwm);
 		pwm_free(charger->pwm);
