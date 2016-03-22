@@ -218,10 +218,11 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
 dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
 
 # Modify by LeMaker -- begin
-dtb-$(CONFIG_ARCH_OWL) += lemaker_guitar_bbb.dtb \
+dtb-$(CONFIG_ARCH_OWL) += lemaker_guitar_bba.dtb \
+		lemaker_guitar_bbb.dtb \
 		lemaker_guitar_bbc.dtb \
 		lemaker_guitar_bbd.dtb
-																											
+
 ifeq ($(CONFIG_ARCH_OWL),y)
 	DTC_FLAGS = -R -4 -p 0x1000
 endif
