@@ -447,8 +447,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&serial5_state_default>;
 //		actions,enable-dma-rx;
-		status = "okay";
-		sdio_uart_supported;
+		status = "disabled";
 	};
 
 	serial@b012c000 {
@@ -968,9 +967,8 @@
 	};
 
 	mmc@b0230000 {
-		pinctrl-names = "default","share_uart2_5";
+		pinctrl-names = "default";
 		pinctrl-0 = <&mmc0_state_default>;
-		pinctrl-1 = <&mmc_share_uart_state>;
 
 		card_type = "memory";  /* only: "memory", "wifi", or "emmc" */
 		card_detect_mode = "gpio";  /* only: "sirq", "gpio", or "command" */
@@ -980,7 +978,6 @@
 		status = "okay";
 
 		sd_vcc = "switch1";
-		sdio_uart_supported;
 	};
 
 	mmc@b0234000 {
