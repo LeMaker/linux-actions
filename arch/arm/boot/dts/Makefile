@@ -230,6 +230,7 @@ dtb-$(CONFIG_ARCH_OWL) += actduino_bubble_gum.dtb \
 	atm7059a_hr820ac_8723bs.dtb \
 	atm7059a_hr820ac_ap6210.dtb \
 	atm7059c_demo_86v_costdown.dtb \
+	lemaker_guitar_bba.dtb \
 	lemaker_guitar_bbb.dtb \
 	lemaker_guitar_bbc.dtb \
 	lemaker_guitar_bbd.dtb \
