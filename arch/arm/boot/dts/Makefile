@@ -220,6 +220,7 @@ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
 # Modify by LeMaker -- begin
 dtb-$(CONFIG_ARCH_OWL) += lemaker_guitar_bba.dtb \
 		lemaker_guitar_bbb.dtb \
+		lemaker_guitar_bbb_plus.dtb \
 		lemaker_guitar_bbc.dtb \
 		lemaker_guitar_bbd.dtb
 
