@@ -64,7 +64,7 @@ static int err_switch;
 
 #ifdef I2C_DEBUG_WARNING
 #define i2c_warn(fmt, args...)  \
-    printk(KERN_WARNING "owl_i2c: "fmt"\n", ##args)
+    printk(KERN_WARNING "owl_i2c: "fmt, ##args)
 #else
 #define i2c_warn(fmt, args...)   \
     do {} while(0)
@@ -73,12 +73,12 @@ static int err_switch;
 #ifdef I2C_DEBUG_SWITCH
 #define i2c_info(fmt, args...) do { \
 	if (info_switch) \
-		pr_info(fmt"\n", ##args); \
+		pr_info(fmt, ##args); \
 	} while (0)
 
 #define i2c_err(fmt, args...)  do { \
 	if (err_switch) \
-		pr_err(fmt"\n", ##args); \
+		pr_err(fmt, ##args); \
 	} while (0)
 #else
 	#define i2c_info(fmt, args...)
@@ -320,7 +320,7 @@ static struct device_attribute owl_i2c_attr[] = {
 
 static inline void owl_i2c_writel(struct owl_i2c_dev *i2c_dev, u32 val, int reg)
 {
-    i2c_dbg("-->>write 0x%x to 0x%x",val, (u32)(i2c_dev->base +reg));
+    i2c_dbg("-->>write 0x%x to 0x%x\n",val, (u32)(i2c_dev->base +reg));
     __raw_writel(val, i2c_dev->base + reg);
 }
 
@@ -414,7 +414,7 @@ static void owl_i2cdev_init(struct owl_i2c_dev *dev)
 //    u32 iiccon = I2C_CTL_EN | I2C_CTL_IRQE | I2C_CTL_PUEN;
     u32 iiccon = I2C_CTL_EN | I2C_CTL_IRQE | I2C_CTL_PUEN;
 
-    i2c_dbg("owl_i2cdev_init");
+    i2c_dbg("owl_i2cdev_init\n");
     owl_i2c_writel(dev, 0xff, I2C_STAT);
     owl_i2c_writel(dev, iiccon, I2C_CTL);
 }
@@ -444,7 +444,7 @@ static inline void owl_i2c_clear_tcb(struct owl_i2c_dev *dev)
     volatile unsigned int tmp;
     int retry_times = 10;
 
-    i2c_dbg("clear tcb");
+    i2c_dbg("clear tcb\n");
 
     do
     {
@@ -511,7 +511,7 @@ static inline int owl_i2c_reset(struct owl_i2c_dev *dev)
 
 static void owl_master_trans_completion(struct owl_i2c_dev *dev, int retval)
 {
-    i2c_dbg("I2C Trans complete %s", retval? "failed" : "successfully");
+    i2c_dbg("I2C Trans complete %s\n", retval? "failed" : "successfully");
 
 //    spin_lock_irq(&dev->lock);
     dev->msgs = NULL;
@@ -761,14 +761,14 @@ static int owl_i2c_doxfer(struct owl_i2c_dev *dev, struct i2c_msg *msgs, int num
                 dev->msg_num == 0, I2C_TRANS_TIMEOUT);
     if ( !timeout ) {
         ret = -EAGAIN;
-        i2c_warn("Timedout..");
+        i2c_warn("Timedout..\n");
         goto out;
     }
 
     if ( dev->msg_idx < 0) {
         ret = -EAGAIN;
         owl_i2cdev_init(dev);
-        i2c_warn("Transition failed");
+        i2c_warn("Transition failed\n");
     } else {
         ret = dev->msg_idx;
     }
@@ -882,7 +882,7 @@ retry_write:
 
             break;
         default:
-            i2c_warn("Invalid State..");
+            i2c_warn("Invalid State..\n");
             ret = -EINVAL;
             break;
     }
@@ -1013,7 +1013,7 @@ static int owl_i2c_fifo_irq(struct owl_i2c_dev *dev, int stop_detected)
 
     fifostat = owl_i2c_readl(dev, I2C_FIFOSTAT);
     if (fifostat & I2C_FIFOSTAT_RNB) {
-        i2c_warn("%s(): [i2c%d] no ACK, fifostat 0x%x\n", __FUNCTION__, 
+        i2c_dbg("%s(): [i2c%d] no ACK, fifostat 0x%x\n", __FUNCTION__, 
             dev->adapter.nr,
             fifostat);
         owl_i2c_reset(dev);
@@ -1059,7 +1059,7 @@ static irqreturn_t owl_i2c_interrupt(int irq, void *dev_id)
 
     status = owl_i2c_readl(dev, I2C_STAT);
     if (status & I2C_BUS_ERR_MSK) {
-        i2c_warn("I2C trans failed <stat: 0x%x>", status);
+        i2c_warn("I2C trans failed <stat: 0x%x>\n", status);
         goto out;
     }
 
@@ -1204,20 +1204,20 @@ static int owl_i2c_set_pin_mux(struct platform_device *pdev)
 
 	dev->i2c_pin_state.p = pinctrl_get(&pdev->dev);
 	if (IS_ERR(dev->i2c_pin_state.p)) {
-		i2c_err("owl i2c get pinctrl handle failed");
+		i2c_err("owl i2c get pinctrl handle failed\n");
 		return PTR_ERR(dev->i2c_pin_state.p);
 	}
 	dev->i2c_pin_state.s =
 	    pinctrl_lookup_state(dev->i2c_pin_state.p, I2C_STATE_DEFAULT);
 	if (IS_ERR(dev->i2c_pin_state.s)) {
-		i2c_err("alloc find pinctrl state failed");
+		i2c_err("alloc find pinctrl state failed\n");
 		pinctrl_put(dev->i2c_pin_state.p);
 		return PTR_ERR(dev->i2c_pin_state.s);
 	}
 
 	ret = pinctrl_select_state(dev->i2c_pin_state.p, dev->i2c_pin_state.s);
 	if (ret < 0) {
-		i2c_err("alloc set pinctrl state failed");
+		i2c_err("alloc set pinctrl state failed\n");
 		pinctrl_put(dev->i2c_pin_state.p);
 		return ret;
 	}
@@ -1302,11 +1302,11 @@ static int owl_i2c_set_clk_tree(struct platform_device *pdev)
 	return 0;
 
 round_rate_failed:
-	i2c_err("Round i2c module rate failed\r\n");
+	i2c_err("Round i2c module rate failed\n");
 	return -2;
 
 clk_get_failed:
-	i2c_err("Get i2c_clk failed\r\n");
+	i2c_err("Get i2c_clk failed\n");
 	return -1;
 }
 /*
@@ -1334,15 +1334,15 @@ static int owl_i2c_module_init(struct platform_device *pdev)
 	return 0;
 
 alias_get_id_failed:
-	i2c_err("%s: Alias_get_id failed\r\n", __func__);
+	i2c_err("%s: Alias_get_id failed\n", __func__);
 	return -EINVAL;
 
 set_pin_mux_failed:
-	i2c_err("%s: set_pin_mux failed\r\n", __func__);
+	i2c_err("%s: set_pin_mux failed\n", __func__);
 	return -EINVAL;
 
 set_clk_tree_failed:
-	i2c_err("%s: set_clk_tree failed\r\n", __func__);
+	i2c_err("%s: set_clk_tree failed\n", __func__);
 	return -EINVAL;
 
 }
@@ -1351,10 +1351,10 @@ static void owl_i2cdev_reinit(struct owl_i2c_dev *dev)
 {
 	/* u32 iiccon = I2C_CTL_EN | I2C_CTL_IRQE | I2C_CTL_PUEN; */
 	u32 iiccon = I2C_CTL_EN | I2C_CTL_IRQE | I2C_CTL_PUEN;
-	i2c_info("owl_i2cdev_reinit");
+	i2c_dbg("owl_i2cdev_reinit\n");
 
 	if (owl_i2c_set_speed(dev))
-		i2c_err("owl_i2c_set_speed failed\r\n");
+		i2c_err("owl_i2c_set_speed failed\n");
 
 	owl_i2c_writel(dev, 0x8a, I2C_CTL);	/*stop i2c */
 	owl_i2c_writel(dev, 0x00, I2C_CTL);	/*disable i2c */
@@ -1392,7 +1392,7 @@ static int owl_i2c_probe(struct platform_device *pdev)
 	dev = kzalloc(sizeof(struct owl_i2c_dev),
 		GFP_KERNEL);
 	if (!dev) {
-		i2c_err("alloc i2c device failed");
+		i2c_err("alloc i2c device failed\n");
 		ret = -ENOMEM;
 		goto err_release_region;
 	}
@@ -1431,14 +1431,14 @@ static int owl_i2c_probe(struct platform_device *pdev)
 
 	ret = owl_i2c_module_init(pdev);
 	if (ret) {
-		dev_err(dev->dev, "owl_i2c_module_init failed\r\n");
+		dev_err(dev->dev, "owl_i2c_module_init failed\n");
 		ret = ENOMEM;
 		goto err_free_irq;
 	}
 
 	ret = owl_i2c_set_speed(dev);
 	if (ret) {
-		dev_err(dev->dev, "owl_i2c_set_speed failed\r\n");
+		dev_err(dev->dev, "owl_i2c_set_speed failed\n");
 		ret = ENOMEM;
 		goto err_free_irq;
 	}
@@ -1459,7 +1459,7 @@ static int owl_i2c_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(owl_i2c_attr); i++) {
 		ret = device_create_file(&pdev->dev, &owl_i2c_attr[i]);
 		if (ret) {
-			i2c_err("Add device file failed");
+			i2c_err("Add device file failed\n");
 			goto err_free_irq;
 		}
 	}
