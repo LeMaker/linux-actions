@@ -34,7 +34,7 @@ static bool logos_freed;
 
 static int __init fb_logo_late_init(void)
 {
-	logos_freed = true;
+	logos_freed = false;
 	return 0;
 }
 
