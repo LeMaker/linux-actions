@@ -736,7 +736,7 @@ out:
 
 	return page;
 }
-EXPORT_SYMBOL(find_get_page_flags);
+EXPORT_SYMBOL(find_get_page);
 
 /**
  * find_lock_page - locate, pin and lock a pagecache page
