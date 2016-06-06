@@ -1,22 +1,24 @@
-name: snappyv310
-version: 3.10.0
-summary: A generic amd64 kernel built from source
-description: This is a generic kernel for amd64 / kvm built using x86_64_defconfig plus the minimal snappy config changes
+name: lemaker-guitar-kernel
+version: 3.10.94
+summary: A lemaker guitar kernel built from source
+description: This is reference kernel from lemaker branch linux-3.10.y-snappy
 type: kernel
+architectures: [ armhf ]
 
 parts:
   kernel:
     plugin: kernel
     source: .
-    source-branch: snappy_v3.10
+    source-branch: linux-3.10.y-snappy
     source-type: git
-    kdefconfig: [x86_64_defconfig, snappy/generic.config, snappy/security.config, snappy/systemd.config, snappy/snappy.config, snappy/containers.config]
+    kdefconfig: [snappy-atm705a_s500_defconfig]
     kconfigs:
       - CONFIG_LOCALVERSION="-snappy_v3.10"
+      - CONFIG_DEBUG_INFO=n
+      - CONFIG_SQUASHFS=m
     kernel-initrd-modules:
       - squashfs
-    kernel-initrd-firmware:
-      - lib/firmware/e100/d101m_ucode.bin
-      - lib/firmware/e100/d101s_ucode.bin
-      - lib/firmware/e100/d102e_ucode.bin
-    kernel-image-target: bzImage
+    kernel-image-target: zImage
+    kernel-device-trees:
+      - lemaker_guitar_bbb
+    build-packages: [bc, kmod, cpio]
