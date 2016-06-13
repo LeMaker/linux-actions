@@ -35,6 +35,9 @@
 #include "hdmi_ip.h"
 #include "hdmi.h"
 
+void  *cmu_tvoutplldebug0 = 0;
+void  *cmu_tvoutplldebug1 = 0;
+
 static inline void hdmi_write_reg(struct hdmi_ip_data *ip_data,	const u16 idx, u32 val)
 {
 	//HDMI_DEBUG("write base=%x  offset=%x  val=%x\n", ip_data->base, idx, val);
@@ -280,6 +283,7 @@ static void hdmi_video_interval_packet(struct hdmi_ip_data *ip_data, struct owl_
 		case VID1280x720P_60_16VS9:
 		case VID1280x720P_50_16VS9:
 		case VID1920x1080P_50_16VS9:
+		case VID1280x1024P_60_16VS9:
 		case VID1280x720P_60_DVI:
 			val = 0x1107;
 			break;
@@ -386,11 +390,15 @@ static void ip_hdmi_pmds_ldo_enable(struct hdmi_ip_data *ip_data ,bool enable)
 				break;		
 			case VID1280x720P_60_16VS9:
 			case VID1280x720P_50_16VS9:
-			case VID1280x720P_60_DVI:						
+			case VID1280x720P_60_DVI:	
+			case VID1024x768P_60_16VS9:
+			case VID800x600P_60_16VS9:				
 				hdmi_write_reg(ip_data, HDMI_TX_1, 0x81942983);	
 				break;
 			case VID1920x1080P_60_16VS9:
-			case VID1920x1080P_50_16VS9:						
+			case VID1920x1080P_50_16VS9:	
+			case VID1280x1024P_60_16VS9:	
+			case VID1440x900P_60_16VS9:						
 				hdmi_write_reg(ip_data, HDMI_TX_1, 0x81902983);
 				break;
 			default:
@@ -418,6 +426,22 @@ static int ip_hdmi_pll_enable(struct hdmi_ip_data *ip_data)
 		case VID1280x720P_50_16VS9:
 		case VID1280x720P_60_DVI:
 			pix_rate = 74250000;
+			break;
+		case VID800x600P_60_16VS9:
+				writel(readl(cmu_tvoutplldebug0)|(0x1<<31), cmu_tvoutplldebug0);
+				writel(0xb0440180, cmu_tvoutplldebug1);	
+			break;
+		case VID1024x768P_60_16VS9:
+				writel(readl(cmu_tvoutplldebug0)|(0x1<<31), cmu_tvoutplldebug0);
+				writel(0xc0330130, cmu_tvoutplldebug1);
+			break;
+		case VID1280x1024P_60_16VS9:
+				pix_rate = 106000000;
+				writel(readl(cmu_tvoutplldebug0)|(0x1<<31), cmu_tvoutplldebug0);
+			break;
+		case VID1440x900P_60_16VS9:
+				writel(readl(cmu_tvoutplldebug0)|(0x1<<31), cmu_tvoutplldebug0);
+				writel(0xd03300f0, cmu_tvoutplldebug1);
 			break;
 		case VID1920x1080P_60_16VS9:
 		case VID1920x1080P_50_16VS9:
@@ -598,6 +622,7 @@ static void ip_hdmi_phy_enable(struct hdmi_ip_data *ip_data)
 			case VID1280x720P_60_16VS9:
 			case VID1280x720P_50_16VS9:
 			case VID1280x720P_60_DVI:
+			case VID1280x1024P_60_16VS9:
 				hdmi_write_reg(ip_data, HDMI_TX_1, hdmi.ip_data.txrx_cfg.vid720p_tx1);	
 				hdmi_write_reg(ip_data, HDMI_TX_2, hdmi.ip_data.txrx_cfg.vid720p_tx2);	
 				break;
@@ -624,12 +649,16 @@ static void ip_hdmi_phy_enable(struct hdmi_ip_data *ip_data)
 					break;		
 				case VID1280x720P_60_16VS9:
 				case VID1280x720P_50_16VS9:
-				case VID1280x720P_60_DVI:
+				case VID1280x720P_60_DVI:	
+				case VID1024x768P_60_16VS9:		
+				case VID800x600P_60_16VS9:		
 					hdmi_write_reg(ip_data, HDMI_TX_1, 0x81942983);	
 					hdmi_write_reg(ip_data, HDMI_TX_2, 0x18f80f89);	
 					break;
 				case VID1920x1080P_60_16VS9:
 				case VID1920x1080P_50_16VS9:
+				case VID1440x900P_60_16VS9:
+				case VID1280x1024P_60_16VS9:
 					hdmi_write_reg(ip_data, HDMI_TX_1, 0x81902983);	
 					hdmi_write_reg(ip_data, HDMI_TX_2, 0x18f80f89);	
 					break;
@@ -651,6 +680,7 @@ static void ip_hdmi_phy_enable(struct hdmi_ip_data *ip_data)
 				case VID1280x720P_60_16VS9:
 				case VID1280x720P_50_16VS9:
 				case VID1280x720P_60_DVI:
+				case VID1280x1024P_60_16VS9:
 					hdmi_write_reg(ip_data, HDMI_TX_1, 0x81982986);	
 					hdmi_write_reg(ip_data, HDMI_TX_2, 0x18f80f89);
 					break;
@@ -850,6 +880,7 @@ static const struct owl_hdmi_ip_ops owl_hdmi_functions = {
 void dss_init_hdmi_ip_ops(struct hdmi_ip_data *ip_data)
 {
 	ip_data->ops = &owl_hdmi_functions;
-
+	cmu_tvoutplldebug0 = ioremap(0xb01600ec, 4);
+	cmu_tvoutplldebug1 = ioremap(0xb01600f4, 4);
 	WARN_ON(ip_data->ops == NULL);
 }

@@ -175,6 +175,10 @@ static struct data_fmt_param date_fmts[] = {
 	{"PAL", OWL_TV_MOD_PAL},
 	{"NTSC", OWL_TV_MOD_NTSC},
 	{"4K30HZ", OWL_TV_MOD_4K_30HZ},
+	{"800x600p-60", OWL_TV_MOD_600P_60HZ},
+	{"1024x768p-60", OWL_TV_MOD_768P_60HZ},
+	{"1280x1024p-60", OWL_TV_MOD_1024P_60HZ},
+	{"1440x900p-60", OWL_TV_MOD_900P_60HZ},
 };
 
 static struct hdmi_config cea_timings[] = {
@@ -220,6 +224,41 @@ static struct hdmi_config cea_timings[] = {
 			false, 1, 0, },
 		{ 126, HDMI_DVI,OWL_TV_MOD_DVI},
 	},
+	
+		/**********800*600P@60HZ*********************/
+	{
+		{ 800, 600, 40000, 128, 40, 80, 4, 1, 23,
+			OWLDSS_SIG_ACTIVE_HIGH, OWLDSS_SIG_ACTIVE_HIGH,
+			false, 1, 0, },
+		{ 127, HDMI_HDMI,OWL_TV_MOD_600P_60HZ},
+	},
+	
+		/**********1024*768P@60HZ*********************/
+	{
+		{ 1024, 768, 60000, 136, 24, 160, 6, 3, 29,
+			OWLDSS_SIG_ACTIVE_LOW, OWLDSS_SIG_ACTIVE_LOW,
+			false, 1, 0, },
+		{ 128, HDMI_HDMI,OWL_TV_MOD_768P_60HZ},
+	},
+	
+	
+	/**********1280*1024P@60HZ*********************/
+	{
+		{ 1280, 1024, 108000, 112, 48, 248, 3, 1, 38,
+			OWLDSS_SIG_ACTIVE_HIGH, OWLDSS_SIG_ACTIVE_HIGH,
+			false, 1, 0, },
+		{ 129, HDMI_HDMI,OWL_TV_MOD_1024P_60HZ},
+	},
+		
+		/**********1440*900P@60HZ*********************/
+	{
+		{ 1440, 900, 106000, 152, 80, 232, 3, 1, 28,
+			OWLDSS_SIG_ACTIVE_HIGH, OWLDSS_SIG_ACTIVE_LOW,
+			false, 1, 0, },
+		{ 130, HDMI_HDMI,OWL_TV_MOD_900P_60HZ},
+	},
+	
+	
 };
 
 #if 0
@@ -312,7 +351,7 @@ static bool  is_hdmi_power_on(void)
 
 #define DECLK2_MIN		150000000
 static unsigned long de_clk2_rate = 0;
-void  save_declk_and_switch_for_hdmi(void)
+void  save_declk_and_switch_for_hdmi()
 {
 	struct clk      *de2_clk;
 	unsigned long  de2_new_clk = 0;
@@ -335,7 +374,7 @@ void  save_declk_and_switch_for_hdmi(void)
 	    printk("save_declk_and_switch_for_hdmi de2_new_clk %d MHZ\n " ,de2_new_clk);	
 	}	
 }
-void  restore_declk_for_hdmi(void)
+void  restore_declk_for_hdmi()
 {
 	struct clk      *de2_clk;
 	unsigned long  de2_new_clk = 0;

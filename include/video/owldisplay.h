@@ -114,7 +114,11 @@ typedef enum
     OWL_TV_MOD_PAL                 = 8,
     OWL_TV_MOD_NTSC                = 9,
     OWL_TV_MOD_4K_30HZ             = 10,
-    OWL_TV_MODE_NUM               =  10,    
+    OWL_TV_MOD_600P_60HZ					 = 11,
+  	OWL_TV_MOD_768P_60HZ					 = 12,
+    OWL_TV_MOD_1024P_60HZ					 = 13,  
+    OWL_TV_MOD_900P_60HZ					 = 14,    
+    OWL_TV_MODE_NUM               =  14,    
 }__owl_tv_mode_t;
 
 typedef enum
