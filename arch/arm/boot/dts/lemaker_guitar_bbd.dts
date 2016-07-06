@@ -18,7 +18,7 @@
 			cpuvdd-supply = <&dcdc1>;
 		};
 	};
-	
+
 	reserved {
 		tiny {
 			fb_heap_size = <4>;
@@ -36,7 +36,7 @@
 	dual_logo {
 		value=<0x0>; /*dual_logo support,=0 disable, >0 enable; */
 	};
-    
+
 	pinctrl@b01b0040 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&state_default>;
@@ -109,7 +109,7 @@
 				actions,pins = "P_DNAND_DQSN";
 				actions,pull = <2>;	//pull up
 			};
-			
+
 			nand_dqs_pulldown {
 				actions,pins = "P_DNAND_DQS";
 				actions,pull = <1>;	//pull down
@@ -161,25 +161,25 @@
 			sd0_pull_d0_d3_cmd {
 				actions,pins = "P_SD0_CMD";
 				actions,pull = <2>;
-			};	
-			
+			};
+
 			sd0_pull_clk {
 				actions,pins = "P_SD0_CLK";
 				actions,pull = <0>;
 			};
-			
+
 			sd0_d0_d3_cmd_clk_paddrv  {
 				actions,groups  = "paddrv1_19_18","paddrv1_17_16";
-				actions,paddrv  = <1>; /*level 1，范围0~3*/ 			
+				actions,paddrv  = <1>; /*level 1，范围0~3*/
 			};
-			
+
 			// 如果以后使用uart2请修改这个地方到uart2配置，现在默认是uart5
 			serial_5 {
 				actions,groups = "mfp2_19_17","mfp2_16_14";
-				actions,function = "uart5";   
+				actions,function = "uart5";
 			};
 		};
-		
+
 		mmc0_state_default: mmc0_default {
 			sd0_mfp_d0_d3_cmd_clk {
 				actions,groups = "mfp2_19_17", "mfp2_16_14", "mfp2_13_11", "mfp2_8_7", "mfp2_6_5";
@@ -195,10 +195,10 @@
 				actions,pins = "P_SD0_CLK";
 				actions,pull = <0>;
 			};
-			
+
 			sd0_d0_d3_cmd_clk_paddrv  {
 				actions,groups  = "paddrv1_23_22","paddrv1_19_18","paddrv1_17_16";
-				actions,paddrv  = <1>; /*level 1，范围0~3*/ 			
+				actions,paddrv  = <1>; /*level 1，范围0~3*/
 			};
 		};
 
@@ -214,10 +214,10 @@
 			};
 			sd1_d0_d3_cmd_clk_paddrv  {
 				actions,groups  = "paddrv1_21_20","paddrv1_15_14","paddrv1_13_12";
-				actions,paddrv  = <1>; /*level 1，范围0~2*/ 			
+				actions,paddrv  = <1>; /*level 1，范围0~2*/
 			};
 		};
-	
+
 		mmc2_state_default: mmc2_default {
 			sd2_mfp_d0_d3_cmd_clk {
 				actions,groups = "mfp3_3";
@@ -287,7 +287,7 @@
 				actions,pins = "P_UART0_RX","P_UART0_TX";
 				actions,pull = <2>; /*pull up*/
 			};
-		};	
+		};
 
 		i2c1_state_default: i2c1_default {/* i2c1 use default pin	*/
 			i2c1_default_mfp {
@@ -321,7 +321,7 @@
 				actions,pins = "P_I2C2_SCLK","P_I2C2_SDATA";
 				actions,pull = <2>; /*pull up*/
 			};
-		};	
+		};
 
 		i2c3_state_over_spi0: i2c3_over_spi0 {/* i2c3 use spi0 pin      */
 			i2c3_over_spi0_mfp {
@@ -387,7 +387,7 @@
 				actions,function = "lcd0";
 			};
 		};
-		
+
 		dsi_state_default: dsi_default {
 			dsi_mux {
 				actions,groups = "mfp1_20_19", "mfp1_18_17", "mfp1_13_12", "mfp1_11_10", "mfp1_9_7", "mfp2_30_29";
@@ -466,8 +466,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c0_state_default>;
 		#address-cells = <1>;
-		#size-cells = <0>;	
-		
+		#size-cells = <0>;
+
 		/* atc2603c (5307) */
 		atc260x: atc2603c@65 {
 			compatible = "actions,atc2603c";
@@ -550,12 +550,12 @@
 			 now snd-soc-atv5302.ko is first installed.
 			 1, earphone_detect_level use the third value of earphone_gpios
 			 2, commonly, we shouldn't change the value of speaker_gain and earphone_gain*/
-			
+
 			atc260x-audio{
 				compatible = "actions,atc2603c-audio";
 				status = "okay";
                                 pinctrl-names = "default";
-                                pinctrl-0 = <&i2s0_state_default>;				
+                                pinctrl-0 = <&i2s0_state_default>;
 				//earphone_detect_gpios = <&gpio 21 0>; /*0: high, 1: low hr280ac GPIOA21 0*/
 				//speaker_en_gpios = <&gpio 126 1>; /*hr280ac GPIOD(30) 0: high, 1: low*/
 				earphone_output_mode = <0>; /*0: direct mode, 1: undirect mode*/
@@ -564,8 +564,8 @@
 				speaker_gain = < 0xaa 0xaa >; /*<Lchannel,Rchannel>[0x00~0xbebe]*/
 				earphone_gain = < 0xbe 0xbe >; /*<Lchannel,Rchannel>[0x00~0xbebe]*/
 				mic_mode = <1>; /* 1: differential,  2: single end*/
-				earphone_detect_method = <2>; /*0:gpio, 1:irq, 2:adc*/	
-				adc_plugin_threshold = <200>; /*adc earphone detect plugin threshold value*/		
+				earphone_detect_method = <2>; /*0:gpio, 1:irq, 2:adc*/
+				adc_plugin_threshold = <200>; /*adc earphone detect plugin threshold value*/
 				adc_level = <0>; /*adc plugin level, 1:high vol when plugin; 0:low vol when plug in*/
 			};
 
@@ -584,7 +584,7 @@
 				bl_on_voltage_diff  = <350>;                      /*mV,different voltage between SYSPOWR and battery,backlight is on*/
 				bl_off_voltage_diff = <400>;                      /*mV,different voltage between SYSPOWR and battery,backlight is off*/
 				support_adaptor_type = <3>;                       /*1: DCIN  2: USB  3:DCIN+USB*/
-				boot_cap_threshold = <3>;                         /*3%,the lowest capacity permitted to boot*/ 
+				boot_cap_threshold = <3>;                         /*3%,the lowest capacity permitted to boot*/
 				ext_dcdc_exist = <1>;                             /*1:exist external dcdc  0:do not exist external dcdc*/
 				pwms = <&pwm 3 2666 1>;                           /* 3--pwm3   2666ns--1/(24M/64)*1000000000-1   1- -active low*/
 				pwm-names = "ext_dcdc_pwm_ctl";                   /* pwm name */
@@ -595,17 +595,17 @@
 			atc260x-cap-gauge{
 				compatible = "actions,atc2603c-cap-gauge";
 				capacity = < 2500 >;                              /*mAh, the full capacity of battery used*/
-				icm_available= < 1 >;							  /* 1:available 0:not available */ 
+				icm_available= < 1 >;							  /* 1:available 0:not available */
 				icm_ohm_val = < 20 >;                             /*mohm,just 20 or 10,for ICM detecting current*/
 				taper_voltage = < 4200 >;                         /*mV,the one close to the full capacity*/
-				taper_current = <300>; 
+				taper_current = <300>;
 				min_over_chg_protect_voltage = < 4275 >;				/*mA,the one close to the full capacity*/
 				terminal_voltage = <3450>;                        /*mV,the lowest voltage of battery permitted*/
 				suspend_current = < 7730 >;                       /* uA,the current of suspend*/
 				shutdown_current = < 50 >;                        /* uA,the current of shutdown*/
 				print_switch = <0>;                               /*0:open the switch of printing information 1:the opposite*/
 				log_switch = <0>;                                 /*0:open the switch of recording charging log 1:the opposite*/
-				
+
 				ocv_soc_00 = <3477 3534 3591 3624 3637 3649 3661 3667 3673 3677>;    	 /* capacity:from 1% to 10%*/
 				ocv_soc_10 = <3682 3685 3690 3693 3700 3706 3712 3716 3722 3728 >;	 /* capacity:from 11% to 20%*/
 				ocv_soc_20 = <3732 3736 3739 3744 3747 3751 3755 3758 3761 3765>;	 /* capacity:from 21% to 30%*/
@@ -616,14 +616,14 @@
 				ocv_soc_70 = <3954 3961 3968 3972 3979 3985 3992 3997 4005 4012>;	 /* capacity:from 71% to 80%*/
 				ocv_soc_80 = <4019 4028 4036 4046 4054 4061 4068 4075 4084 4090>;	 /* capacity:from 81% to 90%*/
 				ocv_soc_90 = <4099 4107 4115 4126 4132 4141 4152 4160 4170 4180>;	 /* capacity:from 91% to 100%*/
-				
+
 			};
 
 			atc260x-backup{
 				compatible = "actions,atc2603c-backup";
 				status = "disabled";
 			};
- 
+
 			vdd_gpu_dcdc: vdd-gpu-dcdc {
 				compatible = "actions,atc2603c-ext-pwm-dcdc1","actions,atc2603c-ext-pwm-dcdc";
 				regulator-name = "vdd-gpu-dcdc";
@@ -635,7 +635,7 @@
 				vdd_cpu_table = <900000 925000 950000 975000 1000000 1025000 1050000 1075000 1100000 1125000 1150000 1175000 1200000 1225000 1250000>;	//uV
 				pwm_config_table = <19 18 17 16 15 14 13 12 11 10 9 8 7 6 5>;	//the pwm period of 1.1v 1.2v 1.3v
 			};
- 
+
 			vdd_core_dcdc: vdd-core-dcdc {
 				compatible = "actions,atc2603c-ext-pwm-dcdc2","actions,atc2603c-ext-pwm-dcdc";
 				regulator-name = "vdd-core-dcdc";
@@ -647,7 +647,7 @@
 				vdd_cpu_table = <900000 925000 950000 975000 1000000 1025000 1050000 1075000 1100000 1125000 1150000 1175000 1200000 1225000 1250001>;	//uV
 				pwm_config_table = <19 18 17 16 15 14 13 12 11 10 9 8 7 6 5>;	//the pwm period of 1.1v 1.2v 1.3v
 			};
- 
+
 			dcdc1: dcdc1 {
 				compatible = "actions,atc2603c-dcdc1","actions,atc2603c-dcdc";
 				regulator-name = "dcdc1";
@@ -767,14 +767,14 @@
 			};
 		};
 	};
-	
+
 	i2c@b0174000 {
 		i2c_num = <1>;
 		clock-frequency = <400000>;
 		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c1_state_default>;
-			
+
 		ft5x06@38 {
 			compatible = "ft5x06";
 			reg = <0x38>;
@@ -846,18 +846,18 @@
 			calibration_table = <0 0 0>;
 		};
 
-		stk8313@22{		
+		stk8313@22{
 			compatible = "stk8313";
 			reg = <0x22>;
 			position = "1";
-			calibration_table = <0 0 0>;			
+			calibration_table = <0 0 0>;
 		};
 
-		mc323x@4c{		
+		mc323x@4c{
 			compatible = "mc323x";
 			reg = <0x4c>;
 			position = "-3";
-			calibration_table = <0 0 0>;			
+			calibration_table = <0 0 0>;
 		};
 
 		mpu6515@68{
@@ -868,15 +868,20 @@
 			MASTER_inv6515_position = "-1";
 			SECONDARY_ak8963c_position = "-2";
 		};
-		
+
 		mir3da@27{
 			compatible = "mir3da";
 			reg = <0x27>;
 			position = "-3";
 			calibration_table = <0 0 0>;
 		};
+		
+		ds1307@68{
+			compatible = "ds1307";
+			reg = <0x68>;
+		};
 	};
-	
+
 	i2c@b017c000 {
 		i2c_num = <3>;
 		clock-frequency = <400000>;
@@ -909,10 +914,10 @@
 	spi@b0204000 {
 		status = "disabled";
 	};
-	
+
 	gl5203-audio-i2s{
 		#address-cells = <1>;
-		#size-cells = <1>; 
+		#size-cells = <1>;
 		compatible = "actions,owl-audio-i2s";
 		reg = <0xb0100000 0x34>;
 	};
@@ -948,7 +953,7 @@
 
 		phy-mode = "rmii";
 		phy-handle = <&phy0>;
-		phy-power-gpios = <&gpio 43 0>; /* GPIOB11 active  1:low  0:high*/		
+		phy-power-gpios = <&gpio 43 0>; /* GPIOB11 active  1:low  0:high*/
 		phy-reset-gpios = <&gpio 127 0>; /* GPIOD31 active  1:low  0:high*/
 
 		phy_addr = <1>;
@@ -959,7 +964,7 @@
 
 		status = "okay";
 		compatible = "actions,owl-ethernet";
-		
+
 		phy0: ethernet-phy@0 {
 			compatible = "SR8201G,sr8201g";
 			reg = <0>;
@@ -973,7 +978,7 @@
 
 		card_type = "memory";  /* only: "memory", "wifi", or "emmc" */
 		card_detect_mode = "gpio";  /* only: "sirq", "gpio", or "command" */
-		card_detect_gpios = <&gpio 66 1>; /*86v S500 GPIOC2 */  
+		card_detect_gpios = <&gpio 66 1>; /*86v S500 GPIOC2 */
 		interrupts = < 0 42 0x4 >;
 
 		status = "okay";
@@ -1016,12 +1021,12 @@
 		usb_hs_output_strength = <2>; /*defaut:2,range:0~7; 0:min,7:max;usb high speed(2.0)transmitter output strength*/
 		status = "okay";
 	};
-  usb@b0600000 { 
-     //vbus_otg_en_gpio = <&gpio 116 0>; /*GPIO D20*/ 
+  usb@b0600000 {
+     //vbus_otg_en_gpio = <&gpio 116 0>; /*GPIO D20*/
                       port0_host_plug_detect = <1>;
 		 status = "okay";
-   }; 
-   usb@b0700000 { 
+   };
+   usb@b0700000 {
                       //        vbus_otg_en_gpio = <&gpio 36 0>; /*GPIO B4*/
                       port1_host_plug_detect = <1>;
                       status = "okay";
@@ -1032,8 +1037,8 @@
 		detect_type = <3>; /* config what to detect, 0:DISABLE ; 1:DEVICE_ONLY; 2:HOST_ONLY; 3: HOST_AND_DEVICE*/
 		idpin_type   = <0>; /* 0:use ic's idpin;      1:soft idpin,##no support!##;       2:gpio idpin,use gpio to detect,need to add a "idpin_gpio" configuration */
 		vbus_type   = <2>; /* 0:use ic's vbuspin; 1:gpio vbus,##no support!## ;      2:use dc5v to detect vbus level*/
-		
-		/*vbus_otg_en_gpio is use to turn on/off otg vbus,it's different from vbus detect gpio;*/  
+
+		/*vbus_otg_en_gpio is use to turn on/off otg vbus,it's different from vbus detect gpio;*/
 		vbus_otg_en_gpios = <&gpio 125 1>;  /* GPIOC14,  0: low active; 1: high active */
 		//idpin_gpio = <&gpio 63 1>;   /*if idpin detect by gpio,config the gpio to GPIOB31, input,0: low active; 1: high active*/
 		status = "okay";
@@ -1047,7 +1052,7 @@
 		dvdd-regulator = "ldo7";
 		dvdd-regulator-scope = <1800000 1810000>;  /* uV */
 
-		sensors = "dual"; /* "dual", "front" or "rear" */		
+		sensors = "dual"; /* "dual", "front" or "rear" */
 		pwdn-rear-gpios = <&gpio 124 0>; /* GPIOC17 */
 		pwdn-front-gpios = <&gpio 120 0>; /* GPIOC15 */
 		reset-gpios = <&gpio 121 1>; /*:GPIOC16*/
@@ -1055,7 +1060,7 @@
 
 		status = "okay"; /* create platform-device */
 	};
-	
+
 	sensors: isp-sensor {
 		compatible = "sensor_common";
 		bus_type = "dvp";  /* dvp or mipi */
@@ -1083,18 +1088,18 @@
 
 			bf3703 = <1>;
 			bf3920 = <1>;
-									
+
 			hi708 = <1>;
 			hi257 = <1>;
-			
+
 			ov2686 = <1>;
 			ov5640 = <1>;
-			
+
 			sp0718 = <1>;
 			sp0a19 = <1>;
 			sp2519 = <1>;
-			
-			
+
+
 			soc5140 = <1>;
     	};
     };
@@ -1133,7 +1138,7 @@ lcd0: lcd0@b02a0000 {
                 //        /*0: FB_VMODE_NONINTERLACED, 1:FB_VMODE_INTERLACED*/
                 //        vmode = <0>;
                 //};
-	
+
 		lcd_mode0:mode@1024x600p60 {
 			refresh = <60>;
 			xres = <1024>;
@@ -1163,9 +1168,9 @@ lcd0: lcd0@b02a0000 {
 		bootrotate = <0>;
 		default_resolution = "auto";
 	};
-	
+
 	framebuffer {
-		compatible = "actions,framebuffer";  
+		compatible = "actions,framebuffer";
 		def_display  = "hdmi";
 
 	};
@@ -1196,16 +1201,16 @@ lcd0: lcd0@b02a0000 {
 	backlight {
 		/*1.pwm num; 2. period in ns; */
 		/*3.plarity, 0: high active, 1: low active*/
-		backlight_en_gpios = <&gpio 49 0>; /*GPIOB17*/ 
+		backlight_en_gpios = <&gpio 49 0>; /*GPIOB17*/
 		pwms = <&pwm 0 50000 1>;
 		total_steps = <1024>;
 		min_brightness = <250>;
 		max_brightness = <1000>;
 		dft_brightness = <600>;
 		delay_bf_pwm  = <200>;
-		delay_af_pwm  = <10>;	
+		delay_af_pwm  = <10>;
 	};
-	
+
 	leds {
 		compatible = "gpio-leds";
 		led@1 {
@@ -1221,12 +1226,12 @@ lcd0: lcd0@b02a0000 {
                         default-state = "OFF";
 		};
 	};
-	
+
 	vibrator {
 		compatible = "actions,vibrator";
 		status = "disabled";
 	};
-	
+
 	wifi_bt_power_ctl {
 		compatible = "wifi,bt,power,ctl";
 		//bt_power_gpio = <&gpio  0>;/*GPIOA20, high active*/   /*BT_WAKE*/
@@ -1287,18 +1292,18 @@ lcd0: lcd0@b02a0000 {
 			SSD254X =  <0>;
 	   };
 	};
-   
+
 	gpu@b0300000 {
 		gpuvdd-supply = <&vdd_gpu_dcdc>;
 		normal_value = <2>;
 		status = "okay";
 	};
-	
+
 	vce@b0288000{
 		corevdd-supply = <&vdd_core_dcdc>;
 		status = "okay";
 	};
-	
+
 	vde@b0280000{
 		corevdd-supply = <&vdd_core_dcdc>;
 		status = "okay";
